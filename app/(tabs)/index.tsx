@@ -6,7 +6,6 @@ import { EntryFormModal } from '@/src/components/EntryFormModal';
 import { EntryRow } from '@/src/components/EntryRow';
 import { EntrySectionHeader } from '@/src/components/EntrySectionHeader';
 import { Fab } from '@/src/components/Fab';
-import { RangeToggle } from '@/src/components/RangeToggle';
 import { RecordBanner } from '@/src/components/RecordBanner';
 import { Screen } from '@/src/components/Screen';
 import { SummaryCard } from '@/src/components/SummaryCard';
@@ -19,7 +18,7 @@ import { celebrateHaptic } from '@/src/utils/haptics';
 
 const FALLBACK_EMOJI = '💰';
 
-export default function RecordsScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const { colors, type, sp, radius, size } = useTheme();
   const list = useEntryList();
@@ -65,7 +64,6 @@ export default function RecordsScreen() {
               celebrateTick={list.celebrateTick}
             />
             <RecordBanner best={list.lastRecord} celebrateTick={list.celebrateTick} />
-            <RangeToggle mode={list.mode} onChange={list.setMode} />
           </View>
         }
         renderSectionHeader={({ section }) => (
@@ -96,7 +94,7 @@ export default function RecordsScreen() {
         ListEmptyComponent={
           <View style={[styles.empty, { paddingVertical: sp.xl }]}>
             <Text style={[type.bodyStrong, { color: colors.text }]}>
-              {list.mode === 'month' ? '이번 달 기록이 없어요' : '올해 기록이 없어요'}
+              이번 달 기록이 없어요
             </Text>
             <Text style={[type.note, { color: colors.textMuted, marginTop: sp.xs }]}>
               오늘 참은 소비를 + 버튼으로 남겨보세요

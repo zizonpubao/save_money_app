@@ -1,11 +1,18 @@
-import type { Category, CategoryTotal, DailyTotal } from '@/src/db';
+import type { Category, CategoryTotal, DailyTotal, MonthlyTotal } from '@/src/db';
 import {
   axisDays,
   buildCategoryRows,
   buildDailyBars,
+  buildMonthlyBars,
   canGoNext,
+  canGoNextYear,
   canGoPrev,
+  canGoPrevYear,
   dailyAverage,
+  monthForYear,
+  monthlyAverage,
+  toDailyChartBars,
+  toMonthlyChartBars,
 } from '@/src/features/monthlyStats';
 
 const 커피: Category = { id: 1, name: '커피', emoji: '☕', sortOrder: 0, isDefault: true };
@@ -149,5 +156,108 @@ describe('월 이동 경계', () => {
   it('이번 달보다 미래로는 못 간다', () => {
     expect(canGoNext('2026-08', '2026-09')).toBe(true);
     expect(canGoNext('2026-09', '2026-09')).toBe(false);
+  });
+});
+
+describe('monthlyAverage (년 모드 월 평균)', () => {
+  it('이번 해 9월이면 9로 나눈다', () => {
+    expect(monthlyAverage(180000, '2026', '2026-09-24')).toBe(20000);
+  });
+
+  it('지난 해면 12로 나눈다', () => {
+    expect(monthlyAverage(120000, '2025', '2026-09-24')).toBe(10000);
+  });
+
+  it('이번 해 1월이면 총액이 그대로 월 평균이다', () => {
+    expect(monthlyAverage(4500, '2026', '2026-01-10')).toBe(4500);
+  });
+
+  it('기록이 없으면 0이다', () => {
+    expect(monthlyAverage(0, '2026', '2026-09-24')).toBe(0);
+  });
+
+  it('나눈 값은 원 단위 정수로 반올림한다', () => {
+    expect(monthlyAverage(10000, '2025', '2026-09-24')).toBe(833);
+  });
+});
+
+describe('buildMonthlyBars', () => {
+  const TOTALS: MonthlyTotal[] = [
+    { month: '2026-03', total: 50000 },
+    { month: '2026-09', total: 184000 },
+  ];
+
+  it('1월부터 12월까지 12칸을 빠짐없이 채운다', () => {
+    const bars = buildMonthlyBars('2026', TOTALS);
+    expect(bars.map((b) => b.month)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}`),
+    );
+  });
+
+  it('기록 없는 달은 0, 최고 달만 isMax 이고 비율은 최고 달 기준이다', () => {
+    const bars = buildMonthlyBars('2026', TOTALS);
+    expect(bars[0]).toMatchObject({ monthNumber: 1, total: 0, ratio: 0, isMax: false });
+    expect(bars[8]).toMatchObject({ monthNumber: 9, total: 184000, ratio: 1, isMax: true });
+    expect(bars.filter((b) => b.isMax)).toHaveLength(1);
+    expect(bars[2]?.ratio).toBeCloseTo(50000 / 184000);
+  });
+
+  it('기록이 하나도 없으면 12칸 모두 0이고 isMax 도 없다', () => {
+    const bars = buildMonthlyBars('2026', []);
+    expect(bars).toHaveLength(12);
+    expect(bars.every((b) => b.total === 0 && !b.isMax)).toBe(true);
+  });
+});
+
+describe('BarChart 칸 변환', () => {
+  it('월별 칸은 "9월" 라벨이고 축 숫자는 1 · 6 · 12월에만 붙는다', () => {
+    const bars = toMonthlyChartBars(buildMonthlyBars('2026', []));
+    expect(bars[8]?.label).toBe('9월');
+    expect(bars.filter((b) => b.axisLabel !== null).map((b) => b.axisLabel)).toEqual([
+      '1',
+      '6',
+      '12',
+    ]);
+  });
+
+  it('일별 칸은 "23일" 라벨이고 축 숫자는 1 · 15 · 말일에만 붙는다', () => {
+    const bars = toDailyChartBars(buildDailyBars('2026-09', []), axisDays('2026-09'));
+    expect(bars[22]?.label).toBe('23일');
+    expect(bars[22]?.key).toBe('2026-09-23');
+    expect(bars.filter((b) => b.axisLabel !== null).map((b) => b.axisLabel)).toEqual([
+      '1',
+      '15',
+      '30',
+    ]);
+  });
+});
+
+describe('년 이동 경계', () => {
+  it('가장 오래된 기록의 해보다 앞으로는 못 간다', () => {
+    expect(canGoPrevYear('2026', '2025')).toBe(true);
+    expect(canGoPrevYear('2025', '2025')).toBe(false);
+  });
+
+  it('기록이 하나도 없으면 이전 해로 못 간다', () => {
+    expect(canGoPrevYear('2026', null)).toBe(false);
+  });
+
+  it('올해보다 미래로는 못 간다', () => {
+    expect(canGoNextYear('2025', '2026')).toBe(true);
+    expect(canGoNextYear('2026', '2026')).toBe(false);
+  });
+});
+
+describe('monthForYear (년 → 월 모드로 돌아갈 달)', () => {
+  it('보던 달이 그 해 안이면 그대로 둔다', () => {
+    expect(monthForYear('2026', '2026-03', '2026-09')).toBe('2026-03');
+  });
+
+  it('올해로 옮겨 왔으면 이번 달', () => {
+    expect(monthForYear('2026', '2025-05', '2026-09')).toBe('2026-09');
+  });
+
+  it('지난 해로 옮겨 갔으면 그 해 12월', () => {
+    expect(monthForYear('2024', '2026-09', '2026-09')).toBe('2024-12');
   });
 });

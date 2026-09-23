@@ -3,6 +3,7 @@ import {
   deleteEntry,
   getAllCategories,
   getCategoryTotals,
+  getCategoryTotalsBetween,
   getDailyTotals,
   getDb,
   getEarliestEntryDate,
@@ -11,6 +12,8 @@ import {
   getMaxDailyTotal,
   getMaxMonthlyTotal,
   getMonthStats,
+  getMonthlyTotals,
+  getStatsBetween,
   getSumBetween,
   getSumByDate,
   initDatabase,
@@ -20,6 +23,7 @@ import {
   type EntryInput,
 } from '@/src/db';
 import { runMigrations } from '@/src/db/migrations';
+import { buildMonthlyBars } from '@/src/features/monthlyStats';
 
 function input(over: Partial<EntryInput> = {}): EntryInput {
   return {
@@ -270,6 +274,63 @@ describe('queries', () => {
     it('기록 없는 달은 빈 배열이다', () => {
       addEntry(input({ date: '2026-08-31', amount: 1000, categoryId: categoryIdOf('커피') }));
       expect(getCategoryTotals('2026-09')).toEqual([]);
+    });
+  });
+
+  describe('getMonthlyTotals (년 모드 월별 합계)', () => {
+    it('같은 달 기록을 합쳐 월 오름차순으로, 기록 있는 달만 돌려준다', () => {
+      addEntry(input({ date: '2026-09-15', amount: 4500 }));
+      addEntry(input({ date: '2026-09-30', amount: 3000 }));
+      addEntry(input({ date: '2026-01-02', amount: 1000 }));
+      expect(getMonthlyTotals('2026')).toEqual([
+        { month: '2026-01', total: 1000 },
+        { month: '2026-09', total: 7500 },
+      ]);
+    });
+
+    it('연도 경계: 작년 12/31 과 내년 1/1 은 섞이지 않고 1/1·12/31 은 포함된다', () => {
+      addEntry(input({ date: '2025-12-31', amount: 100 }));
+      addEntry(input({ date: '2026-01-01', amount: 1000 }));
+      addEntry(input({ date: '2026-12-31', amount: 2000 }));
+      addEntry(input({ date: '2027-01-01', amount: 200 }));
+      expect(getMonthlyTotals('2026')).toEqual([
+        { month: '2026-01', total: 1000 },
+        { month: '2026-12', total: 2000 },
+      ]);
+    });
+
+    it('기록 없는 해는 빈 배열이다', () => {
+      addEntry(input({ date: '2025-06-01' }));
+      expect(getMonthlyTotals('2026')).toEqual([]);
+    });
+
+    it('buildMonthlyBars 와 합치면 12칸이 되고 기록 없는 달은 0이다', () => {
+      addEntry(input({ date: '2026-03-10', amount: 5000 }));
+      const bars = buildMonthlyBars('2026', getMonthlyTotals('2026'));
+      expect(bars).toHaveLength(12);
+      expect(bars.map((b) => b.total)).toEqual([0, 0, 5000, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    });
+  });
+
+  describe('getStatsBetween / getCategoryTotalsBetween (기간 파라미터)', () => {
+    it('한 해 구간의 합계·건수를 센다 (구간 밖은 빼고)', () => {
+      addEntry(input({ date: '2026-01-01', amount: 1000 }));
+      addEntry(input({ date: '2026-12-31', amount: 2000 }));
+      addEntry(input({ date: '2027-01-01', amount: 50000 }));
+      expect(getStatsBetween('2026-01-01', '2026-12-31')).toEqual({ total: 3000, count: 2 });
+    });
+
+    it('한 해 구간의 카테고리별 합계를 많은 순으로 센다', () => {
+      const coffee = categoryIdOf('커피');
+      const taxi = categoryIdOf('택시');
+      addEntry(input({ date: '2026-01-05', amount: 4500, categoryId: coffee }));
+      addEntry(input({ date: '2026-11-05', amount: 4500, categoryId: coffee }));
+      addEntry(input({ date: '2026-06-05', amount: 12000, categoryId: taxi }));
+      addEntry(input({ date: '2025-06-05', amount: 99000, categoryId: taxi }));
+      expect(getCategoryTotalsBetween('2026-01-01', '2026-12-31')).toEqual([
+        { categoryId: taxi, total: 12000 },
+        { categoryId: coffee, total: 9000 },
+      ]);
     });
   });
 

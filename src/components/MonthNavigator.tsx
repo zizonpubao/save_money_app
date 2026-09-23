@@ -1,20 +1,23 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { RangeMode } from '@/src/store/entryStore';
 import { useTheme } from '@/src/theme';
-import { formatKoMonth } from '@/src/utils/date';
+import { formatKoMonth, formatKoYear } from '@/src/utils/date';
 
 type Props = {
-  /** 'YYYY-MM' */
-  month: string;
+  /** 월 모드 'YYYY-MM' / 년 모드 'YYYY' */
+  period: string;
+  mode?: RangeMode;
   canPrev: boolean;
   canNext: boolean;
   onPrev: () => void;
   onNext: () => void;
 };
 
-/** `‹ 2026년 9월 ›` 월 이동. 끝에 닿으면 화살표를 비활성으로 흐리게 둔다. */
-export function MonthNavigator({ month, canPrev, canNext, onPrev, onNext }: Props) {
+/** `‹ 2026년 9월 ›` / `‹ 2026년 ›` 기간 이동. 끝에 닿으면 화살표를 비활성으로 흐리게 둔다. */
+export function MonthNavigator({ period, mode = 'month', canPrev, canNext, onPrev, onNext }: Props) {
   const { colors, type, sp, size } = useTheme();
+  const isYear = mode === 'year';
 
   const arrow = (label: string, enabled: boolean, onPress: () => void, hint: string) => (
     <Pressable
@@ -33,9 +36,11 @@ export function MonthNavigator({ month, canPrev, canNext, onPrev, onNext }: Prop
 
   return (
     <View style={[styles.row, { paddingVertical: sp.sm }]}>
-      {arrow('‹', canPrev, onPrev, '이전 달')}
-      <Text style={[type.heading, { color: colors.text }]}>{formatKoMonth(month)}</Text>
-      {arrow('›', canNext, onNext, '다음 달')}
+      {arrow('‹', canPrev, onPrev, isYear ? '이전 해' : '이전 달')}
+      <Text style={[type.heading, { color: colors.text }]}>
+        {isYear ? formatKoYear(period) : formatKoMonth(period)}
+      </Text>
+      {arrow('›', canNext, onNext, isYear ? '다음 해' : '다음 달')}
     </View>
   );
 }

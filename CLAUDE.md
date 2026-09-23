@@ -28,8 +28,8 @@ app/                  # Expo Router 화면 (라우팅만, 로직 없음)
   _layout.tsx
   (tabs)/
     _layout.tsx
-    index.tsx         # 오늘/기록 탭
-    monthly.tsx       # 월별 탭
+    index.tsx         # 홈 탭 (이번 달 카드, 입력, 최근 기록)
+    monthly.tsx       # 기록 탭 (월/년 토글, 통계, 전체 목록)
     settings.tsx      # 설정(백업/복원/카테고리)
   entry/[id].tsx      # 기록 수정
 src/

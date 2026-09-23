@@ -7,7 +7,7 @@ async function renderNav(canPrev: boolean, canNext: boolean) {
   const onNext = jest.fn();
   await render(
     <MonthNavigator
-      month="2026-09"
+      period="2026-09"
       canPrev={canPrev}
       canNext={canNext}
       onPrev={onPrev}
@@ -44,5 +44,23 @@ describe('MonthNavigator (월 이동)', () => {
     await fireEvent.press(screen.getByLabelText('다음 달'));
     expect(onPrev).toHaveBeenCalledTimes(1);
     expect(onNext).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MonthNavigator (년 모드)', () => {
+  it('가운데에 "2026년" 을 보여주고 화살표 라벨이 "이전 해 / 다음 해" 다', async () => {
+    await render(
+      <MonthNavigator
+        period="2026"
+        mode="year"
+        canPrev
+        canNext={false}
+        onPrev={jest.fn()}
+        onNext={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('2026년')).toBeOnTheScreen();
+    expect(screen.getByLabelText('이전 해')).toBeEnabled();
+    expect(screen.getByLabelText('다음 해')).toBeDisabled();
   });
 });

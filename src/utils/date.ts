@@ -40,6 +40,26 @@ export function thisYear(): string {
   return dayjs().format('YYYY');
 }
 
+/** '2026-09-23' 또는 '2026-09' → '2026' */
+export function toYear(date: string): string {
+  return date.slice(0, 'YYYY'.length);
+}
+
+/** '2026' → '2026년' */
+export function formatKoYear(year: string): string {
+  return `${year}년`;
+}
+
+/** 'YYYY'에 delta년을 더한다. addYears('2026', -1) → '2025' */
+export function addYears(year: string, delta: number): string {
+  return String(Number(year) + delta);
+}
+
+/** 'YYYY-MM-DD' 또는 'YYYY-MM' → 1~12 (몇 월인지) */
+export function monthOfYear(date: string): number {
+  return Number(date.slice('YYYY-'.length, 'YYYY-MM'.length));
+}
+
 /** '2026' → { start: '2026-01-01', end: '2026-12-31' } */
 export function yearRange(year: string): { start: string; end: string } {
   return { start: `${year}-01-01`, end: `${year}-12-31` };

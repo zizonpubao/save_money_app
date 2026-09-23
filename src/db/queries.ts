@@ -1,4 +1,4 @@
-import { monthRange, nowIso } from '@/src/utils/date';
+import { monthRange, nowIso, yearRange } from '@/src/utils/date';
 
 import { getDb } from './database';
 import {
@@ -12,6 +12,7 @@ import {
   type EntryInput,
   type EntryRow,
   type MonthStats,
+  type MonthlyTotal,
 } from './types';
 
 const ENTRY_COLUMNS =
@@ -84,9 +85,8 @@ export function getDailyTotals(month: string): DailyTotal[] {
   );
 }
 
-/** 그 달의 카테고리별 합계. 많은 순. 미분류(NULL)도 한 줄로 들어온다. */
-export function getCategoryTotals(month: string): CategoryTotal[] {
-  const { start, end } = monthRange(month);
+/** start ≤ date ≤ end 구간의 카테고리별 합계. 많은 순. 미분류(NULL)도 한 줄로 들어온다. */
+export function getCategoryTotalsBetween(start: string, end: string): CategoryTotal[] {
   const rows = getDb().getAllSync<{ category_id: number | null; total: number }>(
     'SELECT category_id, SUM(amount) AS total FROM entries WHERE date BETWEEN ? AND ? GROUP BY category_id ORDER BY total DESC',
     [start, end],
@@ -94,14 +94,40 @@ export function getCategoryTotals(month: string): CategoryTotal[] {
   return rows.map((r) => ({ categoryId: r.category_id, total: r.total }));
 }
 
-/** 그 달의 총 절약액과 기록 건수. 기록이 없으면 { total: 0, count: 0 }. */
-export function getMonthStats(month: string): MonthStats {
+/** 그 달의 카테고리별 합계. */
+export function getCategoryTotals(month: string): CategoryTotal[] {
   const { start, end } = monthRange(month);
+  return getCategoryTotalsBetween(start, end);
+}
+
+/** start ≤ date ≤ end 구간의 총 절약액과 기록 건수. 기록이 없으면 { total: 0, count: 0 }. */
+export function getStatsBetween(start: string, end: string): MonthStats {
   const row = getDb().getFirstSync<{ total: number | null; count: number | null }>(
     'SELECT SUM(amount) AS total, COUNT(*) AS count FROM entries WHERE date BETWEEN ? AND ?',
     [start, end],
   );
   return { total: row?.total ?? 0, count: row?.count ?? 0 };
+}
+
+/** 그 달의 총 절약액과 기록 건수. */
+export function getMonthStats(month: string): MonthStats {
+  const { start, end } = monthRange(month);
+  return getStatsBetween(start, end);
+}
+
+/**
+ * 그 해('YYYY')의 월별 합계. 기록이 있는 달만 월 오름차순으로 돌려준다.
+ * 빈 달을 0으로 채워 12칸을 만드는 건 buildMonthlyBars 가 한다 (getDailyTotals 와 같은 방식).
+ */
+export function getMonthlyTotals(year: string): MonthlyTotal[] {
+  const { start, end } = yearRange(year);
+  // substr(date, 1, 7) = 'YYYY-MM'
+  return getDb().getAllSync<MonthlyTotal>(
+    `SELECT substr(date, 1, 7) AS month, SUM(amount) AS total FROM entries
+     WHERE date BETWEEN ? AND ?
+     GROUP BY substr(date, 1, 7) ORDER BY month ASC`,
+    [start, end],
+  );
 }
 
 /**

@@ -28,11 +28,11 @@ export default function TabLayout() {
       }}>
       <Tabs.Screen
         name="index"
-        options={{ title: '기록', tabBarIcon: tabIcon('list') }}
+        options={{ title: '홈', tabBarIcon: tabIcon('home') }}
       />
       <Tabs.Screen
         name="monthly"
-        options={{ title: '월별', tabBarIcon: tabIcon('bar-chart') }}
+        options={{ title: '기록', tabBarIcon: tabIcon('bar-chart') }}
       />
       <Tabs.Screen
         name="settings"

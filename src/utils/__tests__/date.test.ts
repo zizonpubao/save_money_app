@@ -1,13 +1,17 @@
 import {
   addMonths,
+  addYears,
   daysInMonth,
   formatKoDate,
   formatKoMonth,
+  formatKoYear,
   fromDate,
+  monthOfYear,
   monthRange,
   thisMonth,
   thisYear,
   toDate,
+  toYear,
   today,
   yearRange,
 } from '../date';
@@ -88,6 +92,28 @@ describe('thisYear / yearRange', () => {
 
   it('yearRange 는 1월 1일 ~ 12월 31일', () => {
     expect(yearRange('2026')).toEqual({ start: '2026-01-01', end: '2026-12-31' });
+  });
+});
+
+describe('년 유틸 (toYear / formatKoYear / addYears / monthOfYear)', () => {
+  it('toYear 는 날짜·월에서 앞 4자리를 뗀다', () => {
+    expect(toYear('2026-09-23')).toBe('2026');
+    expect(toYear('2026-09')).toBe('2026');
+  });
+
+  it('formatKoYear 는 "2026년"', () => {
+    expect(formatKoYear('2026')).toBe('2026년');
+  });
+
+  it('addYears 는 연도를 더하고 뺀다', () => {
+    expect(addYears('2026', -1)).toBe('2025');
+    expect(addYears('2026', 1)).toBe('2027');
+  });
+
+  it('monthOfYear 는 1~12', () => {
+    expect(monthOfYear('2026-09-23')).toBe(9);
+    expect(monthOfYear('2026-01')).toBe(1);
+    expect(monthOfYear('2026-12-31')).toBe(12);
   });
 });
 

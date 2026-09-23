@@ -34,13 +34,19 @@ export type DailyTotal = {
   total: number;
 };
 
+/** 그 해의 한 달치 합계 (기록이 있는 달만) */
+export type MonthlyTotal = {
+  month: string; // 'YYYY-MM'
+  total: number;
+};
+
 /** 그 달의 카테고리별 합계. categoryId 가 null 이면 미분류. */
 export type CategoryTotal = {
   categoryId: number | null;
   total: number;
 };
 
-/** 월 요약 숫자 */
+/** 기간(월·년) 요약 숫자 */
 export type MonthStats = {
   total: number;
   /** 기록 건수 */

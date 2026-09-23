@@ -30,4 +30,18 @@ describe('MonthStatsCard (월별 요약 카드)', () => {
     await render(<MonthStatsCard total={120000} count={7} average={4000} />);
     expect(screen.getByText('기록 7건 · 하루 평균 4,000원')).toBeOnTheScreen();
   });
+
+  it('년 모드에서는 제목과 평균 문구를 바꿔 "월 평균" 으로 보여준다', async () => {
+    await render(
+      <MonthStatsCard
+        total={1200000}
+        count={40}
+        average={100000}
+        title="이 해 절약"
+        averageLabel="월 평균"
+      />,
+    );
+    expect(screen.getByText('이 해 절약')).toBeOnTheScreen();
+    expect(screen.getByText('기록 40건 · 월 평균 100,000원')).toBeOnTheScreen();
+  });
 });

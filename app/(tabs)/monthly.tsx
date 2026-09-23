@@ -1,23 +1,36 @@
 import { useRouter } from 'expo-router';
+import { useRef } from 'react';
 import { Alert, SectionList, StyleSheet, Text, View } from 'react-native';
 
+import { BarChart } from '@/src/components/BarChart';
 import { CategoryBreakdown } from '@/src/components/CategoryBreakdown';
-import { DailyBarChart } from '@/src/components/DailyBarChart';
 import { EntryRow } from '@/src/components/EntryRow';
 import { EntrySectionHeader } from '@/src/components/EntrySectionHeader';
 import { MonthNavigator } from '@/src/components/MonthNavigator';
 import { MonthStatsCard } from '@/src/components/MonthStatsCard';
+import { RangeToggle } from '@/src/components/RangeToggle';
 import { Screen } from '@/src/components/Screen';
 import type { Entry } from '@/src/db';
+import type { EntrySection } from '@/src/features/groupEntries';
 import { useMonthlySummary } from '@/src/features/useMonthlySummary';
+import type { RangeMode } from '@/src/store/entryStore';
 import { useTheme } from '@/src/theme';
 
 const FALLBACK_EMOJI = '💰';
 
-export default function MonthlyScreen() {
+/** 기록 탭 (라우트 이름은 monthly 그대로). 월 / 년 단위 통계와 그 기간 전체 목록. */
+export default function RecordsScreen() {
   const router = useRouter();
   const { colors, type, sp, radius } = useTheme();
   const monthly = useMonthlySummary();
+  const listRef = useRef<SectionList<Entry, EntrySection>>(null);
+  const isYear = monthly.mode === 'year';
+
+  // 모드를 바꾸면 요약 카드부터 다시 보이게 맨 위로 올린다
+  const changeMode = (next: RangeMode) => {
+    monthly.setMode(next);
+    listRef.current?.getScrollResponder()?.scrollTo({ y: 0, animated: false });
+  };
 
   const openEntry = (entry: Entry) => {
     router.push({ pathname: '/entry/[id]', params: { id: String(entry.id) } });
@@ -36,14 +49,17 @@ export default function MonthlyScreen() {
   return (
     <Screen style={styles.noPadding}>
       <SectionList
+        ref={listRef}
         sections={monthly.sections}
         keyExtractor={(item) => String(item.id)}
         stickySectionHeadersEnabled={false}
         contentContainerStyle={{ padding: sp.md, paddingBottom: sp.xl }}
         ListHeaderComponent={
           <View style={{ gap: sp.md, marginBottom: sp.sm }}>
+            <RangeToggle mode={monthly.mode} onChange={changeMode} />
             <MonthNavigator
-              month={monthly.month}
+              period={monthly.period}
+              mode={monthly.mode}
               canPrev={monthly.canPrev}
               canNext={monthly.canNext}
               onPrev={monthly.goPrev}
@@ -53,22 +69,26 @@ export default function MonthlyScreen() {
               total={monthly.total}
               count={monthly.count}
               average={monthly.average}
+              title={isYear ? '이 해 절약' : '이 달 절약'}
+              averageLabel={isYear ? '월 평균' : '하루 평균'}
             />
             {monthly.isEmpty ? (
               <View style={[styles.empty, { paddingVertical: sp.xl }]}>
-                <Text style={[type.bodyStrong, { color: colors.text }]}>이 달엔 기록이 없어요</Text>
+                <Text style={[type.bodyStrong, { color: colors.text }]}>
+                  {isYear ? '이 해엔 기록이 없어요' : '이 달엔 기록이 없어요'}
+                </Text>
                 <Text style={[type.note, { color: colors.textMuted, marginTop: sp.xs }]}>
-                  기록 탭의 + 버튼으로 남기면 여기에 쌓여요
+                  홈 탭의 + 버튼으로 남기면 여기에 쌓여요
                 </Text>
               </View>
             ) : (
               <>
                 <View style={card}>
                   <Text style={[type.bodyStrong, { color: colors.text, marginBottom: sp.sm }]}>
-                    일별
+                    {isYear ? '월별' : '일별'}
                   </Text>
-                  {/* key=달: 월을 옮기면 새로 마운트돼 열려 있던 툴팁이 닫힌다 */}
-                  <DailyBarChart key={monthly.month} bars={monthly.bars} axis={monthly.axis} />
+                  {/* key=모드+기간: 모드를 바꾸거나 기간을 옮기면 새로 마운트돼 열려 있던 툴팁이 닫힌다 */}
+                  <BarChart key={`${monthly.mode}-${monthly.period}`} bars={monthly.bars} />
                 </View>
                 <View style={card}>
                   <Text style={[type.bodyStrong, { color: colors.text, marginBottom: sp.md }]}>

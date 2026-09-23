@@ -4,11 +4,10 @@ import { useCallback, useMemo } from 'react';
 import { toCategoryMap, useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
 
-import { groupEntriesByDate, groupEntriesByMonth } from './groupEntries';
+import { groupEntriesByDate } from './groupEntries';
 
-/** 홈 탭 목록 화면 로직. 섹션 변환 + 범위 전환 + 더 보기. */
+/** 홈 탭 목록 화면 로직. 날짜별 섹션 변환 + "이전 달 더 보기". (월/년 토글은 기록 탭으로 옮겼다) */
 export function useEntryList() {
-  const mode = useEntryStore((s) => s.mode);
   const entries = useEntryStore((s) => s.entries);
   const todayTotal = useEntryStore((s) => s.todayTotal);
   const monthTotal = useEntryStore((s) => s.monthTotal);
@@ -16,7 +15,6 @@ export function useEntryList() {
   const celebrateTick = useEntryStore((s) => s.celebrateTick);
   const lastRecord = useEntryStore((s) => s.lastRecord);
   const reload = useEntryStore((s) => s.reload);
-  const setMode = useEntryStore((s) => s.setMode);
   const loadMore = useEntryStore((s) => s.loadMore);
   const remove = useEntryStore((s) => s.remove);
 
@@ -32,16 +30,10 @@ export function useEntryList() {
     }, [categoriesLoaded, reloadCategories, reload]),
   );
 
-  // 년 모드는 해당 연도 전체를 월별 섹션으로 (PRD 화면 1)
-  const sections = useMemo(
-    () => (mode === 'year' ? groupEntriesByMonth(entries) : groupEntriesByDate(entries)),
-    [mode, entries],
-  );
+  const sections = useMemo(() => groupEntriesByDate(entries), [entries]);
   const categoryMap = useMemo(() => toCategoryMap(categories), [categories]);
 
   return {
-    mode,
-    setMode,
     sections,
     isEmpty: entries.length === 0,
     todayTotal,

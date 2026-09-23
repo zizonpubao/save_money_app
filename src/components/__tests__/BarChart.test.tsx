@@ -1,12 +1,25 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
-import { DailyBarChart } from '@/src/components/DailyBarChart';
-import type { DailyTotal } from '@/src/db';
-import { axisDays, buildDailyBars } from '@/src/features/monthlyStats';
+import { BarChart } from '@/src/components/BarChart';
+import type { DailyTotal, MonthlyTotal } from '@/src/db';
+import {
+  axisDays,
+  buildDailyBars,
+  buildMonthlyBars,
+  toDailyChartBars,
+  toMonthlyChartBars,
+} from '@/src/features/monthlyStats';
 
-/** 실제 화면과 같은 경로(buildDailyBars/axisDays)로 props 를 만든다. 2026-01 은 31일. */
+/** 실제 화면과 같은 경로(buildDailyBars/axisDays → toDailyChartBars)로 props 를 만든다. 2026-01 은 31일. */
 async function renderChart(month: string, totals: DailyTotal[] = []) {
-  await render(<DailyBarChart bars={buildDailyBars(month, totals)} axis={axisDays(month)} />);
+  await render(
+    <BarChart bars={toDailyChartBars(buildDailyBars(month, totals), axisDays(month))} />,
+  );
+}
+
+/** 년 모드: buildMonthlyBars → toMonthlyChartBars */
+async function renderYearChart(year: string, totals: MonthlyTotal[] = []) {
+  await render(<BarChart bars={toMonthlyChartBars(buildMonthlyBars(year, totals))} />);
 }
 
 const TOTALS: DailyTotal[] = [
@@ -14,7 +27,7 @@ const TOTALS: DailyTotal[] = [
   { date: '2026-01-23', total: 12000 },
 ];
 
-describe('DailyBarChart (일별 막대 그래프)', () => {
+describe('BarChart — 일별 막대 (월 모드)', () => {
   it('31일 달에는 막대 칸이 31개다', async () => {
     await renderChart('2026-01');
     expect(screen.getAllByRole('button')).toHaveLength(31);
@@ -70,5 +83,37 @@ describe('DailyBarChart (일별 막대 그래프)', () => {
     await renderChart('2026-01', TOTALS);
     await fireEvent.press(screen.getByLabelText('1일 0원'));
     expect(screen.getByText('1일 · 0원')).toBeOnTheScreen();
+  });
+});
+
+const MONTHLY: MonthlyTotal[] = [
+  { month: '2026-03', total: 50000 },
+  { month: '2026-09', total: 184000 },
+];
+
+describe('BarChart — 월별 막대 (년 모드)', () => {
+  it('막대 칸이 12개다', async () => {
+    await renderYearChart('2026');
+    expect(screen.getAllByRole('button')).toHaveLength(12);
+  });
+
+  it('축 라벨은 1 · 6 · 12 세 개만 보인다', async () => {
+    await renderYearChart('2026');
+    const labels = screen.getAllByText(/^\d+$/).map((el) => String(el.props.children));
+    expect(labels).toEqual(['1', '6', '12']);
+  });
+
+  it('막대를 탭하면 "9월 · 184,000원" 툴팁이 뜨고 다시 탭하면 닫힌다', async () => {
+    await renderYearChart('2026', MONTHLY);
+    await fireEvent.press(screen.getByLabelText('9월 184,000원'));
+    expect(screen.getByText('9월 · 184,000원')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('9월 184,000원'));
+    expect(screen.queryByText('9월 · 184,000원')).toBeNull();
+  });
+
+  it('기록 없는 달도 탭하면 "0원" 툴팁이 뜬다', async () => {
+    await renderYearChart('2026', MONTHLY);
+    await fireEvent.press(screen.getByLabelText('1월 0원'));
+    expect(screen.getByText('1월 · 0원')).toBeOnTheScreen();
   });
 });

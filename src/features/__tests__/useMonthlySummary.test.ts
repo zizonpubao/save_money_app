@@ -3,7 +3,17 @@ import { act, renderHook } from '@testing-library/react-native';
 import { addEntry, initDatabase, resetDatabaseConnection, type EntryInput } from '@/src/db';
 import { useMonthlySummary } from '@/src/features/useMonthlySummary';
 import { useCategoryStore } from '@/src/store/categoryStore';
-import { addMonths, daysInMonth, monthRange, thisMonth, today } from '@/src/utils/date';
+import {
+  addMonths,
+  addYears,
+  daysInMonth,
+  monthOfYear,
+  monthRange,
+  thisMonth,
+  thisYear,
+  toYear,
+  today,
+} from '@/src/utils/date';
 
 // 네비게이터 밖에서 훅을 돌리기 위해 포커스 효과를 평범한 useEffect 로 대체한다.
 jest.mock('expo-router', () => ({
@@ -16,6 +26,10 @@ jest.mock('expo-router', () => ({
 const THIS_MONTH = thisMonth();
 const LAST_MONTH = addMonths(THIS_MONTH, -1);
 const TWO_MONTHS_AGO = addMonths(THIS_MONTH, -2);
+const THIS_YEAR = thisYear();
+const LAST_YEAR = addYears(THIS_YEAR, -1);
+/** 올해 1월 1일 — 항상 오늘 이전이라 올해 기록으로 안전하게 쓸 수 있다 */
+const NEW_YEAR = `${THIS_YEAR}-01-01`;
 
 function input(over: Partial<EntryInput> = {}): EntryInput {
   return {
@@ -165,6 +179,125 @@ describe('useMonthlySummary', () => {
       await act(() => result.current.remove(created.id));
       expect(result.current.total).toBe(0);
       expect(result.current.sections).toEqual([]);
+    });
+  });
+
+  describe('년 모드 (RangeToggle)', () => {
+    it('년으로 바꾸면 막대 12개 · 월별 섹션이 된다', async () => {
+      addEntry(input({ date: NEW_YEAR, amount: 1000 }));
+      addEntry(input({ date: today(), amount: 4500 }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+
+      expect(result.current.mode).toBe('year');
+      expect(result.current.period).toBe(THIS_YEAR);
+      expect(result.current.bars).toHaveLength(12);
+      expect(result.current.bars.map((b) => b.label)).toEqual(
+        Array.from({ length: 12 }, (_, i) => `${i + 1}월`),
+      );
+      // 섹션 key 가 'YYYY-MM' 이면 EntrySectionHeader 가 월 헤더로 그린다
+      expect(result.current.sections.every((sec) => sec.key.length === 'YYYY-MM'.length)).toBe(true);
+      expect(result.current.sections.map((sec) => sec.key)).toContain(`${THIS_YEAR}-01`);
+    });
+
+    it('년 요약은 그 해 전체 합계·건수이고 지난해 기록은 섞이지 않는다', async () => {
+      addEntry(input({ date: NEW_YEAR, amount: 1000 }));
+      addEntry(input({ date: today(), amount: 4500 }));
+      addEntry(input({ date: `${LAST_YEAR}-12-31`, amount: 99000 }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      expect(result.current.total).toBe(5500);
+      expect(result.current.count).toBe(2);
+    });
+
+    it('올해 월 평균은 이번 달까지 경과 개월 수로 나눈다', async () => {
+      addEntry(input({ date: NEW_YEAR, amount: 120000 }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      expect(result.current.average).toBe(Math.round(120000 / monthOfYear(today())));
+    });
+
+    it('카테고리별 합계도 그 해 전체로 센다', async () => {
+      addEntry(input({ date: NEW_YEAR, amount: 1000 }));
+      addEntry(input({ date: today(), amount: 4500 }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      expect(result.current.categoryRows.map((r) => r.total)).toEqual([5500]);
+    });
+
+    it('지난해 기록이 있으면 이전 해로 가고, 지난해 월 평균은 12로 나눈다', async () => {
+      addEntry(input({ date: `${LAST_YEAR}-06-15`, amount: 120000 }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      expect(result.current.canPrev).toBe(true);
+      expect(result.current.canNext).toBe(false);
+
+      await act(() => result.current.goPrev());
+      expect(result.current.year).toBe(LAST_YEAR);
+      expect(result.current.total).toBe(120000);
+      expect(result.current.average).toBe(10000);
+      expect(result.current.bars[5]?.total).toBe(120000);
+      expect(result.current.bars[5]?.isMax).toBe(true);
+      expect(result.current.canPrev).toBe(false);
+      expect(result.current.canNext).toBe(true);
+    });
+
+    it('가장 오래된 해보다 앞으로, 올해보다 뒤로는 가지 않는다', async () => {
+      addEntry(input({ date: `${LAST_YEAR}-06-15` }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      await act(() => result.current.goNext());
+      expect(result.current.year).toBe(THIS_YEAR);
+
+      await act(() => result.current.goPrev());
+      await act(() => result.current.goPrev());
+      expect(result.current.year).toBe(LAST_YEAR);
+    });
+
+    it('기록이 없는 해는 isEmpty 이고 막대는 12개 모두 0, 카테고리·목록은 비어 있다', async () => {
+      addEntry(input({ date: `${LAST_YEAR}-06-15` }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      expect(result.current.isEmpty).toBe(true);
+      expect(result.current.bars).toHaveLength(12);
+      expect(result.current.bars.every((b) => b.total === 0)).toBe(true);
+      expect(result.current.categoryRows).toEqual([]);
+      expect(result.current.sections).toEqual([]);
+    });
+
+    it('보던 달의 해로 들어가고, 월로 돌아오면 보던 달로 돌아온다', async () => {
+      addEntry(input({ date: firstOf(TWO_MONTHS_AGO) }));
+      const { result } = await setup();
+      await act(() => result.current.goPrev());
+      await act(() => result.current.goPrev());
+      await act(() => result.current.setMode('year'));
+      expect(result.current.year).toBe(toYear(TWO_MONTHS_AGO));
+
+      await act(() => result.current.setMode('month'));
+      expect(result.current.mode).toBe('month');
+      expect(result.current.month).toBe(TWO_MONTHS_AGO);
+      expect(result.current.bars).toHaveLength(daysInMonth(TWO_MONTHS_AGO));
+    });
+
+    it('지난해로 옮긴 뒤 월로 돌아오면 그 해 12월을 보여준다', async () => {
+      addEntry(input({ date: `${LAST_YEAR}-06-15` }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      await act(() => result.current.goPrev());
+      await act(() => result.current.setMode('month'));
+      expect(result.current.month).toBe(`${LAST_YEAR}-12`);
+      // 날짜별 섹션으로 돌아온다 (12월엔 기록이 없어 비어 있음)
+      expect(result.current.sections).toEqual([]);
+    });
+
+    it('년 모드에서 삭제하면 그 해 합계가 바로 줄어든다', async () => {
+      const created = addEntry(input({ date: NEW_YEAR, amount: 1000 }));
+      addEntry(input({ date: today(), amount: 4500 }));
+      const { result } = await setup();
+      await act(() => result.current.setMode('year'));
+      await act(() => result.current.remove(created.id));
+      expect(result.current.mode).toBe('year');
+      expect(result.current.total).toBe(4500);
     });
   });
 });

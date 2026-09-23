@@ -1,6 +1,6 @@
 import { addEntry, initDatabase, resetDatabaseConnection, type EntryInput } from '@/src/db';
 import { computeRange, useEntryStore } from '@/src/store/entryStore';
-import { addMonths, monthRange, thisMonth, thisYear, today } from '@/src/utils/date';
+import { addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
 
 const THIS_MONTH = thisMonth();
 const LAST_MONTH = addMonths(THIS_MONTH, -1);
@@ -51,7 +51,6 @@ describe('entryStore', () => {
     resetDatabaseConnection();
     initDatabase();
     useEntryStore.setState({
-      mode: 'month',
       oldestMonth: THIS_MONTH,
       entries: [],
       todayTotal: 0,
@@ -240,51 +239,6 @@ describe('entryStore', () => {
       useEntryStore.getState().reload();
       useEntryStore.getState().loadMore();
       expect(useEntryStore.getState().oldestMonth).toBe(THIS_MONTH);
-    });
-  });
-
-  describe('월 / 년 전환', () => {
-    it('year 모드로 바꾸면 올해 전체 기록이 들어온다', () => {
-      addEntry(input({ date: `${thisYear()}-01-01`, title: '연초' }));
-      addEntry(input({ date: today(), title: '오늘' }));
-      useEntryStore.getState().reload();
-      useEntryStore.getState().setMode('year');
-      expect(useEntryStore.getState().entries.map((e) => e.title)).toEqual(
-        expect.arrayContaining(['연초', '오늘']),
-      );
-    });
-
-    it('year 모드에서는 hasMore 가 false 다 ("이전 달 더 보기" 없음)', () => {
-      addEntry(input({ date: firstOf(LAST_MONTH) }));
-      useEntryStore.getState().reload();
-      useEntryStore.getState().setMode('year');
-      expect(useEntryStore.getState().hasMore).toBe(false);
-    });
-
-    it('month 로 되돌리면 oldestMonth 가 이번 달로 초기화된다', () => {
-      addEntry(input({ date: firstOf(LAST_MONTH) }));
-      useEntryStore.getState().reload();
-      useEntryStore.getState().loadMore();
-      useEntryStore.getState().setMode('year');
-      useEntryStore.getState().setMode('month');
-      expect(useEntryStore.getState().oldestMonth).toBe(THIS_MONTH);
-    });
-
-    it('같은 모드로 다시 바꾸면 아무 일도 하지 않는다', () => {
-      addEntry(input({ date: firstOf(LAST_MONTH) }));
-      useEntryStore.getState().reload();
-      useEntryStore.getState().loadMore();
-      useEntryStore.getState().setMode('month');
-      expect(useEntryStore.getState().oldestMonth).toBe(LAST_MONTH);
-    });
-
-    it('year 모드에서도 이번 달 합계는 이번 달만 센다', () => {
-      addEntry(input({ date: `${thisYear()}-01-01`, amount: 100000 }));
-      addEntry(input({ date: today(), amount: 4500 }));
-      useEntryStore.getState().setMode('year');
-      expect(useEntryStore.getState().monthTotal).toBe(
-        `${thisYear()}-01-01` === today() ? 104500 : 4500,
-      );
     });
   });
 });

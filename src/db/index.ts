@@ -7,4 +7,5 @@ export type {
   Entry,
   EntryInput,
   MonthStats,
+  MonthlyTotal,
 } from './types';
