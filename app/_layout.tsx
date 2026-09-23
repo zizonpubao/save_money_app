@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { initDatabase } from '@/src/db';
-import { useTheme } from '@/src/theme';
+import { sp, typeScale, useTheme } from '@/src/theme';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -42,7 +42,7 @@ export default function RootLayout() {
     return (
       <View style={[styles.center, { backgroundColor: colors.bg }]}>
         <Text style={[styles.errorTitle, { color: colors.danger }]}>데이터베이스 초기화 실패</Text>
-        <Text style={{ color: colors.textMuted }}>{db.error.message}</Text>
+        <Text style={[styles.errorBody, { color: colors.textMuted }]}>{db.error.message}</Text>
       </View>
     );
   }
@@ -80,6 +80,7 @@ function RootLayoutNav() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
-  errorTitle: { fontSize: 18, fontWeight: '600' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: sp.lg, gap: sp.sm },
+  errorTitle: typeScale.heading,
+  errorBody: typeScale.note,
 });

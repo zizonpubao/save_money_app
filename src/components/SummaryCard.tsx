@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AnimatedWon } from '@/src/components/AnimatedWon';
-import { useTheme } from '@/src/theme';
+import { numeric, useTheme } from '@/src/theme';
 import { formatKoDate, formatKoMonth, thisMonth, today } from '@/src/utils/date';
 import { formatWon } from '@/src/utils/money';
 
@@ -21,7 +21,7 @@ type Props = {
 
 /** 홈 상단 카드: 이번 달 절약액(크게), 오늘 절약액(작게) */
 export function SummaryCard({ todayTotal, monthTotal, celebrateTick }: Props) {
-  const { colors, fs, sp, radius } = useTheme();
+  const { colors, type, sp, radius } = useTheme();
   const scale = useSharedValue(1);
 
   useEffect(() => {
@@ -41,17 +41,13 @@ export function SummaryCard({ todayTotal, monthTotal, celebrateTick }: Props) {
         animatedStyle,
         { backgroundColor: colors.card, borderRadius: radius.lg, padding: sp.lg },
       ]}>
-      <Text style={{ color: colors.textMuted, fontSize: fs.sm }}>
-        {formatKoMonth(thisMonth())}
-      </Text>
-      <Text style={[styles.label, { color: colors.text, fontSize: fs.md, marginTop: sp.sm }]}>
-        이번 달 절약
-      </Text>
+      <Text style={[type.note, { color: colors.textMuted }]}>{formatKoMonth(thisMonth())}</Text>
+      <Text style={[type.bodyStrong, { color: colors.text, marginTop: sp.sm }]}>이번 달 절약</Text>
       <AnimatedWon
         value={monthTotal}
-        style={[styles.amount, { color: colors.primary, fontSize: fs.xxl, marginTop: sp.xs }]}
+        style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}
       />
-      <Text style={{ color: colors.textMuted, fontSize: fs.sm, marginTop: sp.sm }}>
+      <Text style={[type.note, numeric, { color: colors.textMuted, marginTop: sp.sm }]}>
         오늘 {formatWon(todayTotal)} · {formatKoDate(today())}
       </Text>
     </Animated.View>
@@ -60,6 +56,4 @@ export function SummaryCard({ todayTotal, monthTotal, celebrateTick }: Props) {
 
 const styles = StyleSheet.create({
   card: {},
-  label: { fontWeight: '600' },
-  amount: { fontWeight: '800', fontVariant: ['tabular-nums'] },
 });

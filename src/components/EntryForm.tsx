@@ -14,7 +14,7 @@ import {
 import { CategoryChips } from '@/src/components/CategoryChips';
 import type { Category } from '@/src/db';
 import type { useEntryForm } from '@/src/features/useEntryForm';
-import { useTheme } from '@/src/theme';
+import { numeric, size, useTheme } from '@/src/theme';
 import { formatKoDate, fromDate, toDate } from '@/src/utils/date';
 
 type Props = PropsWithChildren<{
@@ -29,7 +29,7 @@ type Props = PropsWithChildren<{
  * children 은 폼 아래(예: 삭제 버튼)에 붙는다. 신규/수정 화면이 공유한다.
  */
 export function EntryForm({ form, categories, autoFocusAmount = false, children }: Props) {
-  const { colors, fs, sp, radius, isDark } = useTheme();
+  const { colors, type, fs, sp, radius, isDark } = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { values } = form;
 
@@ -40,16 +40,16 @@ export function EntryForm({ form, categories, autoFocusAmount = false, children 
   };
 
   const fieldStyle = {
+    ...type.body,
     backgroundColor: colors.card,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: sp.md,
-    paddingVertical: sp.sm + sp.xs,
+    paddingVertical: sp.smd,
     color: colors.text,
-    fontSize: fs.md,
   } as const;
 
-  const labelStyle = { color: colors.textMuted, fontSize: fs.xs, marginBottom: sp.xs } as const;
+  const labelStyle = { ...type.caption, color: colors.textMuted, marginBottom: sp.xs } as const;
 
   return (
     <KeyboardAvoidingView
@@ -80,7 +80,12 @@ export function EntryForm({ form, categories, autoFocusAmount = false, children 
               autoFocus={autoFocusAmount}
               returnKeyType="done"
               maxLength={13}
-              style={[styles.amountInput, { color: colors.text, fontSize: fs.xl, paddingVertical: sp.sm + sp.xs }]}
+              style={[
+                styles.amountInput,
+                type.title,
+                numeric,
+                { color: colors.text, paddingVertical: sp.smd },
+              ]}
             />
             <Text style={{ color: colors.textMuted, fontSize: fs.lg }}>원</Text>
           </View>
@@ -114,7 +119,7 @@ export function EntryForm({ form, categories, autoFocusAmount = false, children 
             onPress={() => setPickerOpen((v) => !v)}
             accessibilityRole="button"
             style={[styles.input, fieldStyle]}>
-            <Text style={{ color: pickerOpen ? colors.primary : colors.text, fontSize: fs.md }}>
+            <Text style={[type.body, { color: pickerOpen ? colors.primary : colors.text }]}>
               {formatKoDate(values.date)}
             </Text>
           </Pressable>
@@ -153,7 +158,7 @@ export function EntryForm({ form, categories, autoFocusAmount = false, children 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   amountRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },
-  amountInput: { flex: 1, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  input: { borderWidth: 1 },
-  memo: { minHeight: 80, textAlignVertical: 'top' },
+  amountInput: { flex: 1 },
+  input: { borderWidth: 1, minHeight: size.touch },
+  memo: { minHeight: size.memoMin, textAlignVertical: 'top' },
 });

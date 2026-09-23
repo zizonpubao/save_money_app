@@ -5,7 +5,7 @@ import ReanimatedSwipeable, {
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import type { Entry } from '@/src/db';
-import { useTheme } from '@/src/theme';
+import { numeric, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = {
@@ -17,11 +17,9 @@ type Props = {
   isLast?: boolean;
 };
 
-const ACTION_WIDTH = 88;
-
 /** 목록 한 줄. 탭 → 수정, 왼쪽 스와이프 → 삭제(확인 알림). */
 export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Props) {
-  const { colors, fs, sp } = useTheme();
+  const { colors, type, fs, sp, size } = useTheme();
   const swipeRef = useRef<SwipeableMethods>(null);
 
   const confirmDelete = () => {
@@ -34,8 +32,8 @@ export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Pr
   const renderRightActions = () => (
     <Pressable
       onPress={confirmDelete}
-      style={[styles.action, { backgroundColor: colors.danger, width: ACTION_WIDTH }]}>
-      <Text style={[styles.actionText, { color: colors.onPrimary, fontSize: fs.md }]}>삭제</Text>
+      style={[styles.action, { backgroundColor: colors.danger, width: size.swipeAction }]}>
+      <Text style={[type.bodyStrong, { color: colors.onPrimary }]}>삭제</Text>
     </Pressable>
   );
 
@@ -52,24 +50,25 @@ export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Pr
           styles.row,
           {
             backgroundColor: pressed ? colors.bg : colors.card,
+            minHeight: size.touch,
             paddingHorizontal: sp.md,
-            paddingVertical: sp.sm + sp.xs,
+            paddingVertical: sp.smd,
             borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
-            borderBottomColor: colors.border,
+            borderBottomColor: colors.divider,
           },
         ]}>
-        <Text style={{ fontSize: fs.lg, marginRight: sp.sm + sp.xs }}>{emoji}</Text>
+        <Text style={{ fontSize: fs.lg, marginRight: sp.smd }}>{emoji}</Text>
         <View style={styles.body}>
-          <Text numberOfLines={1} style={{ color: colors.text, fontSize: fs.md }}>
+          <Text numberOfLines={1} style={[type.body, { color: colors.text }]}>
             {entry.title}
           </Text>
           {entry.memo ? (
-            <Text numberOfLines={1} style={{ color: colors.textMuted, fontSize: fs.xs }}>
+            <Text numberOfLines={1} style={[type.caption, { color: colors.textMuted }]}>
               {entry.memo}
             </Text>
           ) : null}
         </View>
-        <Text style={[styles.amount, { color: colors.text, fontSize: fs.md }]}>
+        <Text style={[type.bodyStrong, numeric, { color: colors.text }]}>
           {formatWon(entry.amount)}
         </Text>
       </Pressable>
@@ -80,7 +79,5 @@ export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Pr
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   body: { flex: 1, gap: 2 },
-  amount: { fontWeight: '600', fontVariant: ['tabular-nums'] },
   action: { justifyContent: 'center', alignItems: 'center' },
-  actionText: { fontWeight: '600' },
 });

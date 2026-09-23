@@ -20,7 +20,7 @@ const FALLBACK_EMOJI = '💰';
 
 export default function RecordsScreen() {
   const router = useRouter();
-  const { colors, fs, sp, radius } = useTheme();
+  const { colors, type, sp, radius, size } = useTheme();
   const list = useEntryList();
   const categories = useCategoryStore((s) => s.categories);
   const add = useEntryStore((s) => s.add);
@@ -93,10 +93,10 @@ export default function RecordsScreen() {
         )}
         ListEmptyComponent={
           <View style={[styles.empty, { paddingVertical: sp.xl }]}>
-            <Text style={{ color: colors.text, fontSize: fs.md, fontWeight: '600' }}>
+            <Text style={[type.bodyStrong, { color: colors.text }]}>
               {list.mode === 'month' ? '이번 달 기록이 없어요' : '올해 기록이 없어요'}
             </Text>
-            <Text style={{ color: colors.textMuted, fontSize: fs.sm, marginTop: sp.xs }}>
+            <Text style={[type.note, { color: colors.textMuted, marginTop: sp.xs }]}>
               오늘 참은 소비를 + 버튼으로 남겨보세요
             </Text>
           </View>
@@ -112,14 +112,13 @@ export default function RecordsScreen() {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
                   borderRadius: radius.md,
-                  paddingVertical: sp.sm + sp.xs,
+                  minHeight: size.touch,
+                  paddingVertical: sp.smd,
                   marginTop: sp.md,
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}>
-              <Text style={{ color: colors.primary, fontSize: fs.sm, fontWeight: '600' }}>
-                이전 달 더 보기
-              </Text>
+              <Text style={[type.label, { color: colors.primary }]}>이전 달 더 보기</Text>
             </Pressable>
           ) : null
         }
@@ -141,5 +140,5 @@ const styles = StyleSheet.create({
   noPadding: { padding: 0 },
   rowClip: { overflow: 'hidden' },
   empty: { alignItems: 'center' },
-  loadMore: { alignItems: 'center', borderWidth: 1 },
+  loadMore: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

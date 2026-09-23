@@ -1,11 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { useTheme } from '@/src/theme';
+import { shadow, size, useTheme } from '@/src/theme';
 
 type Props = { onPress: () => void };
-
-const SIZE = 56;
 
 /** 우하단 + 플로팅 버튼 */
 export function Fab({ onPress }: Props) {
@@ -25,7 +23,7 @@ export function Fab({ onPress }: Props) {
           shadowColor: colors.text,
         },
       ]}>
-      <Ionicons name="add" size={30} color={colors.onPrimary} />
+      <Ionicons name="add" size={size.fabIcon} color={colors.onPrimary} />
     </Pressable>
   );
 }
@@ -33,14 +31,11 @@ export function Fab({ onPress }: Props) {
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
-    width: SIZE,
-    height: SIZE,
-    borderRadius: SIZE / 2,
+    width: size.fab,
+    height: size.fab,
+    borderRadius: size.fab / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...shadow.fab,
   },
 });

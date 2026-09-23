@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { RangeMode } from '@/src/store/entryStore';
-import { useTheme } from '@/src/theme';
+import { size, useTheme } from '@/src/theme';
 
 type Props = {
   mode: RangeMode;
@@ -15,12 +15,17 @@ const OPTIONS: { value: RangeMode; label: string }[] = [
 
 /** 목록 범위 월 / 년 세그먼트 토글 */
 export function RangeToggle({ mode, onChange }: Props) {
-  const { colors, fs, sp, radius } = useTheme();
+  const { colors, type, sp, radius } = useTheme();
   return (
     <View
       style={[
         styles.track,
-        { backgroundColor: colors.card, borderColor: colors.border, borderRadius: radius.md, padding: sp.xs },
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderRadius: radius.md,
+          padding: sp.xs,
+        },
       ]}>
       {OPTIONS.map((o) => {
         const active = o.value === mode;
@@ -38,11 +43,7 @@ export function RangeToggle({ mode, onChange }: Props) {
                 paddingVertical: sp.sm,
               },
             ]}>
-            <Text
-              style={[
-                styles.label,
-                { color: active ? colors.onPrimary : colors.textMuted, fontSize: fs.sm },
-              ]}>
+            <Text style={[type.label, { color: active ? colors.onPrimary : colors.textMuted }]}>
               {o.label}
             </Text>
           </Pressable>
@@ -53,7 +54,6 @@ export function RangeToggle({ mode, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', borderWidth: 1, alignSelf: 'flex-end', minWidth: 120 },
-  segment: { flex: 1, alignItems: 'center' },
-  label: { fontWeight: '600' },
+  track: { flexDirection: 'row', borderWidth: 1, alignSelf: 'flex-end', minWidth: size.toggleMin },
+  segment: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

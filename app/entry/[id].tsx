@@ -12,7 +12,7 @@ import { celebrateHaptic } from '@/src/utils/haptics';
 export default function EntryEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { colors, fs, sp, radius } = useTheme();
+  const { colors, type, sp, radius, size } = useTheme();
   const categories = useCategoryStore((s) => s.categories);
   const { entry, save, destroy } = useEntryEditor(id);
   const form = useEntryForm(entry);
@@ -54,9 +54,9 @@ export default function EntryEditScreen() {
       <>
         <Stack.Screen options={{ title: '기록 수정' }} />
         <Screen style={styles.center}>
-          <Text style={{ color: colors.text, fontSize: fs.md }}>기록을 찾을 수 없어요</Text>
+          <Text style={[type.body, { color: colors.text }]}>기록을 찾을 수 없어요</Text>
           <Pressable onPress={() => router.back()} style={{ marginTop: sp.md }}>
-            <Text style={{ color: colors.primary, fontSize: fs.md }}>돌아가기</Text>
+            <Text style={[type.bodyStrong, { color: colors.primary }]}>돌아가기</Text>
           </Pressable>
         </Screen>
       </>
@@ -69,12 +69,9 @@ export default function EntryEditScreen() {
         options={{
           title: '기록 수정',
           headerRight: () => (
-            <Pressable onPress={onSave} disabled={!form.canSave} hitSlop={8}>
+            <Pressable onPress={onSave} disabled={!form.canSave} hitSlop={sp.sm}>
               <Text
-                style={[
-                  styles.save,
-                  { color: form.canSave ? colors.primary : colors.textMuted, fontSize: fs.md },
-                ]}>
+                style={[type.action, { color: form.canSave ? colors.primary : colors.textMuted }]}>
                 저장
               </Text>
             </Pressable>
@@ -92,13 +89,12 @@ export default function EntryEditScreen() {
                 {
                   borderColor: colors.danger,
                   borderRadius: radius.md,
-                  paddingVertical: sp.sm + sp.xs,
+                  minHeight: size.touch,
+                  paddingVertical: sp.smd,
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}>
-              <Text style={{ color: colors.danger, fontSize: fs.md, fontWeight: '600' }}>
-                이 기록 삭제
-              </Text>
+              <Text style={[type.bodyStrong, { color: colors.danger }]}>이 기록 삭제</Text>
             </Pressable>
           </View>
         </EntryForm>
@@ -110,6 +106,5 @@ export default function EntryEditScreen() {
 const styles = StyleSheet.create({
   noPadding: { padding: 0 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  save: { fontWeight: '700' },
-  delete: { alignItems: 'center', borderWidth: 1 },
+  delete: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

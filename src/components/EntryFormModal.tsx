@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EntryForm } from '@/src/components/EntryForm';
 import type { Category, EntryInput } from '@/src/db';
 import { useEntryForm } from '@/src/features/useEntryForm';
-import { useTheme } from '@/src/theme';
+import { size, useTheme } from '@/src/theme';
 
 type Props = {
   visible: boolean;
@@ -46,7 +46,7 @@ export function EntryFormModal({
 type BodyProps = Omit<Props, 'visible'> & { initial: EntryInput | null; title: string };
 
 function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps) {
-  const { colors, fs, sp } = useTheme();
+  const { colors, type, sp } = useTheme();
   const form = useEntryForm(initial);
 
   return (
@@ -54,22 +54,18 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.md, borderBottomColor: colors.border },
+          { paddingHorizontal: sp.md, paddingVertical: sp.md, borderBottomColor: colors.divider },
         ]}>
-        <Pressable onPress={onClose} hitSlop={8} style={styles.headerSide}>
-          <Text style={{ color: colors.textMuted, fontSize: fs.md }}>취소</Text>
+        <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
+          <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
         </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.text, fontSize: fs.md }]}>{title}</Text>
+        <Text style={[styles.headerTitle, type.bodyStrong, { color: colors.text }]}>{title}</Text>
         <Pressable
           onPress={() => onSubmit(form.toInput())}
           disabled={!form.canSave}
-          hitSlop={8}
+          hitSlop={sp.sm}
           style={[styles.headerSide, styles.headerRight]}>
-          <Text
-            style={[
-              styles.save,
-              { color: form.canSave ? colors.primary : colors.textMuted, fontSize: fs.md },
-            ]}>
+          <Text style={[type.action, { color: form.canSave ? colors.primary : colors.textMuted }]}>
             저장
           </Text>
         </Pressable>
@@ -86,8 +82,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerSide: { width: 56 },
+  headerSide: { width: size.headerAction },
   headerRight: { alignItems: 'flex-end' },
-  headerTitle: { flex: 1, textAlign: 'center', fontWeight: '600' },
-  save: { fontWeight: '700' },
+  headerTitle: { flex: 1, textAlign: 'center' },
 });

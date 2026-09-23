@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import type { Category } from '@/src/db';
-import { useTheme } from '@/src/theme';
+import { size, useTheme } from '@/src/theme';
 
 type Props = {
   categories: Category[];
@@ -11,7 +11,7 @@ type Props = {
 
 /** 가로 스크롤 카테고리 칩. 선택된 칩은 primary 로 강조. */
 export function CategoryChips({ categories, selectedId, onSelect }: Props) {
-  const { colors, fs, sp, radius } = useTheme();
+  const { colors, type, sp, radius } = useTheme();
   return (
     <ScrollView
       horizontal
@@ -31,12 +31,12 @@ export function CategoryChips({ categories, selectedId, onSelect }: Props) {
               {
                 backgroundColor: selected ? colors.primary : colors.card,
                 borderColor: selected ? colors.primary : colors.border,
-                borderRadius: radius.lg,
+                borderRadius: radius.pill,
                 paddingHorizontal: sp.md,
                 paddingVertical: sp.sm,
               },
             ]}>
-            <Text style={{ color: selected ? colors.onPrimary : colors.text, fontSize: fs.sm }}>
+            <Text style={[type.note, { color: selected ? colors.onPrimary : colors.text }]}>
               {c.emoji} {c.name}
             </Text>
           </Pressable>
@@ -47,5 +47,5 @@ export function CategoryChips({ categories, selectedId, onSelect }: Props) {
 }
 
 const styles = StyleSheet.create({
-  chip: { borderWidth: 1 },
+  chip: { borderWidth: 1, justifyContent: 'center', minHeight: size.touch },
 });
