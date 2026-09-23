@@ -10,17 +10,17 @@ describe('SummaryCard (홈 상단 카드)', () => {
     expect(screen.getByText('1,234,567원')).toBeOnTheScreen();
   });
 
-  it('오늘 행: 왼쪽 "오늘 · 날짜", 오른쪽 금액 (읽기는 "오늘 4,500원 · 날짜" 한 번에)', async () => {
+  it('오늘: 큰 숫자 아래 작은 한 줄 "오늘 4,500원 · 날짜" (읽기도 같은 문장 한 번에)', async () => {
     await render(<SummaryCard todayTotal={4500} monthTotal={10000} celebrateTick={0} />);
-    expect(screen.getByText(/^오늘 · \d{4}년 \d{1,2}월 \d{1,2}일/)).toBeOnTheScreen();
-    expect(screen.getByText('4,500원')).toBeOnTheScreen();
+    expect(screen.getByText(/^오늘 4,500원 · \d{4}년 \d{1,2}월 \d{1,2}일 \(.\)$/)).toBeOnTheScreen();
     expect(screen.getByLabelText(/^오늘 4,500원 · \d{4}년/)).toBeOnTheScreen();
   });
 
   it('이번 달 절약액이 0이면 "0원" 으로 보인다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={0} celebrateTick={0} />);
-    // 큰 숫자와 오늘 금액 둘 다 0원
-    expect(screen.getAllByText('0원')).toHaveLength(2);
+    // 큰 숫자 0원, 오늘 줄도 0원
+    expect(screen.getByText('0원')).toBeOnTheScreen();
+    expect(screen.getByText(/^오늘 0원 · /)).toBeOnTheScreen();
   });
 });
 
@@ -46,16 +46,20 @@ describe('SummaryCard — 월 목표 (M3.5)', () => {
     expect(onGoalPress).toHaveBeenCalledTimes(1);
   });
 
-  it('목표가 있으면 진행 바와 "목표 300,000원 · 62%" 를 보여준다', async () => {
+  it('목표가 있으면 진행 바와 왼쪽 "목표 300,000원", 오른쪽 "62%" 를 보여준다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={186000} celebrateTick={0} goal={300000} />);
-    expect(screen.getByText('목표 300,000원 · 62%')).toBeOnTheScreen();
+    expect(screen.getByText('목표 300,000원')).toBeOnTheScreen();
+    expect(screen.getByText('62%')).toBeOnTheScreen();
+    expect(screen.queryByText(/초과/)).toBeNull();
     expect(screen.getByRole('progressbar')).toBeOnTheScreen();
     expect(screen.queryByText('목표를 정하면 진행률이 보여요 →')).toBeNull();
   });
 
-  it('목표를 넘으면 100% 에서 멈추지 않고 "달성! +12,000원 초과" 로 보여준다', async () => {
+  it('목표를 넘으면 % 가 100 에서 멈추지 않고("104%") 옆에 "+12,000원 초과" 를 보여준다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={312000} celebrateTick={0} goal={300000} />);
-    expect(screen.getByText('목표 300,000원 · 달성! +12,000원 초과')).toBeOnTheScreen();
+    expect(screen.getByText('목표 300,000원')).toBeOnTheScreen();
+    expect(screen.getByText('104%')).toBeOnTheScreen();
+    expect(screen.getByText('+12,000원 초과')).toBeOnTheScreen();
     // 바는 가득(100)에서 멈춘다
     expect(screen.getByRole('progressbar').props.accessibilityValue).toMatchObject({ now: 100 });
   });
@@ -74,7 +78,8 @@ describe('SummaryCard — 월 목표 (M3.5)', () => {
       />,
     );
     // 큰 숫자는 카운트업 중이라 보지 않고, 목표 줄이 새 합계로 바뀌었는지만 본다
-    expect(screen.getByText('목표 300,000원 · 달성! +12,000원 초과')).toBeOnTheScreen();
+    expect(screen.getByText('104%')).toBeOnTheScreen();
+    expect(screen.getByText('+12,000원 초과')).toBeOnTheScreen();
     expect(screen.getByRole('progressbar').props.accessibilityValue).toMatchObject({ now: 100 });
   });
 });
@@ -87,7 +92,7 @@ describe('SummaryCard — M3.6 슬롯', () => {
     expect(screen.getByText('1,000원')).toBeOnTheScreen();
   });
 
-  it('topLine 은 큰 숫자 위, bottomExtra 는 오늘 행 아래에 그린다', async () => {
+  it('topLine 은 큰 숫자 위, bottomExtra 는 오늘·목표 아래에 그린다', async () => {
     await render(
       <SummaryCard
         todayTotal={0}
@@ -99,11 +104,11 @@ describe('SummaryCard — M3.6 슬롯', () => {
     );
     // 화면에 그려진 글자를 위→아래 순서로 모아 구획 순서를 본다
     const order = screen
-      .getAllByText(/한 줄|이번 달 절약|오늘 ·|아래/)
+      .getAllByText(/한 줄|이번 달 절약|^오늘 |아래/)
       .map((el) => String([el.props.children].flat().join('')));
     expect(order[0]).toBe('한 줄');
     expect(order[1]).toMatch(/^이번 달 절약/);
-    expect(order[2]).toMatch(/^오늘 ·/);
+    expect(order[2]).toMatch(/^오늘 /);
     expect(order[3]).toBe('아래');
   });
 
@@ -121,7 +126,7 @@ describe('SummaryCard — M3.6 슬롯', () => {
     );
     // jest 의 reanimated mock 은 카운트업 진행을 화면에 반영하지 않으므로 시작값만 본다
     expect(screen.queryByText('52,000원')).toBeNull();
-    expect(screen.getAllByText('0원')).toHaveLength(2);
+    expect(screen.getByText('0원')).toBeOnTheScreen();
   });
 });
 

@@ -2,8 +2,8 @@ import { formatQuote, QUOTE_MAX_CHARS, QUOTES, quoteOfDay } from '@/src/features
 import { addDays } from '@/src/utils/date';
 
 describe('quotes (절약 명언)', () => {
-  it('30개 이상이고 같은 문장이 없다', () => {
-    expect(QUOTES.length).toBeGreaterThanOrEqual(30);
+  it('35개 이상이고 같은 문장이 없다', () => {
+    expect(QUOTES.length).toBeGreaterThanOrEqual(35);
     const texts = QUOTES.map((q) => q.text);
     expect(new Set(texts).size).toBe(texts.length);
   });

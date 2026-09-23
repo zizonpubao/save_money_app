@@ -82,6 +82,8 @@ export const fs = {
 } as const;
 
 export const radius = {
+  /** (홈 폴리싱) 잔디 칸처럼 16pt 이하 작은 면 */
+  xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
@@ -157,10 +159,12 @@ export const size = {
   bar: 10,
   /** (M3.6) 잔디 오늘 칸 테두리 두께 */
   todayRing: 2,
-  /** (M3.6) 잔디 칸 한 변 최대. 넓은 화면에서 6줄 달력이 카드를 과하게 늘리지 않게 */
-  grassCellMax: 26,
+  /** (M3.6 → 홈 폴리싱) 잔디 칸 높이. 너비는 폭을 7등분 — 6줄 달이어도 목록이 첫 화면에 3행 보이게 낮게 둔다 */
+  grassCell: 16,
   /** (M3.6) 이모지 적립 줄 한 칸 (정사각형). 이모지 글자 크기는 fs.md */
   emojiCell: 24,
+  /** (홈 폴리싱) 카드 아래 정보 칩(연속 기록일·누적·이모지 적립) 최소 높이 = emojiCell + sp.xs * 2 */
+  statChip: 32,
 } as const;
 
 export type Theme = {

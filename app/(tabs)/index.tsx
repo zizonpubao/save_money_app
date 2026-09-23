@@ -11,6 +11,7 @@ import { Fab } from '@/src/components/Fab';
 import { MonthGrass } from '@/src/components/MonthGrass';
 import { RecordBanner } from '@/src/components/RecordBanner';
 import { Screen } from '@/src/components/Screen';
+import { StatChip } from '@/src/components/StatChip';
 import { SummaryCard } from '@/src/components/SummaryCard';
 import type { Entry, EntryInput } from '@/src/db';
 import { useEntryList } from '@/src/features/useEntryList';
@@ -62,9 +63,12 @@ export default function HomeScreen() {
         sections={list.sections}
         keyExtractor={(item) => String(item.id)}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ padding: sp.md, paddingBottom: sp.xl * 3 }}
+        // 아래 여백 = FAB 지름 + FAB 바닥 여백 + 화면 여백 → 마지막 행이 FAB 에 가리지 않는다
+        contentContainerStyle={{ padding: sp.md, paddingBottom: size.fab + sp.lg + sp.md }}
         ListHeaderComponent={
-          <View style={{ gap: sp.md, marginBottom: sp.sm }}>
+          // 구획 사이는 sp.smd 한 가지. 첫 섹션 헤더와의 간격은 헤더 자신의 paddingTop(sp.md)
+          <View style={{ gap: sp.smd }}>
+            {/* (M4) 지난달 회고 카드 자리 — 매달 1~3일에만 맨 위, 닫기 가능 (DESIGN 홈 규칙) */}
             <SummaryCard
               todayTotal={list.todayTotal}
               monthTotal={list.monthTotal}
@@ -76,18 +80,30 @@ export default function HomeScreen() {
               firstOpenTick={card.firstOpenTick}
               // DB 를 읽기 전 기본값(0원)으로 만든 문구가 한 프레임 비쳤다 바뀌지 않게, 읽은 뒤에만 그린다
               topLine={card.loaded ? <DailyLine text={card.line.text} /> : undefined}
-              bottomExtra={
-                <View style={{ gap: sp.md }}>
-                  <EmojiStrip items={card.monthEmojis} celebrateTick={list.celebrateTick} />
-                  <MonthGrass grass={card.grass} />
-                </View>
-              }
             />
             <RecordBanner
               best={list.lastRecord}
               goalReached={list.lastGoalReached}
               celebrateTick={list.celebrateTick}
             />
+            {/* 칩 행: 작은 정보를 한 줄에. (M4) 🔥 연속 기록일 · 누적 칩이 이모지 칩 앞에 <StatChip> 으로 들어온다 */}
+            {card.monthEmojis.length > 0 ? (
+              <View style={[styles.chipRow, { gap: sp.sm }]}>
+                <StatChip grow>
+                  <EmojiStrip items={card.monthEmojis} celebrateTick={list.celebrateTick} maxLines={1} />
+                </StatChip>
+              </View>
+            ) : null}
+            {/* 잔디 구획: 제목 없이 요일 헤더만, 보조 카드(안쪽 sp.md·sp.smd) */}
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: radius.lg,
+                paddingHorizontal: sp.md,
+                paddingVertical: sp.smd,
+              }}>
+              <MonthGrass grass={card.grass} />
+            </View>
           </View>
         }
         renderSectionHeader={({ section }) => (
@@ -165,4 +181,5 @@ const styles = StyleSheet.create({
   rowClip: { overflow: 'hidden' },
   empty: { alignItems: 'center' },
   loadMore: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  chipRow: { flexDirection: 'row', alignItems: 'center' },
 });

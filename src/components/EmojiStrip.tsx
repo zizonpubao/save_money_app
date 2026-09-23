@@ -18,6 +18,8 @@ type Props = {
   items: EntryEmoji[];
   /** 저장 성공 횟수. 이 값이 커진 렌더에서 처음 보는 id 만 톡 튀어 들어온다 */
   celebrateTick: number;
+  /** 최대 줄 수. 넘치면 오래된 것을 "+N" 으로 접는다 (홈 칩 행은 1줄) */
+  maxLines?: number;
 };
 
 /**
@@ -64,11 +66,11 @@ function PopIn({ children }: { children: string }) {
 type Tracked = { items: EntryEmoji[]; tick: number; popId: number | null };
 
 /**
- * 카드 안 이모지 적립 줄. 이번 달 기록의 카테고리 이모지가 등록 순서대로 쌓이고 줄이 넘치면 다음 줄로.
+ * 이모지 적립 줄. 이번 달 기록의 카테고리 이모지가 등록 순서대로 쌓이고 줄이 넘치면 다음 줄로.
  * 저장하면 새 이모지가 오른쪽 끝에서 톡 들어온다. 수정·삭제·다시 읽기는 애니메이션 없이 바뀐다.
  * 기록이 없으면 아무것도 그리지 않는다.
  */
-export function EmojiStrip({ items, celebrateTick }: Props) {
+export function EmojiStrip({ items, celebrateTick, maxLines = EMOJI_MAX_LINES }: Props) {
   const { colors, type, fs, sp, size } = useTheme();
   const [width, setWidth] = useState(0);
   // 직전 렌더의 목록·저장 횟수를 기억해 "이번 저장으로 새로 생긴 칸" 을 렌더 중에 가린다
@@ -87,7 +89,7 @@ export function EmojiStrip({ items, celebrateTick }: Props) {
 
   const gap = sp.xs;
   const perLine = width > 0 ? Math.max(1, Math.floor((width + gap) / (size.emojiCell + gap))) : 0;
-  const { hidden, shown } = visibleEmojis(items, perLine);
+  const { hidden, shown } = visibleEmojis(items, perLine, maxLines);
   const cellStyle = [
     styles.cell,
     { width: size.emojiCell, fontSize: fs.md, lineHeight: size.emojiCell },

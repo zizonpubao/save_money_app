@@ -10,7 +10,10 @@ type Props = {
   total: number;
 };
 
-/** 섹션 헤더: 왼쪽 날짜(또는 월), 오른쪽 섹션 합계 */
+/**
+ * 섹션 헤더: 왼쪽 날짜(또는 월), 오른쪽 섹션 합계.
+ * 좌우를 sp.md 들여 아래 행 묶음(행 안쪽 여백 sp.md)의 이모지·금액과 세로 줄을 맞춘다 (iOS 그룹 목록 방식).
+ */
 export function EntrySectionHeader({ sectionKey, total }: Props) {
   const { colors, type, sp } = useTheme();
   // key 길이로 월별('YYYY-MM') / 일별('YYYY-MM-DD') 을 구분한다
@@ -18,7 +21,15 @@ export function EntrySectionHeader({ sectionKey, total }: Props) {
     sectionKey.length === MONTH_FORMAT.length ? formatKoMonth(sectionKey) : formatKoDate(sectionKey);
   return (
     <View
-      style={[styles.row, { paddingTop: sp.md, paddingBottom: sp.sm, backgroundColor: colors.bg }]}>
+      style={[
+        styles.row,
+        {
+          paddingTop: sp.md,
+          paddingBottom: sp.sm,
+          paddingHorizontal: sp.md,
+          backgroundColor: colors.bg,
+        },
+      ]}>
       <Text style={[type.label, { color: colors.textMuted }]}>{label}</Text>
       <Text style={[type.note, numeric, { color: colors.textMuted }]}>{formatWon(total)}</Text>
     </View>

@@ -11,7 +11,8 @@ type Props = {
 };
 
 /**
- * 홈 카드 큰 숫자 위 "오늘의 한 줄". 보조 문장이라 note + textMuted.
+ * 홈 카드 큰 숫자 위 "오늘의 한 줄". 명언을 읽을 수 있게 크기는 본문(body 16),
+ * 색은 textMuted 로 물려 큰 숫자와 경쟁하지 않게 한다. 문구 종류(명언·환산·어제 대비·목표 근접)와 상관없이 같은 모양.
  * 카드 높이가 문구마다 흔들리지 않게 2줄까지만 보여 주고 넘치면 말줄임.
  * 문구가 바뀌면 0.2초 동안 투명 → 불투명으로 나타난다 (처음 그릴 때는 바로 보인다).
  */
@@ -36,7 +37,7 @@ export function DailyLine({ text }: Props) {
       accessibilityRole="text"
       numberOfLines={2}
       ellipsizeMode="tail"
-      style={[type.note, { color: colors.textMuted }, fadeStyle]}>
+      style={[type.body, { color: colors.textMuted }, fadeStyle]}>
       {text}
     </Animated.Text>
   );

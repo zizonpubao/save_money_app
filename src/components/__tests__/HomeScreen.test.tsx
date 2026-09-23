@@ -108,7 +108,8 @@ describe('홈 화면 — 월 목표 (M3.5)', () => {
   it('DB 에 목표가 있으면 홈을 열 때 읽어서 진행률을 보여준다', async () => {
     setSetting(SETTING_KEYS.monthlyGoal, '300000');
     await render(<HomeScreen />);
-    expect(screen.getByText('목표 300,000원 · 0%')).toBeOnTheScreen();
+    expect(screen.getByText('목표 300,000원')).toBeOnTheScreen();
+    expect(screen.getByText('0%')).toBeOnTheScreen();
   });
 });
 
@@ -139,12 +140,13 @@ describe('홈 화면 — 활기 (M3.6)', () => {
     addEntry({ date: today(), title: '치킨', amount: 20000, categoryId: null, memo: null });
     await render(<HomeScreen />);
     expect(useEntryStore.getState().firstOpenTick).toBe(0);
-    // 큰 숫자도 0원을 거치지 않고 20,000원 (카드 큰 숫자·오늘 행·섹션 합계)
+    // 큰 숫자도 0원을 거치지 않고 20,000원 (카드 큰 숫자·섹션 합계, 오늘 줄은 문장 안에)
     expect(screen.queryByText('0원')).toBeNull();
-    expect(screen.getAllByText('20,000원')).toHaveLength(3);
+    expect(screen.getAllByText('20,000원')).toHaveLength(2);
+    expect(screen.getByText(/^오늘 20,000원 · /)).toBeOnTheScreen();
   });
 
-  it('카드에 오늘의 한 줄·이모지 적립 줄·잔디가 함께 그려진다', async () => {
+  it('홈에 오늘의 한 줄(카드 안)·이모지 적립 칩·잔디 구획(카드 밖)이 함께 그려진다', async () => {
     addEntry({ date: today(), title: '아메리카노', amount: 4500, categoryId: 1, memo: null });
     await render(<HomeScreen />);
     expect(screen.getByTestId('daily-line')).toBeOnTheScreen();

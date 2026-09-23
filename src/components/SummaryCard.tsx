@@ -34,7 +34,7 @@ type Props = {
   onGoalPress?: () => void;
   /** (M3.6 슬롯) 큰 숫자 위 "오늘의 한 줄". 없으면 자리도 차지하지 않는다 */
   topLine?: ReactNode;
-  /** (M3.6 슬롯) 오늘 행 아래 — 이모지 적립 줄, 카드 안 잔디. 없으면 자리도 차지하지 않는다 */
+  /** 목표 구획 아래 추가 슬롯. 없으면 자리도 차지하지 않는다 (홈은 비워 둔다 — 칩·잔디는 카드 밖) */
   bottomExtra?: ReactNode;
   /**
    * (M3.6) 합계를 DB 에서 읽었는지. 읽기 전(스토어 기본값 0원)에는 굴리지 않고 그대로 보여주다가,
@@ -46,8 +46,9 @@ type Props = {
 };
 
 /**
- * 홈 상단 카드. 한 카드 안에서 구획을 위→아래로 나눈다:
- * (한 줄) → 숫자(이번 달, 주인공) → 목표(진행 바 + 회색 한 줄) → 구분선 → 오늘 행 → (이모지·잔디)
+ * 홈 상단 카드. 정보는 4종까지만, 위→아래로:
+ * (오늘의 한 줄) → 숫자(회색 라벨 + 이번 달 절약액, 주인공) → 오늘(숫자에 붙은 회색 한 줄) → 목표(진행 바 + 한 줄)
+ * 연속 기록일·누적·이모지 적립·잔디는 카드 밖 구획에 둔다 (app/(tabs)/index.tsx).
  */
 export function SummaryCard({
   todayTotal,
@@ -126,9 +127,17 @@ export function SummaryCard({
         <Text style={bigNumberStyle}>{formatWon(monthTotal)}</Text>
       )}
 
-      {/* ③ 목표 구획: 큰 숫자와 sp.lg 띄워 별도 줄로 */}
+      {/* ③ 오늘: 큰 숫자에 붙은 작은 회색 한 줄 (위 라벨과 같은 caption — 숫자를 위아래로 받친다) */}
+      <Text
+        accessibilityLabel={`오늘 ${formatWon(todayTotal)} · ${todayLabel}`}
+        numberOfLines={1}
+        style={[type.caption, numeric, { color: colors.textMuted, marginTop: sp.xs }]}>
+        오늘 {formatWon(todayTotal)} · {todayLabel}
+      </Text>
+
+      {/* ④ 목표 구획: 숫자 묶음과 sp.md 띄워 별도 줄로 */}
       {goal !== null && progress !== null ? (
-        <View style={{ marginTop: sp.lg }}>
+        <View style={{ marginTop: sp.md }}>
           <GoalProgressBar goal={goal} progress={progress} />
         </View>
       ) : (
@@ -138,30 +147,14 @@ export function SummaryCard({
           accessibilityRole="link"
           style={({ pressed }) => [
             styles.goalHint,
-            // 터치 영역(44) 안의 위아래 여백이 있어 sp.smd 만 줘도 보이는 간격은 진행 바와 비슷하다
-            { minHeight: size.touch, marginTop: sp.smd, opacity: pressed ? 0.7 : 1 },
+            // 터치 영역(44) 안 위아래 여백이 있어 sp.xs 만 줘도 보이는 간격은 진행 바(sp.md)와 비슷하다
+            { minHeight: size.touch, marginTop: sp.xs, opacity: pressed ? 0.7 : 1 },
           ]}>
           <Text style={[type.label, { color: colors.primary }]}>목표를 정하면 진행률이 보여요 →</Text>
         </Pressable>
       )}
 
-      {/* ④ 오늘 구획: 구분선 아래 한 줄 — 왼쪽 라벨·날짜, 오른쪽 금액 */}
-      <View
-        style={[styles.divider, { backgroundColor: colors.divider, marginTop: sp.md }]}
-      />
-      <View
-        accessible
-        accessibilityLabel={`오늘 ${formatWon(todayTotal)} · ${todayLabel}`}
-        style={[styles.todayRow, { marginTop: sp.md, gap: sp.sm }]}>
-        <Text style={[type.caption, styles.todayLabel, { color: colors.textMuted }]}>
-          오늘 · {todayLabel}
-        </Text>
-        <Text style={[type.bodyStrong, numeric, { color: colors.text }]}>
-          {formatWon(todayTotal)}
-        </Text>
-      </View>
-
-      {/* ⑤ (M3.6) 이모지 적립 줄 · 카드 안 잔디 */}
+      {/* ⑤ 추가 슬롯. 홈은 쓰지 않는다 — 카드 안은 한 줄·숫자·오늘·목표 4종까지 (DESIGN 홈 규칙) */}
       {bottomExtra ? <View style={{ marginTop: sp.md }}>{bottomExtra}</View> : null}
     </Animated.View>
   );
@@ -169,7 +162,4 @@ export function SummaryCard({
 
 const styles = StyleSheet.create({
   goalHint: { justifyContent: 'center', alignSelf: 'flex-start' },
-  divider: { height: StyleSheet.hairlineWidth },
-  todayRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  todayLabel: { flexShrink: 1 },
 });

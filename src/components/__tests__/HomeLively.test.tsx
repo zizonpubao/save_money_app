@@ -6,7 +6,7 @@ import { EmojiStrip, hiddenLabel, visibleEmojis } from '@/src/components/EmojiSt
 import { MonthGrass } from '@/src/components/MonthGrass';
 import type { EntryEmoji } from '@/src/db';
 import { buildGrassCells } from '@/src/features/grass';
-import { lightColors, size, sp } from '@/src/theme';
+import { lightColors, radius, size, sp, typeScale } from '@/src/theme';
 
 const emojis = (list: string[], startId = 1): EntryEmoji[] =>
   list.map((emoji, i) => ({ id: startId + i, emoji }));
@@ -20,11 +20,12 @@ describe('DailyLine', () => {
     expect(screen.queryByText('어제보다 +4,500원')).toBeNull();
   });
 
-  it('보조 문장이라 textMuted 색이다', async () => {
+  it('읽히게 본문 크기(body 16), 큰 숫자와 겨루지 않게 textMuted 색이다', async () => {
     await render(<DailyLine text="어제와 같아요" />);
-    expect(StyleSheet.flatten(screen.getByTestId('daily-line').props.style).color).toBe(
-      lightColors.textMuted,
-    );
+    expect(StyleSheet.flatten(screen.getByTestId('daily-line').props.style)).toMatchObject({
+      fontSize: typeScale.body.fontSize,
+      color: lightColors.textMuted,
+    });
   });
 
   it('2줄까지만 보여 주고 넘치면 끝을 말줄임', async () => {
@@ -115,11 +116,15 @@ describe('EmojiStrip', () => {
     expect(visibleEmojis(emojis(Array.from({ length: 16 }, () => '☕')), 5)).toMatchObject({
       hidden: 2,
     });
+    // 홈 칩 행은 1줄: 5칸 넘는 6개면 "+2" + 최근 4개
+    expect(visibleEmojis(emojis(Array.from({ length: 6 }, () => '☕')), 5, 1)).toMatchObject({
+      hidden: 2,
+    });
   });
 });
 
 describe('MonthGrass', () => {
-  /** 칸 크기 20 이 되도록(상한 26 아래): 7 * 20 + 6 * gap(4) = 164 */
+  /** 칸 너비 20 이 되도록: 7 * 20 + 6 * gap(4) = 164 */
   async function renderGrass(
     month: string,
     today: string,
@@ -139,17 +144,22 @@ describe('MonthGrass', () => {
     expect(screen.getAllByTestId(/^grass-2026-09-/)).toHaveLength(30);
   });
 
-  it('칸은 폭에 맞춘 정사각형, radius.sm', async () => {
+  it('칸 너비는 폭을 7등분, 높이는 size.grassCell 로 낮게, radius.xs', async () => {
     await renderGrass('2026-09', '2026-09-24');
-    expect(styleOf('2026-09-01')).toMatchObject({ width: 20, height: 20, borderRadius: 8 });
+    expect(styleOf('2026-09-01')).toMatchObject({
+      width: 20,
+      height: size.grassCell,
+      borderRadius: radius.xs,
+    });
   });
 
-  it('폭이 넓어도 칸은 grassCellMax(26) 를 넘지 않고, 격자는 가운데 정렬', async () => {
-    await renderGrass('2026-09', '2026-09-24', [], 360);
-    expect(size.grassCellMax).toBe(26);
-    expect(styleOf('2026-09-01')).toMatchObject({ width: 26, height: 26 });
+  it('폭이 넓으면 칸이 옆으로만 늘고(높이 grassCell 16 고정), 내림 나머지는 격자 가운데 정렬로 나눈다', async () => {
+    // (360 - 24) / 7 = 48 → 딱 나눠지지 않게 1 더한 폭
+    await renderGrass('2026-09', '2026-09-24', [], 361);
+    expect(size.grassCell).toBe(16);
+    expect(styleOf('2026-09-01')).toMatchObject({ width: 48, height: 16 });
     expect(StyleSheet.flatten(screen.getByTestId('month-grass-grid').props.style)).toMatchObject({
-      width: 7 * 26 + 6 * sp.xs,
+      width: 7 * 48 + 6 * sp.xs,
       alignSelf: 'center',
     });
   });
