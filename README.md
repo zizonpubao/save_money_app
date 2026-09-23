@@ -27,6 +27,74 @@
 - Windows PC + 아이폰 Expo Go만으로 개발합니다 (Mac 없음)
 - 기획 → 구현 → 리뷰 → 테스트를 역할별 AI 서브 에이전트가 나눠 맡고, 사람은 결정만 합니다
 
+## 🧭 유스케이스
+
+사용자는 한 명(개발자 본인)이고, 시스템 밖의 외부 참여자는 iOS 공유 시트뿐입니다.
+
+```mermaid
+flowchart LR
+    U(["🙋 사용자"])
+    S(["📤 iOS 공유 시트<br/>(파일 앱 · 카톡)"])
+
+    subgraph SaveLog
+        direction TB
+        UC1(["참은 소비 기록하기"])
+        UC2(["기록 수정 · 삭제하기"])
+        UC3(["이번 달 절약액 보기"])
+        UC4(["월 · 년 통계 보기"])
+        UC5(["월 목표 정하기"])
+        UC6(["백업 · 복원하기"])
+        UC7(["카테고리 관리하기"])
+        UC8(["저장 이펙트 · 최고 기록 · 목표 달성 축하"])
+        UC9(["오늘의 한 줄 · 잔디 · 이모지 적립 보기"])
+    end
+
+    U --> UC1
+    U --> UC2
+    U --> UC3
+    U --> UC4
+    U --> UC5
+    U --> UC6
+    U --> UC7
+    UC1 -. include .-> UC8
+    UC3 -. include .-> UC9
+    UC5 -. extend .-> UC3
+    UC6 --> S
+```
+
+| 유스케이스 | 트리거 | 결과 |
+|---|---|---|
+| 참은 소비 기록하기 | 홈의 `+` | 기록 저장, 햅틱 + 카운트업 + 펄스. 최고 기록·목표 달성이면 배너 |
+| 기록 수정 · 삭제 | 행 탭 / 왼쪽 스와이프 | 수정 화면 또는 확인 후 삭제. 이펙트 없음 |
+| 이번 달 절약액 보기 | 앱 열기 | 카드 큰 숫자, 목표 진행 바, 오늘의 한 줄 |
+| 월 · 년 통계 | 기록 탭 | 합계 · 건수 · 평균, 막대, 카테고리 비율, 전체 목록 |
+| 월 목표 정하기 | 설정 탭 | 프리셋 또는 직접 입력, 홈 카드에 즉시 반영 |
+| 백업 · 복원 | 설정 탭 | JSON 내보내기 → 공유 시트 / JSON 선택 → 병합 또는 덮어쓰기 |
+
+### 🔁 저장 한 번의 시퀀스
+
+```mermaid
+sequenceDiagram
+    actor U as 사용자
+    participant H as 홈 화면
+    participant F as useEntryForm
+    participant S as entryStore
+    participant Q as queries.ts
+    participant DB as SQLite
+
+    U->>H: + 탭 → 금액 · 항목 입력 → 저장
+    H->>F: canSave 확인
+    F->>S: add(input)
+    S->>Q: getSumByDate / getMaxDailyTotal (저장 전 값)
+    S->>Q: addEntry(input)
+    Q->>DB: INSERT (파라미터 바인딩)
+    DB-->>Q: id
+    S->>Q: 합계 재조회
+    Q-->>S: todayTotal, monthTotal
+    S-->>H: celebrateTick++, lastRecord, goalReached
+    H-->>U: 햅틱 → 카운트업 → 펄스 → (배너)
+```
+
 ## ✨ 주요 기능
 
 | # | 기능 | 요약 |
