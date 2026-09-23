@@ -12,7 +12,10 @@ savelog/
 │   │   ├── code-reviewer.md     # 리뷰 담당 (읽기 전용)
 │   │   ├── expo-doctor.md       # 에러 해결 담당
 │   │   ├── dashboard-keeper.md  # 실시간 현황판 갱신 (sonnet, 백그라운드)
-│   │   └── product-coach.md     # 제품·동기부여 기능 제안 (읽기 전용)
+│   │   ├── product-coach.md     # 제품·동기부여 기능 제안 (읽기 전용)
+│   │   ├── ui-designer.md       # 디자인 가이드·토큰·폴리싱 (opus)
+│   │   ├── qa-tester.md         # 기능별 테스트 작성 (opus)
+│   │   └── readme-keeper.md     # README 자동 갱신 (sonnet, 백그라운드)
 │   └── commands/
 │       ├── init-project.md      # /init-project  — M1 뼈대 생성
 │       ├── feature.md           # /feature <기능> — 구현→리뷰→수정 사이클

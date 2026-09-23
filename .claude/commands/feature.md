@@ -31,6 +31,7 @@ argument-hint: <단계 또는 기능 설명>
 - `/check` 와 동일하게 `npx tsc --noEmit && npx expo lint && npx jest` 실행
 - 통과하면 커밋: `feat: <기능명>`
 - 커밋 후 `dashboard-keeper` 에게 검사 결과·커밋·변경 파일을 넘겨 현황판 갱신 (백그라운드)
+- 같은 시점에 `readme-keeper` 에게 "M? 커밋됨" 을 넘겨 README(기능 표·로드맵·배지·화면 섹션) 갱신 (백그라운드). 끝나면 README 도 같이 커밋하고 `git push`
 - 사용자에게 최종 보고:
   - 무엇이 됐는지 (3줄 이내)
   - **아이폰 Expo Go에서 직접 눌러봐야 할 것** (체크리스트)
