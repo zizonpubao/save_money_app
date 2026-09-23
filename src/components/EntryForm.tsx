@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 
 import { CategoryChips } from '@/src/components/CategoryChips';
-import type { Category } from '@/src/db';
+import { QuickEntryChips } from '@/src/components/QuickEntryChips';
+import type { Category, RecentTitle } from '@/src/db';
 import type { useEntryForm } from '@/src/features/useEntryForm';
 import { numeric, size, useTheme } from '@/src/theme';
 import { formatKoDate, fromDate, toDate } from '@/src/utils/date';
@@ -22,13 +23,21 @@ type Props = PropsWithChildren<{
   categories: Category[];
   /** 열리자마자 금액 키패드를 띄울지 (신규 입력 모달에서 true) */
   autoFocusAmount?: boolean;
+  /** (M4) 빠른 입력 칩. 비어 있으면 줄째로 숨긴다 (수정 화면은 넘기지 않는다) */
+  recent?: RecentTitle[];
 }>;
 
 /**
- * 기록 입력 필드 묶음. 금액 → 항목명 → 카테고리 → 날짜 → 메모 순.
+ * 기록 입력 필드 묶음. (빠른 입력) → 금액 → 항목명 → 카테고리 → 날짜 → 메모 순.
  * children 은 폼 아래(예: 삭제 버튼)에 붙는다. 신규/수정 화면이 공유한다.
  */
-export function EntryForm({ form, categories, autoFocusAmount = false, children }: Props) {
+export function EntryForm({
+  form,
+  categories,
+  autoFocusAmount = false,
+  recent = [],
+  children,
+}: Props) {
   const { colors, type, fs, sp, radius, isDark } = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { values } = form;
@@ -59,6 +68,13 @@ export function EntryForm({ form, categories, autoFocusAmount = false, children 
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl }}>
+        {recent.length > 0 ? (
+          <View>
+            <Text style={labelStyle}>최근 항목</Text>
+            <QuickEntryChips items={recent} categories={categories} onPress={form.applyRecent} />
+          </View>
+        ) : null}
+
         <View>
           <Text style={labelStyle}>금액</Text>
           <View

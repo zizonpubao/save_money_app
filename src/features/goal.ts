@@ -1,5 +1,6 @@
 import { formatWon } from '@/src/utils/money';
 
+import { milestoneMessage } from './milestone';
 import { personalBestMessage, type PersonalBest } from './personalBest';
 
 /** 목표 달성 순간 카드 아래에 띄우는 문구 */
@@ -83,7 +84,13 @@ export function detectGoalReached(
   return before < goal && goal <= after;
 }
 
-/** 저장 직후 카드 아래 한 줄. 목표 달성이 개인 최고보다 우선한다. */
-export function celebrationMessage(goalReached: boolean, best: PersonalBest): string | null {
-  return goalReached ? GOAL_REACHED_MESSAGE : personalBestMessage(best);
+/** 저장 직후 카드 아래 한 줄. 우선순위: 목표 달성 > (M4) 누적 이정표 > 개인 최고. */
+export function celebrationMessage(
+  goalReached: boolean,
+  best: PersonalBest,
+  milestone: number | null = null,
+): string | null {
+  if (goalReached) return GOAL_REACHED_MESSAGE;
+  if (milestone !== null) return milestoneMessage(milestone);
+  return personalBestMessage(best);
 }

@@ -10,6 +10,7 @@ import Animated, {
 
 import { AnimatedWon } from '@/src/components/AnimatedWon';
 import { GoalProgressBar } from '@/src/components/GoalProgressBar';
+import type { CelebrationTier } from '@/src/features/celebration';
 import { goalProgress } from '@/src/features/goal';
 import { numeric, useTheme } from '@/src/theme';
 import { formatKoDate, formatKoMonth, thisMonth, today } from '@/src/utils/date';
@@ -20,12 +21,18 @@ const TINT_IN_MS = 200;
 const TINT_OUT_MS = 600;
 /** (M3.6) 하루 첫 오픈 카운트업 0 → 월 합계 시간 */
 const FIRST_OPEN_COUNT_UP_MS = 800;
+/** (M4) 5만원 이상 저장 때 큰 숫자가 커졌다 돌아오는 크기 */
+const BIG_NUMBER_POP = 1.1;
 
 type Props = {
   todayTotal: number;
   monthTotal: number;
   /** 값이 바뀔 때마다 스케일 펄스를 재생한다 (0이면 재생 안 함) */
   celebrateTick: number;
+  /** (M4) 마지막 저장의 이펙트 구간. 'big' 이면 펄스와 함께 큰 숫자가 1 → 1.1 → 1 로 튄다 */
+  celebrateTier?: CelebrationTier;
+  /** (M4) 동작 줄이기 설정. 켜져 있으면 큰 숫자 스케일을 생략한다 */
+  reduceMotion?: boolean;
   /** 월 목표(원). 없으면 진행 바 대신 "목표를 정하면…" 안내 한 줄 */
   goal?: number | null;
   /** 목표를 처음 넘긴 저장 횟수. 값이 커질 때 카드 배경 틴트를 재생한다. */
@@ -54,6 +61,8 @@ export function SummaryCard({
   todayTotal,
   monthTotal,
   celebrateTick,
+  celebrateTier = 'base',
+  reduceMotion = false,
   goal = null,
   goalReachedTick = 0,
   onGoalPress,
@@ -65,6 +74,7 @@ export function SummaryCard({
   const { colors, type, sp, radius, size } = useTheme();
   const todayLabel = formatKoDate(today());
   const scale = useSharedValue(1);
+  const numberScale = useSharedValue(1);
   const tint = useSharedValue(0);
   // 마운트 시점의 tick 에서 시작해, 탭을 다시 그렸다고 지난 달성 틴트가 재생되지 않게 한다.
   const seenGoalTick = useRef(goalReachedTick);
@@ -77,6 +87,18 @@ export function SummaryCard({
     );
   }, [celebrateTick, scale]);
 
+  // 새 저장(tick 증가)에서만 튄다. 동작 줄이기 설정만 바뀐 렌더나 다시 마운트된 렌더에서는 재생하지 않는다
+  const seenPopTick = useRef(celebrateTick);
+  useEffect(() => {
+    if (celebrateTick === seenPopTick.current) return;
+    seenPopTick.current = celebrateTick;
+    if (celebrateTier !== 'big' || reduceMotion) return;
+    numberScale.value = withSequence(
+      withSpring(BIG_NUMBER_POP, { damping: 8, stiffness: 380 }),
+      withSpring(1, { damping: 14, stiffness: 220 }),
+    );
+  }, [celebrateTick, celebrateTier, reduceMotion, numberScale]);
+
   useEffect(() => {
     if (goalReachedTick <= seenGoalTick.current) return;
     seenGoalTick.current = goalReachedTick;
@@ -88,6 +110,7 @@ export function SummaryCard({
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const tintStyle = useAnimatedStyle(() => ({ opacity: tint.value }));
+  const numberStyle = useAnimatedStyle(() => ({ transform: [{ scale: numberScale.value }] }));
   const progress = useMemo(() => goalProgress(monthTotal, goal), [monthTotal, goal]);
   const bigNumberStyle = [type.display, numeric, { color: colors.primary, marginTop: sp.xs }];
 
@@ -114,18 +137,21 @@ export function SummaryCard({
       <Text style={[type.caption, { color: colors.textMuted }]}>
         이번 달 절약 · {formatKoMonth(thisMonth())}
       </Text>
-      {ready ? (
-        // key 가 바뀌면 새로 마운트돼 from(0) 부터 다시 굴러간다 (자정 넘겨 다시 포커스된 경우 포함)
-        <AnimatedWon
-          key={firstOpenTick}
-          value={monthTotal}
-          from={firstOpenTick > 0 ? 0 : undefined}
-          fromDuration={FIRST_OPEN_COUNT_UP_MS}
-          style={bigNumberStyle}
-        />
-      ) : (
-        <Text style={bigNumberStyle}>{formatWon(monthTotal)}</Text>
-      )}
+      {/* (M4) 큰 숫자 스케일은 왼쪽 끝을 기준으로 커져서 라벨과 세로 줄이 흔들리지 않는다 */}
+      <Animated.View style={[styles.bigNumber, numberStyle]}>
+        {ready ? (
+          // key 가 바뀌면 새로 마운트돼 from(0) 부터 다시 굴러간다 (자정 넘겨 다시 포커스된 경우 포함)
+          <AnimatedWon
+            key={firstOpenTick}
+            value={monthTotal}
+            from={firstOpenTick > 0 ? 0 : undefined}
+            fromDuration={FIRST_OPEN_COUNT_UP_MS}
+            style={bigNumberStyle}
+          />
+        ) : (
+          <Text style={bigNumberStyle}>{formatWon(monthTotal)}</Text>
+        )}
+      </Animated.View>
 
       {/* ③ 오늘: 큰 숫자에 붙은 작은 회색 한 줄 (위 라벨과 같은 caption — 숫자를 위아래로 받친다) */}
       <Text
@@ -162,4 +188,5 @@ export function SummaryCard({
 
 const styles = StyleSheet.create({
   goalHint: { justifyContent: 'center', alignSelf: 'flex-start' },
+  bigNumber: { alignSelf: 'flex-start', transformOrigin: 'left center' },
 });

@@ -11,6 +11,7 @@ import { buildGrassCells } from './grass';
 
 /**
  * (M3.6) 홈 카드의 활기 요소: 오늘의 한 줄, 이번 달 잔디, 이모지 적립 줄, 하루 첫 오픈 카운트업.
+ * (M4) 칩 행의 연속 기록일·누적 절약액도 같이 내준다.
  * 데이터는 entryStore 스냅숏(저장·수정·삭제·포커스 때 다시 읽음)에서 가져오고,
  * 문구와 잔디는 입력이 바뀔 때만 다시 계산한다. 홈을 보고 있는 채로 앱이 앞으로 돌아오면(active) 첫 오픈 판정을 다시 한다.
  */
@@ -22,6 +23,8 @@ export function useHomeCard() {
   const monthEmojis = useEntryStore((s) => s.monthEmojis);
   const loaded = useEntryStore((s) => s.loaded);
   const firstOpenTick = useEntryStore((s) => s.firstOpenTick);
+  const streak = useEntryStore((s) => s.streak);
+  const totalSum = useEntryStore((s) => s.totalSum);
   const openHome = useEntryStore((s) => s.openHome);
   const goal = useSettingsStore((s) => s.monthlyGoal);
   const focused = useIsFocused();
@@ -54,6 +57,6 @@ export function useHomeCard() {
     [month, dailyTotals, date],
   );
 
-  return { line, grass, monthEmojis, loaded, firstOpenTick };
+  return { line, grass, monthEmojis, loaded, firstOpenTick, streak, totalSum };
 }
 

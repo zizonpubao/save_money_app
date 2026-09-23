@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EntryForm } from '@/src/components/EntryForm';
 import type { Category, EntryInput } from '@/src/db';
 import { useEntryForm } from '@/src/features/useEntryForm';
+import { useRecentTitles } from '@/src/features/useRecentTitles';
 import { size, useTheme } from '@/src/theme';
 
 type Props = {
@@ -48,6 +49,8 @@ type BodyProps = Omit<Props, 'visible'> & { initial: EntryInput | null; title: s
 function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps) {
   const { colors, type, sp } = useTheme();
   const form = useEntryForm(initial);
+  // 빠른 입력 칩은 새 기록에만. 열릴 때마다 새로 마운트되므로 방금 저장한 항목도 다음에 바로 보인다
+  const recent = useRecentTitles(initial === null);
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
@@ -70,7 +73,7 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
           </Text>
         </Pressable>
       </View>
-      <EntryForm form={form} categories={categories} autoFocusAmount />
+      <EntryForm form={form} categories={categories} recent={recent} autoFocusAmount />
     </View>
   );
 }

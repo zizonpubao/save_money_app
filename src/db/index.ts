@@ -9,4 +9,5 @@ export type {
   EntryInput,
   MonthStats,
   MonthlyTotal,
+  RecentTitle,
 } from './types';

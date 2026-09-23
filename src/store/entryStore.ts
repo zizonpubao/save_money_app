@@ -6,12 +6,16 @@ import {
   getEarliestEntryDate,
   getDailyTotals,
   getEntriesBetween,
+  getCategoryTotals,
   getEntryEmojisForMonth,
   getMaxDailyTotal,
   getMaxMonthlyTotal,
+  getMonthStats,
+  getRecordedDates,
   getSetting,
   getSumBetween,
   getSumByDate,
+  getTotalSum,
   setSetting,
   SETTING_KEYS,
   updateEntry,
@@ -20,9 +24,13 @@ import {
   type EntryEmoji,
   type EntryInput,
 } from '@/src/db';
+import { celebrationTier, type CelebrationTier } from '@/src/features/celebration';
 import { isFirstOpenOfDay } from '@/src/features/firstOpen';
 import { detectGoalReached, parseGoal } from '@/src/features/goal';
+import { detectMilestone, parseMilestone } from '@/src/features/milestone';
 import { detectPersonalBest, type PersonalBest } from '@/src/features/personalBest';
+import { reviewMonthOf, type MonthReviewData } from '@/src/features/review';
+import { computeStreak } from '@/src/features/streak';
 import { addDays, addMonths, monthRange, thisMonth, toMonth, today } from '@/src/utils/date';
 
 type EntryState = {
@@ -35,6 +43,10 @@ type EntryState = {
   hasMore: boolean;
   /** 저장 성공 횟수. 홈 카드가 이 값이 바뀔 때 축하 이펙트를 재생한다. (수정은 올리지 않는다) */
   celebrateTick: number;
+  /** (M4) 마지막 저장 금액의 이펙트 구간. celebrateTick 과 함께 소비한다 (햅틱·컨페티·큰 숫자 스케일) */
+  celebrateTier: CelebrationTier;
+  /** (M4) 마지막 저장 시각(ms). 컨페티 조각 배치 시드 */
+  celebratedAt: number;
   /** 마지막 저장이 역대 최고를 갱신했는지. 홈에서 "최고 기록!" 한 줄을 띄우는 데 쓴다. */
   lastRecord: PersonalBest;
   /** 목표를 처음 넘긴 저장 횟수. 홈 카드가 이 값이 바뀔 때 바 차오름·틴트·강한 햅틱을 낸다. */
@@ -51,6 +63,16 @@ type EntryState = {
   monthEmojis: EntryEmoji[];
   /** (M3.6) 그날 처음 홈을 연 횟수. 값이 커지면 카드 큰 숫자가 0부터 다시 카운트업한다. */
   firstOpenTick: number;
+  /** (M4) 연속 기록일. 칩 행 "🔥 5일째" (0이면 칩 숨김) */
+  streak: number;
+  /** (M4) 전체 누적 절약액. 칩 행 "누적 432,000원" */
+  totalSum: number;
+  /** (M4) 마지막 저장으로 새로 넘은 누적 이정표(원). 없으면 null. 배너 "누적 50만원 돌파 🎉" */
+  lastMilestone: number | null;
+  /** (M4) 지난달 회고 카드 재료 */
+  review: MonthReviewData;
+  /** (M4) 회고 카드를 닫은 대상 달 ('YYYY-MM') */
+  reviewDismissedMonth: string | null;
 
   reload: () => void;
   /** 홈이 포커스될 때: 다시 읽기 + 오늘 첫 오픈 판정을 한 번에 (카운트업 신호와 새 합계가 같은 렌더에 오게) */
@@ -59,6 +81,8 @@ type EntryState = {
   add: (input: EntryInput) => Entry;
   update: (id: number, input: EntryInput) => Entry | null;
   remove: (id: number) => void;
+  /** (M4) 회고 카드 닫기. 지난달을 닫은 달로 적어 이번 달엔 다시 띄우지 않는다 */
+  dismissReview: () => void;
 };
 
 /**
@@ -95,6 +119,23 @@ function checkGoalReached(before: number, after: number): boolean {
   return reached;
 }
 
+/**
+ * 저장 직후 누적 이정표 판정. 새로 넘었으면 그 이정표를 settings 에 적어 같은 이정표를 다시 축하하지 않는다.
+ */
+function checkMilestone(before: number, after: number): number | null {
+  const hit = detectMilestone(before, after, parseMilestone(getSetting(SETTING_KEYS.milestoneReached)));
+  if (hit !== null) setSetting(SETTING_KEYS.milestoneReached, String(hit));
+  return hit;
+}
+
+/** 지난달 합계·건수와 금액 1위 카테고리 */
+function readReview(now: string): MonthReviewData {
+  const month = reviewMonthOf(now);
+  const stats = getMonthStats(month);
+  const top = stats.count > 0 ? (getCategoryTotals(month)[0]?.categoryId ?? null) : null;
+  return { month, count: stats.count, total: stats.total, topCategoryId: top };
+}
+
 /** fn 이 던지면 fallback. 저장 뒤 부가 판정(축하)이 저장 자체를 실패로 만들지 않게 한다. */
 function orFallback<T>(fn: () => T, fallback: T): T {
   try {
@@ -121,6 +162,11 @@ function fetchSnapshot(oldestMonth: string) {
     yesterdayTotal: getSumByDate(addDays(now, -1)),
     dailyTotals: getDailyTotals(month),
     monthEmojis: getEntryEmojisForMonth(month),
+    streak: computeStreak(getRecordedDates(), now),
+    totalSum: getTotalSum(),
+    review: readReview(now),
+    // 설정을 못 읽어도 홈은 떠야 한다 (회고 카드가 한 번 더 보이는 정도로 끝난다)
+    reviewDismissedMonth: orFallback(() => getSetting(SETTING_KEYS.reviewDismissedMonth), null),
     loaded: true,
   };
 }
@@ -146,6 +192,8 @@ export const useEntryStore = create<EntryState>((set, get) => ({
   monthTotal: 0,
   hasMore: false,
   celebrateTick: 0,
+  celebrateTier: 'base',
+  celebratedAt: 0,
   lastRecord: null,
   goalReachedTick: 0,
   lastGoalReached: false,
@@ -154,6 +202,11 @@ export const useEntryStore = create<EntryState>((set, get) => ({
   dailyTotals: [],
   monthEmojis: [],
   firstOpenTick: 0,
+  streak: 0,
+  totalSum: 0,
+  lastMilestone: null,
+  review: { month: '', count: 0, total: 0, topCategoryId: null },
+  reviewDismissedMonth: null,
 
   reload: () => {
     const safeOldest = safeOldestMonth(get().oldestMonth);
@@ -190,6 +243,7 @@ export const useEntryStore = create<EntryState>((set, get) => ({
     const dayTotalBefore = getSumByDate(input.date);
     const monthTotalBefore = getSumBetween(range.start, range.end);
     const thisMonthBefore = thisMonthTotal();
+    const totalBefore = getTotalSum();
 
     const created = addEntry(input);
 
@@ -214,13 +268,18 @@ export const useEntryStore = create<EntryState>((set, get) => ({
       null,
     );
 
+    const lastMilestone = orFallback(() => checkMilestone(totalBefore, getTotalSum()), null);
+
     const { oldestMonth, celebrateTick, goalReachedTick } = get();
     set({
       ...fetchSnapshot(oldestMonth),
       celebrateTick: celebrateTick + 1,
+      celebrateTier: celebrationTier(input.amount),
+      celebratedAt: Date.now(),
       lastRecord,
       goalReachedTick: lastGoalReached ? goalReachedTick + 1 : goalReachedTick,
       lastGoalReached,
+      lastMilestone,
     });
     return created;
   },
@@ -228,12 +287,29 @@ export const useEntryStore = create<EntryState>((set, get) => ({
   // 수정은 새로 절약한 게 아니므로 축하 이펙트를 내지 않는다 (celebrateTick 그대로).
   update: (id, input) => {
     const updated = updateEntry(id, input);
-    set({ ...fetchSnapshot(get().oldestMonth), lastRecord: null, lastGoalReached: false });
+    set({
+      ...fetchSnapshot(get().oldestMonth),
+      lastRecord: null,
+      lastGoalReached: false,
+      lastMilestone: null,
+    });
     return updated;
   },
 
   remove: (id) => {
     deleteEntry(id);
-    set({ ...fetchSnapshot(get().oldestMonth), lastRecord: null, lastGoalReached: false });
+    set({
+      ...fetchSnapshot(get().oldestMonth),
+      lastRecord: null,
+      lastGoalReached: false,
+      lastMilestone: null,
+    });
+  },
+
+  dismissReview: () => {
+    const month = reviewMonthOf(today());
+    // 기록이 실패해도 지금 보고 있는 화면에서는 닫는다
+    orFallback(() => setSetting(SETTING_KEYS.reviewDismissedMonth, month), undefined);
+    set({ reviewDismissedMonth: month });
   },
 }));

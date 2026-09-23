@@ -1,4 +1,4 @@
-import { monthRange, nowIso, yearRange } from '@/src/utils/date';
+import { addDays, monthRange, nowIso, today, yearRange } from '@/src/utils/date';
 
 import { getDb } from './database';
 import {
@@ -14,6 +14,7 @@ import {
   type EntryRow,
   type MonthStats,
   type MonthlyTotal,
+  type RecentTitle,
 } from './types';
 
 const ENTRY_COLUMNS =
@@ -179,6 +180,50 @@ export function getEntryEmojisForMonth(month: string): EntryEmoji[] {
   );
 }
 
+// ---------- 연속 기록일 · 누적 (M4) ----------
+
+/**
+ * 오늘부터 sinceDays 일 전까지 기록이 있는 날짜, 최신 날짜부터. 연속 기록일 계산용.
+ * 연속이 이 기간보다 길면 이 기간까지만 센다 (한 번에 읽는 양을 묶어 둔다).
+ */
+export function getRecordedDates(sinceDays: number = 400): string[] {
+  return getDb()
+    .getAllSync<{ date: string }>(
+      'SELECT DISTINCT date FROM entries WHERE date >= ? ORDER BY date DESC',
+      [addDays(today(), -sinceDays)],
+    )
+    .map((r) => r.date);
+}
+
+/** 전체 기록의 누적 절약액. 기록이 없으면 0. */
+export function getTotalSum(): number {
+  const row = getDb().getFirstSync<{ total: number | null }>(
+    'SELECT SUM(amount) AS total FROM entries',
+  );
+  return row?.total ?? 0;
+}
+
+// ---------- 빠른 입력 (M4) ----------
+
+/**
+ * 입력 시트 빠른 입력 칩. 같은 항목명은 가장 최근(updated_at, 같으면 id) 한 건만 남기고, 최근 순으로 limit 개.
+ * 항목명마다 최신 행을 고르는 데 창 함수를 쓴다 (기록이 많아도 한 번 정렬로 끝난다).
+ */
+export function getRecentTitles(limit: number): RecentTitle[] {
+  const rows = getDb().getAllSync<{ title: string; category_id: number | null; amount: number }>(
+    `SELECT title, category_id, amount FROM (
+       SELECT title, category_id, amount, updated_at, id,
+         ROW_NUMBER() OVER (PARTITION BY title ORDER BY updated_at DESC, id DESC) AS rn
+       FROM entries
+     )
+     WHERE rn = 1
+     ORDER BY updated_at DESC, id DESC
+     LIMIT ?`,
+    [limit],
+  );
+  return rows.map((r) => ({ title: r.title, categoryId: r.category_id, amount: r.amount }));
+}
+
 // ---------- settings (M3.5) ----------
 
 /** settings 테이블 키. 값은 항상 문자열로 저장하고, 해석은 쓰는 쪽(features)이 한다. */
@@ -189,6 +234,10 @@ export const SETTING_KEYS = {
   goalReachedMonth: 'goal_reached_month',
   /** (M3.6) 홈을 마지막으로 연 날 ('YYYY-MM-DD'). 그날 처음 열 때만 월 합계를 0부터 카운트업한다. */
   lastOpenDate: 'last_open_date',
+  /** (M4) 축하한 가장 큰 누적 이정표(원 정수 문자열). 이보다 작거나 같은 이정표는 다시 축하하지 않는다. */
+  milestoneReached: 'milestone_reached',
+  /** (M4) 닫은 회고 카드의 대상 달 ('YYYY-MM', 지난달). 같은 달 회고는 다시 띄우지 않는다. */
+  reviewDismissedMonth: 'review_dismissed_month',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

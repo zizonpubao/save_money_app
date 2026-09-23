@@ -65,6 +65,8 @@ describe('entryStore', () => {
       monthTotal: 0,
       hasMore: false,
       celebrateTick: 0,
+      celebrateTier: 'base',
+      celebratedAt: 0,
       lastRecord: null,
       goalReachedTick: 0,
       lastGoalReached: false,
@@ -73,6 +75,11 @@ describe('entryStore', () => {
       dailyTotals: [],
       monthEmojis: [],
       firstOpenTick: 0,
+      streak: 0,
+      totalSum: 0,
+      lastMilestone: null,
+      review: { month: '', count: 0, total: 0, topCategoryId: null },
+      reviewDismissedMonth: null,
     });
   });
 
@@ -159,6 +166,24 @@ describe('entryStore', () => {
       const tick = useEntryStore.getState().celebrateTick;
       useEntryStore.getState().remove(created.id);
       expect(useEntryStore.getState().celebrateTick).toBe(tick);
+    });
+  });
+
+  describe('금액 구간 이펙트 (M4 celebrateTier)', () => {
+    it.each([
+      [9999, 'base'],
+      [10000, 'mid'],
+      [50000, 'big'],
+    ] as const)('%i원 저장 → %s', (amount, tier) => {
+      useEntryStore.getState().add(input({ amount }));
+      expect(useEntryStore.getState().celebrateTier).toBe(tier);
+      expect(useEntryStore.getState().celebratedAt).toBeGreaterThan(0);
+    });
+
+    it('수정 저장은 구간을 바꾸지 않는다 (이펙트 없음)', () => {
+      const created = useEntryStore.getState().add(input({ amount: 4500 }));
+      useEntryStore.getState().update(created.id, input({ amount: 60000 }));
+      expect(useEntryStore.getState().celebrateTier).toBe('base');
     });
   });
 
@@ -388,6 +413,92 @@ describe('entryStore', () => {
       expect(useEntryStore.getState().monthEmojis.at(-1)?.emoji).toBe('📦');
       useEntryStore.getState().remove(second.id);
       expect(useEntryStore.getState().monthEmojis.map((e) => e.id)).toEqual([first.id]);
+    });
+  });
+
+  describe('연속 기록일 · 누적 (M4)', () => {
+    it('reload 는 연속 기록일과 누적 합계를 함께 읽는다', () => {
+      addEntry(input({ date: addDays(today(), -1), amount: 3000 }));
+      addEntry(input({ date: addDays(today(), -2), amount: 4000 }));
+      addEntry(input({ date: firstOf(TWO_MONTHS_AGO), amount: 100000 }));
+      useEntryStore.getState().reload();
+      // 오늘 기록이 없어도 어제까지 이어졌으면 유지
+      expect(useEntryStore.getState().streak).toBe(2);
+      expect(useEntryStore.getState().totalSum).toBe(107000);
+    });
+
+    it('오늘 저장하면 연속 기록일이 늘어난다', () => {
+      addEntry(input({ date: addDays(today(), -1) }));
+      useEntryStore.getState().reload();
+      useEntryStore.getState().add(input({ date: today() }));
+      expect(useEntryStore.getState().streak).toBe(2);
+    });
+  });
+
+  describe('누적 이정표 (M4)', () => {
+    it('10만원을 처음 넘는 저장에서 이정표를 알리고 settings 에 적는다', () => {
+      addEntry(input({ date: firstOf(LAST_MONTH), amount: 95500 }));
+      useEntryStore.getState().add(input({ amount: 4000 }));
+      expect(useEntryStore.getState().lastMilestone).toBeNull();
+      useEntryStore.getState().add(input({ amount: 500 }));
+      expect(useEntryStore.getState().lastMilestone).toBe(100000);
+      expect(getSetting(SETTING_KEYS.milestoneReached)).toBe('100000');
+      // 이미 넘은 뒤 더 쌓는 저장은 조용히
+      useEntryStore.getState().add(input({ amount: 500 }));
+      expect(useEntryStore.getState().lastMilestone).toBeNull();
+    });
+
+    it('지워서 누적이 줄었다가 다시 넘어도 재축하하지 않는다', () => {
+      const big = useEntryStore.getState().add(input({ amount: 100000 }));
+      expect(useEntryStore.getState().lastMilestone).toBe(100000);
+      useEntryStore.getState().remove(big.id);
+      expect(useEntryStore.getState().lastMilestone).toBeNull();
+      useEntryStore.getState().add(input({ amount: 120000 }));
+      expect(useEntryStore.getState().lastMilestone).toBeNull();
+    });
+
+    it('한 번에 여러 이정표를 넘으면 가장 큰 것 하나만 적는다', () => {
+      useEntryStore.getState().add(input({ amount: 1200000 }));
+      expect(useEntryStore.getState().lastMilestone).toBe(1000000);
+      expect(getSetting(SETTING_KEYS.milestoneReached)).toBe('1000000');
+    });
+
+    it('수정은 이정표를 알리지 않는다', () => {
+      const created = useEntryStore.getState().add(input({ amount: 4500 }));
+      useEntryStore.getState().update(created.id, input({ amount: 200000 }));
+      expect(useEntryStore.getState().lastMilestone).toBeNull();
+      expect(getSetting(SETTING_KEYS.milestoneReached)).toBeNull();
+    });
+  });
+
+  describe('지난달 회고 재료 (M4)', () => {
+    it('reload 는 지난달 건수·합계·금액 1위 카테고리를 읽는다', () => {
+      addEntry(input({ date: firstOf(LAST_MONTH), amount: 4500, categoryId: 1 }));
+      addEntry(input({ date: lastOf(LAST_MONTH), amount: 4500, categoryId: 1 }));
+      addEntry(input({ date: lastOf(LAST_MONTH), amount: 6000, categoryId: 2 }));
+      addEntry(input({ date: today(), amount: 50000, categoryId: 2 }));
+      useEntryStore.getState().reload();
+      expect(useEntryStore.getState().review).toEqual({
+        month: LAST_MONTH,
+        count: 3,
+        total: 15000,
+        topCategoryId: 1,
+      });
+    });
+
+    it('지난달 기록이 없으면 0건', () => {
+      addEntry(input({ date: today() }));
+      useEntryStore.getState().reload();
+      expect(useEntryStore.getState().review).toMatchObject({ month: LAST_MONTH, count: 0 });
+    });
+
+    it('dismissReview 는 지난달을 닫은 달로 적고, 다시 읽어도 유지된다', () => {
+      useEntryStore.getState().dismissReview();
+      expect(useEntryStore.getState().reviewDismissedMonth).toBe(LAST_MONTH);
+      expect(getSetting(SETTING_KEYS.reviewDismissedMonth)).toBe(LAST_MONTH);
+      useEntryStore.setState({ reviewDismissedMonth: null });
+      useEntryStore.getState().reload();
+      expect(useEntryStore.getState().reviewDismissedMonth).toBe(LAST_MONTH);
     });
   });
 

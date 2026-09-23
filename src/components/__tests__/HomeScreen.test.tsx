@@ -34,11 +34,18 @@ const EMPTY_HOME = {
   todayTotal: 0,
   monthTotal: 0,
   celebrateTick: 0,
+  celebrateTier: 'base' as const,
+  celebratedAt: 0,
+  lastMilestone: null,
   loaded: false,
   yesterdayTotal: 0,
   dailyTotals: [],
   monthEmojis: [],
   firstOpenTick: 0,
+  streak: 0,
+  totalSum: 0,
+  review: { month: '', count: 0, total: 0, topCategoryId: null },
+  reviewDismissedMonth: null,
 };
 
 // 네비게이터 밖에서 화면을 그리기 위해 라우터 훅을 대역으로 바꾼다.

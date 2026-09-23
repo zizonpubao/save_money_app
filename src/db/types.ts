@@ -40,6 +40,13 @@ export type EntryEmoji = {
   emoji: string;
 };
 
+/** (M4) 빠른 입력 칩 한 개: 같은 항목명 중 가장 최근 기록의 카테고리·금액 */
+export type RecentTitle = {
+  title: string;
+  categoryId: number | null;
+  amount: number;
+};
+
 /** 그 해의 한 달치 합계 (기록이 있는 달만) */
 export type MonthlyTotal = {
   month: string; // 'YYYY-MM'

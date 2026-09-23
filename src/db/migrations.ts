@@ -79,6 +79,18 @@ export const migrations: readonly Migration[] = [
       );
     },
   },
+  {
+    // (M4) 기본 카테고리에 '옷' 추가. 쇼핑(4) 다음, 술 앞에 끼워 넣기 위해 v2 와 같은 방식으로
+    // sort_order 5 이상을 한 칸씩 밀고 빈 자리에 삽입한다. 사용자가 이미 '옷' 을 만들었으면 그것을 그대로 둔다.
+    version: 4,
+    up: (db) => {
+      db.execSync('UPDATE categories SET sort_order = sort_order + 1 WHERE sort_order >= 5');
+      db.runSync(
+        'INSERT OR IGNORE INTO categories (name, emoji, sort_order, is_default) VALUES (?, ?, ?, ?)',
+        ['옷', '👕', 5, 1],
+      );
+    },
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1]?.version ?? 0;

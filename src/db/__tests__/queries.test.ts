@@ -15,10 +15,13 @@ import {
   getMaxMonthlyTotal,
   getMonthStats,
   getMonthlyTotals,
+  getRecentTitles,
+  getRecordedDates,
   getSetting,
   getStatsBetween,
   getSumBetween,
   getSumByDate,
+  getTotalSum,
   initDatabase,
   openDatabaseAt,
   resetDatabaseConnection,
@@ -30,6 +33,7 @@ import {
 } from '@/src/db';
 import { runMigrations } from '@/src/db/migrations';
 import { buildMonthlyBars } from '@/src/features/monthlyStats';
+import { addDays, today } from '@/src/utils/date';
 
 function input(over: Partial<EntryInput> = {}): EntryInput {
   return {
@@ -59,13 +63,14 @@ describe('queries', () => {
   });
 
   describe('카테고리', () => {
-    it('getAllCategories 는 sort_order 순으로 기본 9개를 돌려준다', () => {
+    it('getAllCategories 는 sort_order 순으로 기본 10개를 돌려준다', () => {
       expect(getAllCategories().map((c) => c.name)).toEqual([
         '커피',
         '밥값',
         '배달',
         '택시',
         '쇼핑',
+        '옷',
         '술',
         '간식',
         '구독',
@@ -497,7 +502,86 @@ describe('queries', () => {
         monthlyGoal: 'monthly_goal',
         goalReachedMonth: 'goal_reached_month',
         lastOpenDate: 'last_open_date',
+        milestoneReached: 'milestone_reached',
+        reviewDismissedMonth: 'review_dismissed_month',
       });
+    });
+  });
+
+  describe('getRecordedDates · getTotalSum (M4)', () => {
+    it('기록 있는 날짜를 중복 없이 최신 날짜부터', () => {
+      const now = today();
+      addEntry(input({ date: addDays(now, -2) }));
+      addEntry(input({ date: now }));
+      addEntry(input({ date: now }));
+      addEntry(input({ date: addDays(now, -1) }));
+      expect(getRecordedDates()).toEqual([now, addDays(now, -1), addDays(now, -2)]);
+    });
+
+    it('sinceDays 보다 오래된 날짜는 빼고, 경계 날짜는 넣는다', () => {
+      const now = today();
+      addEntry(input({ date: addDays(now, -10) }));
+      addEntry(input({ date: addDays(now, -11) }));
+      expect(getRecordedDates(10)).toEqual([addDays(now, -10)]);
+    });
+
+    it('기록이 없으면 빈 목록 · 누적 0', () => {
+      expect(getRecordedDates()).toEqual([]);
+      expect(getTotalSum()).toBe(0);
+    });
+
+    it('누적은 날짜·달과 상관없이 전체 합계', () => {
+      addEntry(input({ date: '2025-01-01', amount: 100000 }));
+      addEntry(input({ date: '2026-09-15', amount: 4500 }));
+      expect(getTotalSum()).toBe(104500);
+    });
+  });
+
+  describe('getRecentTitles (M4 빠른 입력)', () => {
+    /** 수정 시각을 직접 정한다 (nowIso 는 초 단위라 한 테스트 안에서는 모두 같은 값이 된다) */
+    function touch(id: number, updatedAt: string) {
+      getDb().runSync('UPDATE entries SET updated_at = ? WHERE id = ?', [updatedAt, id]);
+    }
+
+    it('기록이 없으면 빈 목록', () => {
+      expect(getRecentTitles(5)).toEqual([]);
+    });
+
+    it('같은 항목명은 가장 최근 한 건의 카테고리·금액만 남는다', () => {
+      const coffee = categoryIdOf('커피');
+      const a = addEntry(input({ title: '아메리카노', amount: 4500, categoryId: coffee }));
+      const b = addEntry(input({ title: '택시', amount: 12000, categoryId: categoryIdOf('택시') }));
+      const c = addEntry(input({ title: '아메리카노', amount: 5000, categoryId: null }));
+      touch(a.id, '2026-09-20T09:00:00+09:00');
+      touch(b.id, '2026-09-21T09:00:00+09:00');
+      touch(c.id, '2026-09-22T09:00:00+09:00');
+
+      expect(getRecentTitles(5)).toEqual([
+        { title: '아메리카노', categoryId: null, amount: 5000 },
+        { title: '택시', categoryId: categoryIdOf('택시'), amount: 12000 },
+      ]);
+    });
+
+    it('기록 날짜가 아니라 최근 등록·수정 순이다 (수정한 기록이 앞으로 온다)', () => {
+      const old = addEntry(input({ date: '2026-01-01', title: '예전 것' }));
+      const recent = addEntry(input({ date: '2026-09-20', title: '최근 것' }));
+      touch(recent.id, '2026-09-20T09:00:00+09:00');
+      touch(old.id, '2026-09-23T09:00:00+09:00');
+      expect(getRecentTitles(5).map((r) => r.title)).toEqual(['예전 것', '최근 것']);
+    });
+
+    it('수정 시각이 같으면 나중에 넣은(id 가 큰) 기록이 앞이다', () => {
+      addEntry(input({ title: '첫째' }));
+      addEntry(input({ title: '둘째' }));
+      getDb().runSync('UPDATE entries SET updated_at = ?', ['2026-09-20T09:00:00+09:00']);
+      expect(getRecentTitles(5).map((r) => r.title)).toEqual(['둘째', '첫째']);
+    });
+
+    it('limit 개까지만 최근 순으로', () => {
+      const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((t) => addEntry(input({ title: t })).id);
+      ids.forEach((id, i) => touch(id, `2026-09-${String(10 + i).padStart(2, '0')}T09:00:00+09:00`));
+      expect(getRecentTitles(5).map((r) => r.title)).toEqual(['g', 'f', 'e', 'd', 'c']);
+      expect(getRecentTitles(3)).toHaveLength(3);
     });
   });
 });

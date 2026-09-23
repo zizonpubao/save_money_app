@@ -11,7 +11,8 @@
 | | `primary` / `onPrimary` / `primarySoft` | `#2F6FED` `#FFF` `#E8EFFD` / `#5B8DEF` `#FFF` `#1F2A44` |
 | | `danger` | `#E5484D` / `#F2555A` |
 | | `border`(컨트롤 테두리) / `divider`(카드 안 구분선) | `#E5E7EB` `#EDEFF2` / `#2A2E36` `#2E333C` |
-| | `grass1~4`(잔디 농도) / `grassFuture`(잔디 미래 칸) | `#BACFF9` `#8CAFF5` `#5D8FF1` `#2F6FED` `#F5F6F8` / `#2E436F` `#3D5C9A` `#4C74C4` `#5B8DEF` `#22262D` |
+| | `grass1~4`(잔디 농도) / `grassFuture`(잔디 미래 칸) | `#BACFF9` `#8CAFF5` `#5D8FF1` `#2F6FED` `#F5F6F8` / `#2E436F` `#3D5C9A` `#4C74C4` `#5B8DEF` `#0F1115` (M4: 라이트처럼 `bg` 와 같은 움푹한 칸, 기록 없는 날 `divider` 와 구분) |
+| | `good` / `warn`(M4 컨페티 조각 전용, 글자·넓은 면에 쓰지 않음) | `#30A46C` `#F5A524` / `#4CC38A` `#FFB224` |
 | 간격 | `sp.xs/sm/smd/md/lg/xl` | 4 / 8 / 12 / 16 / 24 / 32 (4의 배수만) |
 | 타이포 | `type.display` | 36 / 800 / 42 — 이번 달 절약액 |
 | | `type.title` | 28 / 700 / 34 — 화면 제목, 금액 입력값 |
@@ -26,13 +27,14 @@
 | | `size.swipeAction/headerAction/memoMin/toggleMin` | 88 / 56 / 80 / 120 |
 | | `size.barTrack` / `size.bar` / `size.axisLabel` | 120 / 10 / 28 (M3 그래프용) |
 | | `size.todayRing` / `size.emojiCell` / `size.grassCell` / `size.statChip` | 2 / 24 / 16 / 32 (잔디 오늘 테두리, 이모지 적립 칸, 잔디 칸 높이, 정보 칩 높이) |
+| | `size.confettiWidth` / `size.confettiHeight` | 6 / 10 (M4 저장 컨페티 한 조각) |
 
 ## 컴포넌트 규칙
 - **카드**: `card` 배경 + `radius.lg` + `padding: sp.lg`. 그림자 없음, 테두리 없음 — 배경 대비로만 뜬다.
 - **보조 구획**: 카드와 같은 `card` 배경 + `radius.lg` 지만 안쪽은 `paddingHorizontal: sp.md` / `paddingVertical: sp.smd` — 주인공 카드(`sp.lg`)보다 한 단계 가볍다. 제목 없이 내용만.
 - **목록 행**: `card` 배경, `paddingHorizontal: sp.md` / `paddingVertical: sp.smd`, `minHeight: size.touch`. 행 사이만 hairline `divider`, 섹션 마지막 행은 선 없음. 섹션의 첫/마지막 행에 `radius.md` 를 줘서 한 덩어리로 보이게 한다.
 - **섹션 헤더**: `bg` 위에 `paddingTop: sp.md` / `paddingBottom: sp.sm` / 좌우 `sp.md`(아래 행 안쪽 여백과 세로 줄 맞춤), 왼쪽 날짜(`type.label`)·오른쪽 합계(`type.note`) 둘 다 `textMuted`. 카드 밖 요소라 배경색은 `bg`.
-- **칩(선택)**: `radius.pill`, `paddingHorizontal: sp.md` / `paddingVertical: sp.sm`, 테두리 1px. 선택 시 `primary` 배경 + `onPrimary` 글자(색만이 아니라 채움으로 구분). 보기 전용 정보 칩은 홈 배치 4번(`StatChip`).
+- **칩(선택)**: `radius.pill`, `paddingHorizontal: sp.md` / `paddingVertical: sp.sm`, 테두리 1px. 선택 시 `primary` 배경 + `onPrimary` 글자(색만이 아니라 채움으로 구분). 보기 전용 정보 칩은 홈 배치 4번(`StatChip`). (M4) 입력 시트 맨 위 빠른 입력 칩도 이 모양(선택 상태 없이 누르면 채움, 눌림 `opacity 0.7`).
 - **버튼/FAB**: 텍스트 버튼은 테두리 1px + `radius.md` + `minHeight: size.touch`, 눌림은 `opacity 0.7`. FAB 은 `size.fab` 원형, `primary`, `shadow.fab`, 우하단 `sp.lg` 여백, 눌림 `opacity 0.85`.
 - **헤더·탭바**: 배경 `card`, 그림자 숨김(`headerShadowVisible: false`), 활성 탭 `primary` / 비활성 `textMuted`, 본문 영역은 `bg`.
 - **입력 필드**: `card` 배경 + `border` 테두리 + `radius.md`, 라벨은 위에 `type.caption` `textMuted`, 필드 간 간격 `sp.md`. 금액 필드만 `type.title` 로 크게, 오른쪽에 "원".
@@ -43,7 +45,7 @@
 1. **(M4) 지난달 회고 카드** — 매달 1~3일에만 맨 위. `RecordBanner` 와 같은 "잠깐 알림" 모양(`primarySoft` + `radius.md` + `padding: sp.smd`, 문구 `label` `primary`) 한 줄 + 오른쪽 닫기(×, 44pt 터치). 두 줄을 넘기지 않고 닫으면 그달엔 다시 안 뜬다.
 2. **홈 카드** (주인공 카드, 정보 4종까지): 오늘의 한 줄(`body` 16 · `textMuted` · 2줄 말줄임, 문구 종류와 무관하게 같은 모양) → `sp.md` → 숫자(`caption` 회색 라벨 "이번 달 절약 · 2026년 9월" + `display` primary) → 오늘(`sp.xs`, `caption` 회색 한 줄 "오늘 4,500원 · 2026년 9월 24일 (목)") → 목표(`sp.md`, 진행 바 + 아래 한 줄). 구분선 없음. 이 밖의 것(연속 기록일·누적·이모지·잔디)은 카드에 넣지 않는다 — `bottomExtra` 슬롯은 비워 둔다.
 3. **축하 배너** `RecordBanner` — 저장 직후 1.5초, 카드 바로 아래.
-4. **칩 행** — 한 줄, 칩 사이 `sp.sm`. 칩은 `StatChip`(보기 전용: `card` 배경 + `radius.pill` + 테두리 없음 + `minHeight: size.statChip`, 가로 `sp.smd`, 글자 `label` `text` + `numeric`). 순서: (M4) `🔥 5일째` → (M4) `누적 432,000원` → 이모지 적립 칩(`grow`, 남은 폭 전부, **1줄**, 넘치면 맨 앞 "+N", 저장하면 새 이모지가 오른쪽 끝에서 톡). 기록 0건이면 이모지 칩은 숨긴다. 선택 칩(테두리 1px)과 헷갈리지 않게 정보 칩엔 테두리·눌림 효과를 주지 않는다.
+4. **칩 행** — 한 줄, 칩 사이 `sp.sm`. 칩은 `StatChip`(보기 전용: `card` 배경 + `radius.pill` + 테두리 없음 + `minHeight: size.statChip`, 가로 `sp.smd`, 글자 `label` `text` + `numeric`). 순서: (M4) `🔥 5일째` → (M4) `누적 432,000원` → 이모지 적립 칩(`grow`, 남은 폭 전부, **1줄**, 넘치면 맨 앞 "+N", 저장하면 새 이모지가 오른쪽 끝에서 톡). `🔥` 칩은 0일이면, 누적 칩은 0원이면, 이모지 칩은 이번 달 0건이면 숨기고 셋 다 없으면 줄째로 숨긴다. 저장으로 연속 기록일이 늘면 `🔥` 칩만 1.15 spring. 선택 칩(테두리 1px)과 헷갈리지 않게 정보 칩엔 테두리·눌림 효과를 주지 않는다.
 5. **잔디 구획** — 보조 구획 안, 제목 없이 요일 헤더(`caption` 회색)만. 칸 = 폭 7등분 × `size.grassCell`(16) 높이, `radius.xs`, 간격 `sp.xs`.
 6. **날짜별 목록** → "이전 달 더 보기"(텍스트 버튼 규칙). 목록 아래 여백 = `size.fab + sp.lg + sp.md` (마지막 행이 FAB 에 안 가리게).
 

@@ -14,9 +14,12 @@ export function useEntryList() {
   const monthTotal = useEntryStore((s) => s.monthTotal);
   const hasMore = useEntryStore((s) => s.hasMore);
   const celebrateTick = useEntryStore((s) => s.celebrateTick);
+  const celebrateTier = useEntryStore((s) => s.celebrateTier);
+  const celebratedAt = useEntryStore((s) => s.celebratedAt);
   const lastRecord = useEntryStore((s) => s.lastRecord);
   const goalReachedTick = useEntryStore((s) => s.goalReachedTick);
   const lastGoalReached = useEntryStore((s) => s.lastGoalReached);
+  const lastMilestone = useEntryStore((s) => s.lastMilestone);
   const openHome = useEntryStore((s) => s.openHome);
   const loadMore = useEntryStore((s) => s.loadMore);
   const remove = useEntryStore((s) => s.remove);
@@ -52,10 +55,13 @@ export function useEntryList() {
     loadMore,
     remove,
     celebrateTick,
+    celebrateTier,
+    celebratedAt,
     lastRecord,
     monthlyGoal,
     goalReachedTick,
     lastGoalReached,
+    lastMilestone,
     categoryMap,
   };
 }

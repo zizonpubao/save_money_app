@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { Category, EntryInput } from '@/src/db';
+import type { Category, EntryInput, RecentTitle } from '@/src/db';
 import { today } from '@/src/utils/date';
 import { formatAmountInput, formatNumber, parseWon } from '@/src/utils/money';
 
@@ -57,6 +57,19 @@ export function useEntryForm(initial?: EntryInput | null) {
     });
   }, []);
 
+  /**
+   * (M4) 빠른 입력 칩. 항목명·카테고리·금액을 그 기록 값으로 채운다.
+   * 사용자가 칩을 직접 눌렀으므로 이미 입력한 값이 있어도 덮어쓴다. 날짜·메모는 그대로 둔다.
+   */
+  const applyRecent = useCallback((recent: RecentTitle) => {
+    setValues((v) => ({
+      ...v,
+      title: recent.title,
+      categoryId: recent.categoryId,
+      amountText: formatAmountInput(String(recent.amount)),
+    }));
+  }, []);
+
   const reset = useCallback((next?: EntryInput | null) => {
     setValues(fromInitial(next));
   }, []);
@@ -84,6 +97,7 @@ export function useEntryForm(initial?: EntryInput | null) {
     setDate,
     setMemo,
     selectCategory,
+    applyRecent,
     reset,
     toInput,
   };

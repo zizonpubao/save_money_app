@@ -22,6 +22,9 @@ export type ColorTokens = {
   grass2: string;
   grass3: string;
   grass4: string;
+  /** (M4) 컨페티 조각 색. primary·primarySoft 와 함께 4색으로 쓴다. 넓은 면적·글자에는 쓰지 않는다 */
+  good: string;
+  warn: string;
 };
 
 export const lightColors: ColorTokens = {
@@ -40,6 +43,8 @@ export const lightColors: ColorTokens = {
   grass2: '#8CAFF5',
   grass3: '#5D8FF1',
   grass4: '#2F6FED',
+  good: '#30A46C',
+  warn: '#F5A524',
 };
 
 export const darkColors: ColorTokens = {
@@ -53,11 +58,14 @@ export const darkColors: ColorTokens = {
   danger: '#F2555A',
   border: '#2A2E36',
   divider: '#2E333C',
-  grassFuture: '#22262D',
+  // (M4) 라이트처럼 미래 칸은 bg 와 같은 "움푹한" 칸으로. 기존 #22262D 는 기록 없는 날(divider)과 구분이 안 됐다
+  grassFuture: '#0F1115',
   grass1: '#2E436F',
   grass2: '#3D5C9A',
   grass3: '#4C74C4',
   grass4: '#5B8DEF',
+  good: '#4CC38A',
+  warn: '#FFB224',
 };
 
 /** 간격 토큰 (px) — 4의 배수만 */
@@ -165,6 +173,9 @@ export const size = {
   emojiCell: 24,
   /** (홈 폴리싱) 카드 아래 정보 칩(연속 기록일·누적·이모지 적립) 최소 높이 = emojiCell + sp.xs * 2 */
   statChip: 32,
+  /** (M4) 저장 컨페티 한 조각 (가로 × 세로 사각형) */
+  confettiWidth: 6,
+  confettiHeight: 10,
 } as const;
 
 export type Theme = {
