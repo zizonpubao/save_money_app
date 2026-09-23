@@ -24,6 +24,10 @@ model: sonnet
 - **로드맵 표**: 상태를 ✅ / 🔨(진행 중) / 예정 으로. PRD 의 단계 목록과 순서·이름을 맞춘다
 - **📱 화면 섹션**: `docs/img/` 에 파일이 있으면 "## ✨ 주요 기능" 바로 앞에 `## 📱 화면` 섹션을 만들고, 파일명으로 어떤 화면인지 추정해 2~3열 표로 배치한다 (`<img src="docs/img/home.png" width="240">` 형식, GIF 도 동일). 파일이 없으면 섹션을 만들지 않는다. 파일명 규칙은 `docs/img/README.md` 에 적어 둔다 (없으면 만든다): `home.png`, `entry-modal.png`, `records-month.png`, `records-year.png`, `settings.png`, `save-effect.gif`, `goal-reached.gif` 등
 
+## 문체
+문장을 쓰거나 고칠 때 `docs/STYLE-KO.md` 를 따른다.
+표 안은 명사형, 본문은 합니다체, 번역투 치환 표 준수.
+
 ## 하지 말 것
 - 제품 코드, PRD, DESIGN.md 수정
 - README 구조 변경, 문단 톤 변경 (한국어, 짧은 문장, 과장 없음)
