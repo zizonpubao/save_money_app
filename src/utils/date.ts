@@ -23,11 +23,37 @@ export function formatKoDate(date: string): string {
   return d.format('YYYY년 M월 D일 (dd)');
 }
 
+/** '2026-09-23' → '2026-09' */
+export function toMonth(date: string): string {
+  return date.slice(0, MONTH_FORMAT.length);
+}
+
 /** '2026-09' → '2026년 9월' */
 export function formatKoMonth(month: string): string {
   const d = dayjs(`${month}-01`, DATE_FORMAT);
   if (!d.isValid()) return month;
   return d.format('YYYY년 M월');
+}
+
+/** 올해를 'YYYY'로 돌려준다. */
+export function thisYear(): string {
+  return dayjs().format('YYYY');
+}
+
+/** '2026' → { start: '2026-01-01', end: '2026-12-31' } */
+export function yearRange(year: string): { start: string; end: string } {
+  return { start: `${year}-01-01`, end: `${year}-12-31` };
+}
+
+/** 'YYYY-MM-DD' → Date (로컬 자정). DateTimePicker 에 넘길 때 사용. */
+export function toDate(date: string): Date {
+  const d = dayjs(date, DATE_FORMAT);
+  return d.isValid() ? d.toDate() : new Date();
+}
+
+/** Date → 'YYYY-MM-DD' (로컬 기준) */
+export function fromDate(d: Date): string {
+  return dayjs(d).format(DATE_FORMAT);
 }
 
 /** '2026-09' → { start: '2026-09-01', end: '2026-09-30' } */

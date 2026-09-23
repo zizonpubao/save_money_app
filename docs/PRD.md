@@ -64,6 +64,7 @@ CREATE TABLE schema_version (version INTEGER NOT NULL);
 - 카테고리 관리: 추가/이름·이모지 수정/순서 변경/삭제(기본 카테고리는 삭제 불가, 사용 중이면 경고)
 - **백업**: 전체 데이터를 JSON 파일로 내보내기 → `expo-sharing` 으로 공유 시트(파일 앱, 카톡 등)
 - **복원**: `expo-document-picker` 로 JSON 선택 → 병합 or 덮어쓰기 선택
+  - 복원 데이터는 `addEntry` 와 같은 검증을 통과해야 함 (금액 1 이상 정수, 항목명 비어있지 않음) + `date` 가 `YYYY-MM-DD` 형식인지 `dayjs(date, DATE_FORMAT, true).isValid()` 로 검사. 하나라도 틀리면 해당 행 건너뛰고 건수 보고
 - CSV 내보내기 (엑셀에서 열기용, UTF-8 BOM 포함)
 - 앱 정보, 데이터 전체 삭제(2단계 확인)
 

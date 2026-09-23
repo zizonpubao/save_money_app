@@ -12,6 +12,15 @@ export function formatNumber(amount: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/**
+ * 금액 입력 필드용: 타이핑 중인 문자열을 콤마 형식으로 다시 만든다.
+ * 숫자가 없거나 0이면 빈 문자열 (placeholder 가 보이도록).
+ */
+export function formatAmountInput(text: string): string {
+  const n = parseWon(text);
+  return n === 0 ? '' : formatNumber(n);
+}
+
 /** '4,500' / '4500원' / ' 4 500 ' 같은 입력을 정수 4500으로 바꾼다. 숫자가 없으면 0. */
 export function parseWon(input: string): number {
   const digits = input.replace(/[^\d]/g, '');

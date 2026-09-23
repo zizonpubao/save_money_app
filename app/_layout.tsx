@@ -51,13 +51,26 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   return (
     <GestureHandlerRootView style={styles.root}>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="entry/[id]"
+            options={{
+              title: '기록 수정',
+              headerBackButtonDisplayMode: 'minimal',
+              // 탭 레이아웃과 같은 헤더 색
+              headerStyle: { backgroundColor: colors.card },
+              headerTintColor: colors.primary,
+              headerTitleStyle: { color: colors.text },
+              headerShadowVisible: false,
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          />
         </Stack>
         <StatusBar style={isDark ? 'light' : 'dark'} />
       </ThemeProvider>

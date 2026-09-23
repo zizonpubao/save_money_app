@@ -6,6 +6,10 @@ export type ColorTokens = {
   text: string;
   textMuted: string;
   primary: string;
+  /** primary 배경 위에 올리는 글자색 */
+  onPrimary: string;
+  /** primary 를 옅게 깐 배경 (선택 강조, 카드 포인트) */
+  primarySoft: string;
   danger: string;
   border: string;
 };
@@ -16,6 +20,8 @@ export const lightColors: ColorTokens = {
   text: '#111418',
   textMuted: '#6B7280',
   primary: '#2F6FED',
+  onPrimary: '#FFFFFF',
+  primarySoft: '#E8EFFD',
   danger: '#E5484D',
   border: '#E5E7EB',
 };
@@ -26,6 +32,8 @@ export const darkColors: ColorTokens = {
   text: '#F3F4F6',
   textMuted: '#9CA3AF',
   primary: '#5B8DEF',
+  onPrimary: '#FFFFFF',
+  primarySoft: '#1F2A44',
   danger: '#F2555A',
   border: '#2A2E36',
 };

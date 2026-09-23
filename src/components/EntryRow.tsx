@@ -1,0 +1,86 @@
+import { useRef } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import ReanimatedSwipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable';
+
+import type { Entry } from '@/src/db';
+import { useTheme } from '@/src/theme';
+import { formatWon } from '@/src/utils/money';
+
+type Props = {
+  entry: Entry;
+  emoji: string;
+  onPress: (entry: Entry) => void;
+  onDelete: (entry: Entry) => void;
+  /** 섹션의 마지막 행이면 하단 구분선을 뺀다 */
+  isLast?: boolean;
+};
+
+const ACTION_WIDTH = 88;
+
+/** 목록 한 줄. 탭 → 수정, 왼쪽 스와이프 → 삭제(확인 알림). */
+export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Props) {
+  const { colors, fs, sp } = useTheme();
+  const swipeRef = useRef<SwipeableMethods>(null);
+
+  const confirmDelete = () => {
+    Alert.alert('기록 삭제', `"${entry.title}" ${formatWon(entry.amount)} 기록을 삭제할까요?`, [
+      { text: '취소', style: 'cancel', onPress: () => swipeRef.current?.close() },
+      { text: '삭제', style: 'destructive', onPress: () => onDelete(entry) },
+    ]);
+  };
+
+  const renderRightActions = () => (
+    <Pressable
+      onPress={confirmDelete}
+      style={[styles.action, { backgroundColor: colors.danger, width: ACTION_WIDTH }]}>
+      <Text style={[styles.actionText, { color: colors.onPrimary, fontSize: fs.md }]}>삭제</Text>
+    </Pressable>
+  );
+
+  return (
+    <ReanimatedSwipeable
+      ref={swipeRef}
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      renderRightActions={renderRightActions}>
+      <Pressable
+        onPress={() => onPress(entry)}
+        style={({ pressed }) => [
+          styles.row,
+          {
+            backgroundColor: pressed ? colors.bg : colors.card,
+            paddingHorizontal: sp.md,
+            paddingVertical: sp.sm + sp.xs,
+            borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+            borderBottomColor: colors.border,
+          },
+        ]}>
+        <Text style={{ fontSize: fs.lg, marginRight: sp.sm + sp.xs }}>{emoji}</Text>
+        <View style={styles.body}>
+          <Text numberOfLines={1} style={{ color: colors.text, fontSize: fs.md }}>
+            {entry.title}
+          </Text>
+          {entry.memo ? (
+            <Text numberOfLines={1} style={{ color: colors.textMuted, fontSize: fs.xs }}>
+              {entry.memo}
+            </Text>
+          ) : null}
+        </View>
+        <Text style={[styles.amount, { color: colors.text, fontSize: fs.md }]}>
+          {formatWon(entry.amount)}
+        </Text>
+      </Pressable>
+    </ReanimatedSwipeable>
+  );
+}
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center' },
+  body: { flex: 1, gap: 2 },
+  amount: { fontWeight: '600', fontVariant: ['tabular-nums'] },
+  action: { justifyContent: 'center', alignItems: 'center' },
+  actionText: { fontWeight: '600' },
+});

@@ -19,6 +19,15 @@ export type Entry = {
   updatedAt: string;
 };
 
+/** 기록 신규 저장/수정에 쓰는 입력형 (id, 타임스탬프 없음) */
+export type EntryInput = {
+  date: string; // 'YYYY-MM-DD'
+  title: string;
+  amount: number; // 원 단위 정수, 0 초과
+  categoryId: number | null;
+  memo: string | null;
+};
+
 /** SQLite 에서 읽어온 원본 행 (snake_case) */
 export type CategoryRow = {
   id: number;

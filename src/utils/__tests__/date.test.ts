@@ -3,9 +3,13 @@ import {
   daysInMonth,
   formatKoDate,
   formatKoMonth,
+  fromDate,
   monthRange,
   thisMonth,
+  thisYear,
+  toDate,
   today,
+  yearRange,
 } from '../date';
 
 describe('today / thisMonth', () => {
@@ -74,5 +78,30 @@ describe('daysInMonth', () => {
     expect(daysInMonth('2026-02')).toBe(28);
     expect(daysInMonth('2026-09')).toBe(30);
     expect(daysInMonth('2026-10')).toBe(31);
+  });
+});
+
+describe('thisYear / yearRange', () => {
+  it('thisYear 는 today 의 앞 4자리', () => {
+    expect(thisYear()).toBe(today().slice(0, 4));
+  });
+
+  it('yearRange 는 1월 1일 ~ 12월 31일', () => {
+    expect(yearRange('2026')).toEqual({ start: '2026-01-01', end: '2026-12-31' });
+  });
+});
+
+describe('toDate / fromDate', () => {
+  it('왕복 변환이 된다', () => {
+    expect(fromDate(toDate('2026-09-23'))).toBe('2026-09-23');
+    expect(fromDate(toDate('2028-02-29'))).toBe('2028-02-29');
+  });
+
+  it('Date 는 로컬 자정이다', () => {
+    const d = toDate('2026-09-23');
+    expect(d.getFullYear()).toBe(2026);
+    expect(d.getMonth()).toBe(8);
+    expect(d.getDate()).toBe(23);
+    expect(d.getHours()).toBe(0);
   });
 });
