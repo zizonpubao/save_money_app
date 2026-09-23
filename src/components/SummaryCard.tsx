@@ -9,7 +9,7 @@ import Animated, {
 
 import { AnimatedWon } from '@/src/components/AnimatedWon';
 import { useTheme } from '@/src/theme';
-import { formatKoDate, today } from '@/src/utils/date';
+import { formatKoDate, formatKoMonth, thisMonth, today } from '@/src/utils/date';
 import { formatWon } from '@/src/utils/money';
 
 type Props = {
@@ -19,8 +19,8 @@ type Props = {
   celebrateTick: number;
 };
 
-/** 홈 상단 카드: 오늘 날짜, 오늘 절약액(크게), 이번 달 누적(작게) */
-export function TodayCard({ todayTotal, monthTotal, celebrateTick }: Props) {
+/** 홈 상단 카드: 이번 달 절약액(크게), 오늘 절약액(작게) */
+export function SummaryCard({ todayTotal, monthTotal, celebrateTick }: Props) {
   const { colors, fs, sp, radius } = useTheme();
   const scale = useSharedValue(1);
 
@@ -41,16 +41,18 @@ export function TodayCard({ todayTotal, monthTotal, celebrateTick }: Props) {
         animatedStyle,
         { backgroundColor: colors.card, borderRadius: radius.lg, padding: sp.lg },
       ]}>
-      <Text style={{ color: colors.textMuted, fontSize: fs.sm }}>{formatKoDate(today())}</Text>
+      <Text style={{ color: colors.textMuted, fontSize: fs.sm }}>
+        {formatKoMonth(thisMonth())}
+      </Text>
       <Text style={[styles.label, { color: colors.text, fontSize: fs.md, marginTop: sp.sm }]}>
-        오늘 절약액
+        이번 달 절약
       </Text>
       <AnimatedWon
-        value={todayTotal}
+        value={monthTotal}
         style={[styles.amount, { color: colors.primary, fontSize: fs.xxl, marginTop: sp.xs }]}
       />
       <Text style={{ color: colors.textMuted, fontSize: fs.sm, marginTop: sp.sm }}>
-        이번 달 누적 {formatWon(monthTotal)}
+        오늘 {formatWon(todayTotal)} · {formatKoDate(today())}
       </Text>
     </Animated.View>
   );

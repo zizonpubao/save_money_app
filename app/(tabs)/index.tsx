@@ -8,7 +8,7 @@ import { EntrySectionHeader } from '@/src/components/EntrySectionHeader';
 import { Fab } from '@/src/components/Fab';
 import { RangeToggle } from '@/src/components/RangeToggle';
 import { Screen } from '@/src/components/Screen';
-import { TodayCard } from '@/src/components/TodayCard';
+import { SummaryCard } from '@/src/components/SummaryCard';
 import type { Entry, EntryInput } from '@/src/db';
 import { useEntryList } from '@/src/features/useEntryList';
 import { useCategoryStore } from '@/src/store/categoryStore';
@@ -58,7 +58,7 @@ export default function RecordsScreen() {
         contentContainerStyle={{ padding: sp.md, paddingBottom: sp.xl * 3 }}
         ListHeaderComponent={
           <View style={{ gap: sp.md, marginBottom: sp.sm }}>
-            <TodayCard
+            <SummaryCard
               todayTotal={list.todayTotal}
               monthTotal={list.monthTotal}
               celebrateTick={list.celebrateTick}

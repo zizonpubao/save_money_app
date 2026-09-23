@@ -5,7 +5,7 @@ type Migration = {
   up: (db: SQLiteDatabase) => void;
 };
 
-/** 기본 카테고리 8개. is_default=1 이라 삭제 불가. */
+/** v1 시드용 기본 카테고리 8개. is_default=1 이라 삭제 불가. v1 마이그레이션이 참조하므로 수정 금지. */
 export const DEFAULT_CATEGORIES: readonly { name: string; emoji: string }[] = [
   { name: '커피', emoji: '☕' },
   { name: '배달', emoji: '🛵' },
@@ -55,6 +55,18 @@ const migrations: Migration[] = [
       } finally {
         insert.finalizeSync();
       }
+    },
+  },
+  {
+    // 기본 카테고리에 '밥값' 추가. 커피(0) 다음, 배달 앞에 끼워 넣기 위해
+    // sort_order 1 이상을 한 칸씩 밀고 빈 자리에 삽입한다. 기존 기록은 건드리지 않는다.
+    version: 2,
+    up: (db) => {
+      db.execSync('UPDATE categories SET sort_order = sort_order + 1 WHERE sort_order >= 1');
+      db.runSync(
+        'INSERT OR IGNORE INTO categories (name, emoji, sort_order, is_default) VALUES (?, ?, ?, ?)',
+        ['밥값', '🍚', 1, 1],
+      );
     },
   },
 ];
