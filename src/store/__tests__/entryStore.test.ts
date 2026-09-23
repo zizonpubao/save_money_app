@@ -1,5 +1,5 @@
 import { addEntry, initDatabase, resetDatabaseConnection, type EntryInput } from '@/src/db';
-import { useEntryStore } from '@/src/store/entryStore';
+import { computeRange, useEntryStore } from '@/src/store/entryStore';
 import { addMonths, monthRange, thisMonth, thisYear, today } from '@/src/utils/date';
 
 const THIS_MONTH = thisMonth();
@@ -22,6 +22,30 @@ function firstOf(month: string): string {
   return monthRange(month).start;
 }
 
+function lastOf(month: string): string {
+  return monthRange(month).end;
+}
+
+describe('computeRange', () => {
+  it('month 모드는 oldestMonth 1일부터 기준 달 말일까지다', () => {
+    expect(computeRange('month', '2026-07', '2026-09')).toEqual({
+      start: '2026-07-01',
+      end: '2026-09-30',
+    });
+  });
+
+  it('year 모드는 기준 달이 속한 해 전체다', () => {
+    expect(computeRange('year', '2026-07', '2026-09')).toEqual({
+      start: '2026-01-01',
+      end: '2026-12-31',
+    });
+  });
+
+  it('기준 달을 생략하면 이번 달을 쓴다', () => {
+    expect(computeRange('month', THIS_MONTH)).toEqual(monthRange(THIS_MONTH));
+  });
+});
+
 describe('entryStore', () => {
   beforeEach(() => {
     resetDatabaseConnection();
@@ -34,6 +58,7 @@ describe('entryStore', () => {
       monthTotal: 0,
       hasMore: false,
       celebrateTick: 0,
+      lastRecord: null,
     });
   });
 
@@ -100,6 +125,13 @@ describe('entryStore', () => {
       expect(useEntryStore.getState().monthTotal).toBe(9000);
     });
 
+    it('update 는 celebrateTick 을 올리지 않는다 (수정은 새로 절약한 게 아님)', () => {
+      const created = useEntryStore.getState().add(input({ amount: 4500 }));
+      const tick = useEntryStore.getState().celebrateTick;
+      useEntryStore.getState().update(created.id, input({ amount: 9000 }));
+      expect(useEntryStore.getState().celebrateTick).toBe(tick);
+    });
+
     it('remove 하면 목록에서 빠지고 합계가 줄어든다', () => {
       const created = useEntryStore.getState().add(input({ amount: 4500 }));
       useEntryStore.getState().add(input({ amount: 3000 }));
@@ -113,6 +145,74 @@ describe('entryStore', () => {
       const tick = useEntryStore.getState().celebrateTick;
       useEntryStore.getState().remove(created.id);
       expect(useEntryStore.getState().celebrateTick).toBe(tick);
+    });
+  });
+
+  describe('개인 최고 갱신 (lastRecord)', () => {
+    /** 지난달에 하루 10,000원짜리 날을 count 개 만든다 (비교 대상 만들기) */
+    function seedLastMonth(days: string[]): void {
+      days.forEach((date) => addEntry(input({ date, amount: 10000 })));
+    }
+
+    it('첫 기록은 비교 대상이 없어 최고로 치지 않는다', () => {
+      useEntryStore.getState().add(input({ amount: 999999 }));
+      expect(useEntryStore.getState().lastRecord).toBeNull();
+    });
+
+    it('역대 하루 최고를 넘기면 day 다', () => {
+      // 지난달 두 날 = 월 합계 20,000 / 하루 최고 10,000
+      seedLastMonth([firstOf(LAST_MONTH), lastOf(LAST_MONTH)]);
+      useEntryStore.getState().add(input({ date: today(), amount: 15000 }));
+      expect(useEntryStore.getState().lastRecord).toBe('day');
+    });
+
+    it('하루 최고와 동점이면 갱신이 아니다', () => {
+      seedLastMonth([firstOf(LAST_MONTH), lastOf(LAST_MONTH)]);
+      useEntryStore.getState().add(input({ date: today(), amount: 10000 }));
+      expect(useEntryStore.getState().lastRecord).toBeNull();
+    });
+
+    it('하루와 한 달을 동시에 넘기면 월이 우선이다', () => {
+      // 지난달 한 날 = 월 합계 10,000 / 하루 최고 10,000
+      seedLastMonth([firstOf(LAST_MONTH)]);
+      useEntryStore.getState().add(input({ date: today(), amount: 20000 }));
+      expect(useEntryStore.getState().lastRecord).toBe('month');
+    });
+
+    it('하루 최고를 이미 넘긴 뒤 같은 날 또 저장하면 다시 뜨지 않는다', () => {
+      seedLastMonth([firstOf(LAST_MONTH), lastOf(LAST_MONTH)]);
+      useEntryStore.getState().add(input({ date: today(), amount: 15000 }));
+      expect(useEntryStore.getState().lastRecord).toBe('day');
+
+      useEntryStore.getState().add(input({ date: today(), amount: 1000 }));
+      expect(useEntryStore.getState().lastRecord).toBeNull();
+    });
+
+    it('월 최고를 이미 넘긴 뒤 또 저장하면 다시 뜨지 않는다', () => {
+      seedLastMonth([firstOf(LAST_MONTH)]);
+      useEntryStore.getState().add(input({ date: today(), amount: 20000 }));
+      expect(useEntryStore.getState().lastRecord).toBe('month');
+
+      useEntryStore.getState().add(input({ date: today(), amount: 1000 }));
+      expect(useEntryStore.getState().lastRecord).toBeNull();
+    });
+
+    it('과거 날짜로 넣은 기록은 축하하지 않는다', () => {
+      seedLastMonth([firstOf(LAST_MONTH), lastOf(LAST_MONTH)]);
+      useEntryStore.getState().add(input({ date: firstOf(TWO_MONTHS_AGO), amount: 999999 }));
+      expect(useEntryStore.getState().lastRecord).toBeNull();
+    });
+
+    it('수정·삭제는 lastRecord 를 지운다', () => {
+      seedLastMonth([firstOf(LAST_MONTH)]);
+      const created = useEntryStore.getState().add(input({ date: today(), amount: 20000 }));
+      expect(useEntryStore.getState().lastRecord).toBe('month');
+
+      useEntryStore.getState().update(created.id, input({ date: today(), amount: 30000 }));
+      expect(useEntryStore.getState().lastRecord).toBeNull();
+
+      useEntryStore.getState().remove(created.id);
+      expect(useEntryStore.getState().lastRecord).toBeNull();
     });
   });
 

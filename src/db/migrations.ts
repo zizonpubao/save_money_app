@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-type Migration = {
+export type Migration = {
   version: number;
   up: (db: SQLiteDatabase) => void;
 };
@@ -17,7 +17,8 @@ export const DEFAULT_CATEGORIES: readonly { name: string; emoji: string }[] = [
   { name: '기타', emoji: '📦' },
 ];
 
-const migrations: Migration[] = [
+/** 버전 오름차순. 중간에 끼워 넣지 말고 항상 뒤에 추가한다. */
+export const migrations: readonly Migration[] = [
   {
     version: 1,
     up: (db) => {
@@ -82,13 +83,14 @@ function getCurrentVersion(db: SQLiteDatabase): number {
 }
 
 /**
- * schema_version 테이블 기준으로 아직 적용 안 된 마이그레이션을 순서대로 실행한다.
+ * schema_version 테이블 기준으로 target 이하의 아직 적용 안 된 마이그레이션만 순서대로 실행한다.
  * 각 마이그레이션은 트랜잭션 하나로 묶여서 중간 실패 시 롤백된다.
+ * (업그레이드 경로 테스트에서 "v1 까지만 올린 DB" 를 만들 때 쓴다.)
  */
-export function runMigrations(db: SQLiteDatabase): number {
+export function runMigrationsUpTo(db: SQLiteDatabase, target: number): number {
   let current = getCurrentVersion(db);
   for (const m of migrations) {
-    if (m.version <= current) continue;
+    if (m.version <= current || m.version > target) continue;
     db.withTransactionSync(() => {
       m.up(db);
       db.runSync('INSERT INTO schema_version (version) VALUES (?)', [m.version]);
@@ -96,4 +98,9 @@ export function runMigrations(db: SQLiteDatabase): number {
     current = m.version;
   }
   return current;
+}
+
+/** 최신 버전까지 마이그레이션한다. */
+export function runMigrations(db: SQLiteDatabase): number {
+  return runMigrationsUpTo(db, LATEST_SCHEMA_VERSION);
 }

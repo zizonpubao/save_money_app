@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-import { getDb, initDatabase, resetDatabaseConnection } from '@/src/db';
-import { DEFAULT_CATEGORIES, runMigrations } from '@/src/db/migrations';
+import { getDb, initDatabase, openDatabaseAt, resetDatabaseConnection } from '@/src/db';
+import { DEFAULT_CATEGORIES, runMigrations, runMigrationsUpTo } from '@/src/db/migrations';
 
 /** 전체 기본 카테고리(v2 이후) 이름 순서 */
 const V2_CATEGORY_NAMES = [
@@ -175,6 +175,29 @@ describe('마이그레이션 실행', () => {
   it('initDatabase 를 두 번 불러도 안전하다', () => {
     initDatabase();
     initDatabase();
+    expect(categoryNames(getDb())).toEqual(V2_CATEGORY_NAMES);
+  });
+
+  it('runMigrationsUpTo(db, 1) 은 v1 까지만 적용한다', () => {
+    const db = getDb();
+    expect(runMigrationsUpTo(db, 1)).toBe(1);
+    expect(currentVersion(db)).toBe(1);
+    expect(categoryNames(db)).toHaveLength(8);
+
+    // 이어서 최신까지 올리면 v2 가 마저 적용된다
+    expect(runMigrations(db)).toBe(2);
+    expect(categoryNames(db)).toEqual(V2_CATEGORY_NAMES);
+  });
+
+  it('openDatabaseAt 은 별도 연결을 열고 기본 연결(getDb)은 그대로 둔다', () => {
+    initDatabase();
+    const main = getDb();
+    const other = openDatabaseAt('savelog-restore.db');
+    expect(other).not.toBe(main);
+    other.closeSync();
+
+    // 다른 파일을 열고 닫아도 기본 연결은 갈아끼워지지 않는다
+    expect(getDb()).toBe(main);
     expect(categoryNames(getDb())).toEqual(V2_CATEGORY_NAMES);
   });
 });

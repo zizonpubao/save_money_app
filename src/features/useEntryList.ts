@@ -14,6 +14,7 @@ export function useEntryList() {
   const monthTotal = useEntryStore((s) => s.monthTotal);
   const hasMore = useEntryStore((s) => s.hasMore);
   const celebrateTick = useEntryStore((s) => s.celebrateTick);
+  const lastRecord = useEntryStore((s) => s.lastRecord);
   const reload = useEntryStore((s) => s.reload);
   const setMode = useEntryStore((s) => s.setMode);
   const loadMore = useEntryStore((s) => s.loadMore);
@@ -49,6 +50,7 @@ export function useEntryList() {
     loadMore,
     remove,
     celebrateTick,
+    lastRecord,
     categoryMap,
   };
 }

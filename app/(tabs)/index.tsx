@@ -7,6 +7,7 @@ import { EntryRow } from '@/src/components/EntryRow';
 import { EntrySectionHeader } from '@/src/components/EntrySectionHeader';
 import { Fab } from '@/src/components/Fab';
 import { RangeToggle } from '@/src/components/RangeToggle';
+import { RecordBanner } from '@/src/components/RecordBanner';
 import { Screen } from '@/src/components/Screen';
 import { SummaryCard } from '@/src/components/SummaryCard';
 import type { Entry, EntryInput } from '@/src/db';
@@ -63,6 +64,7 @@ export default function RecordsScreen() {
               monthTotal={list.monthTotal}
               celebrateTick={list.celebrateTick}
             />
+            <RecordBanner best={list.lastRecord} celebrateTick={list.celebrateTick} />
             <RangeToggle mode={list.mode} onChange={list.setMode} />
           </View>
         }

@@ -1,3 +1,10 @@
-export { initDatabase, getDb, resetDatabaseConnection } from './database';
+export { initDatabase, getDb, openDatabaseAt, resetDatabaseConnection } from './database';
 export * from './queries';
-export type { Category, Entry, EntryInput } from './types';
+export type {
+  Category,
+  CategoryTotal,
+  DailyTotal,
+  Entry,
+  EntryInput,
+  MonthStats,
+} from './types';

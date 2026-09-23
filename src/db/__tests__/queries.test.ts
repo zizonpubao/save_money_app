@@ -2,17 +2,24 @@ import {
   addEntry,
   deleteEntry,
   getAllCategories,
+  getCategoryTotals,
+  getDailyTotals,
   getDb,
   getEarliestEntryDate,
   getEntriesBetween,
   getEntryById,
+  getMaxDailyTotal,
+  getMaxMonthlyTotal,
+  getMonthStats,
   getSumBetween,
   getSumByDate,
   initDatabase,
+  openDatabaseAt,
   resetDatabaseConnection,
   updateEntry,
   type EntryInput,
 } from '@/src/db';
+import { runMigrations } from '@/src/db/migrations';
 
 function input(over: Partial<EntryInput> = {}): EntryInput {
   return {
@@ -201,6 +208,97 @@ describe('queries', () => {
     });
   });
 
+  describe('getMonthStats', () => {
+    it('그 달의 합계와 건수를 함께 돌려준다', () => {
+      addEntry(input({ date: '2026-09-01', amount: 4500 }));
+      addEntry(input({ date: '2026-09-30', amount: 5500 }));
+      addEntry(input({ date: '2026-10-01', amount: 100000 }));
+      expect(getMonthStats('2026-09')).toEqual({ total: 10000, count: 2 });
+    });
+
+    it('기록이 없는 달은 0원 0건이다', () => {
+      addEntry(input({ date: '2026-09-15' }));
+      expect(getMonthStats('2026-08')).toEqual({ total: 0, count: 0 });
+    });
+  });
+
+  describe('getDailyTotals', () => {
+    it('같은 날 기록을 합쳐 날짜 오름차순으로 돌려준다', () => {
+      addEntry(input({ date: '2026-09-15', amount: 4500 }));
+      addEntry(input({ date: '2026-09-15', amount: 3000 }));
+      addEntry(input({ date: '2026-09-02', amount: 1000 }));
+      expect(getDailyTotals('2026-09')).toEqual([
+        { date: '2026-09-02', total: 1000 },
+        { date: '2026-09-15', total: 7500 },
+      ]);
+    });
+
+    it('다른 달 기록은 섞이지 않고, 기록 없는 달은 빈 배열이다', () => {
+      addEntry(input({ date: '2026-08-31', amount: 1000 }));
+      addEntry(input({ date: '2026-10-01', amount: 2000 }));
+      expect(getDailyTotals('2026-09')).toEqual([]);
+    });
+  });
+
+  describe('getCategoryTotals', () => {
+    it('카테고리별로 합쳐 많은 순으로 돌려준다', () => {
+      const coffee = categoryIdOf('커피');
+      const taxi = categoryIdOf('택시');
+      addEntry(input({ date: '2026-09-01', amount: 4500, categoryId: coffee }));
+      addEntry(input({ date: '2026-09-02', amount: 4500, categoryId: coffee }));
+      addEntry(input({ date: '2026-09-03', amount: 12000, categoryId: taxi }));
+      expect(getCategoryTotals('2026-09')).toEqual([
+        { categoryId: taxi, total: 12000 },
+        { categoryId: coffee, total: 9000 },
+      ]);
+    });
+
+    it('카테고리 없는 기록은 categoryId 가 null 인 한 줄로 묶인다', () => {
+      addEntry(input({ date: '2026-09-01', amount: 1000, categoryId: null }));
+      addEntry(input({ date: '2026-09-02', amount: 2000, categoryId: null }));
+      expect(getCategoryTotals('2026-09')).toEqual([{ categoryId: null, total: 3000 }]);
+    });
+  });
+
+  describe('getMaxDailyTotal / getMaxMonthlyTotal', () => {
+    it('기록이 없으면 둘 다 0이다', () => {
+      expect(getMaxDailyTotal()).toBe(0);
+      expect(getMaxMonthlyTotal()).toBe(0);
+    });
+
+    it('인자 없이 부르면 모든 날·모든 달을 센다', () => {
+      addEntry(input({ date: '2026-09-01', amount: 4500 }));
+      addEntry(input({ date: '2026-09-01', amount: 3000 })); // 같은 날 = 7500
+      addEntry(input({ date: '2026-10-05', amount: 9000 }));
+      expect(getMaxDailyTotal()).toBe(9000);
+      expect(getMaxMonthlyTotal()).toBe(9000);
+    });
+
+    it('excludeDate 를 주면 그 날짜만 빼고 최고를 센다', () => {
+      addEntry(input({ date: '2026-09-01', amount: 4500 }));
+      addEntry(input({ date: '2026-09-10', amount: 20000 }));
+      expect(getMaxDailyTotal('2026-09-10')).toBe(4500);
+    });
+
+    it('비교할 다른 날이 없으면 excludeDate 로 0이 된다 (첫 기록)', () => {
+      addEntry(input({ date: '2026-09-01', amount: 4500 }));
+      expect(getMaxDailyTotal('2026-09-01')).toBe(0);
+    });
+
+    it('excludeMonth 를 주면 그 달만 빼고 월 최고를 센다', () => {
+      addEntry(input({ date: '2026-08-01', amount: 4500 }));
+      addEntry(input({ date: '2026-09-01', amount: 30000 }));
+      addEntry(input({ date: '2026-09-02', amount: 30000 }));
+      expect(getMaxMonthlyTotal('2026-09')).toBe(4500);
+      expect(getMaxMonthlyTotal('2026-08')).toBe(60000);
+    });
+
+    it('비교할 다른 달이 없으면 excludeMonth 로 0이 된다 (첫 달)', () => {
+      addEntry(input({ date: '2026-09-01', amount: 4500 }));
+      expect(getMaxMonthlyTotal('2026-09')).toBe(0);
+    });
+  });
+
   describe('카테고리 삭제', () => {
     it('카테고리를 지우면 그 카테고리를 쓰던 기록의 categoryId 가 NULL 이 된다', () => {
       const coffee = categoryIdOf('커피');
@@ -221,6 +319,17 @@ describe('queries', () => {
       const created = addEntry(input({ categoryId: coffee }));
       getDb().runSync('DELETE FROM categories WHERE id = ?', [categoryIdOf('택시')]);
       expect(getEntryById(created.id)?.categoryId).toBe(coffee);
+    });
+
+    it('다른 DB 를 따로 열고 닫아도, 기본 연결을 다시 열어도 foreign_keys PRAGMA 가 걸려 있다', () => {
+      openDatabaseAt('savelog-restore.db').closeSync(); // 기본 연결은 건드리지 않는다
+      resetDatabaseConnection();
+      runMigrations(getDb()); // 다시 열면 PRAGMA 도 함께 걸려야 한다
+
+      const coffee = categoryIdOf('커피');
+      const created = addEntry(input({ categoryId: coffee }));
+      getDb().runSync('DELETE FROM categories WHERE id = ?', [coffee]);
+      expect(getEntryById(created.id)?.categoryId).toBeNull();
     });
   });
 });

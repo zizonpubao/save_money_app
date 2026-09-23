@@ -1,4 +1,4 @@
-import { nowIso } from '@/src/utils/date';
+import { monthRange, nowIso } from '@/src/utils/date';
 
 import { getDb } from './database';
 import {
@@ -6,9 +6,12 @@ import {
   toEntry,
   type Category,
   type CategoryRow,
+  type CategoryTotal,
+  type DailyTotal,
   type Entry,
   type EntryInput,
   type EntryRow,
+  type MonthStats,
 } from './types';
 
 const ENTRY_COLUMNS =
@@ -69,10 +72,70 @@ export function getEarliestEntryDate(): string | null {
   return row?.date ?? null;
 }
 
+// ---------- 월별 집계 (M3) ----------
+// 합계는 모두 SQL SUM/GROUP BY 로 낸다. 화면에서 기록을 순회하며 더하지 않는다.
+
+/** 그 달의 날짜별 합계. 기록이 있는 날만 날짜 오름차순으로 돌려준다. */
+export function getDailyTotals(month: string): DailyTotal[] {
+  const { start, end } = monthRange(month);
+  return getDb().getAllSync<DailyTotal>(
+    'SELECT date, SUM(amount) AS total FROM entries WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date ASC',
+    [start, end],
+  );
+}
+
+/** 그 달의 카테고리별 합계. 많은 순. 미분류(NULL)도 한 줄로 들어온다. */
+export function getCategoryTotals(month: string): CategoryTotal[] {
+  const { start, end } = monthRange(month);
+  const rows = getDb().getAllSync<{ category_id: number | null; total: number }>(
+    'SELECT category_id, SUM(amount) AS total FROM entries WHERE date BETWEEN ? AND ? GROUP BY category_id ORDER BY total DESC',
+    [start, end],
+  );
+  return rows.map((r) => ({ categoryId: r.category_id, total: r.total }));
+}
+
+/** 그 달의 총 절약액과 기록 건수. 기록이 없으면 { total: 0, count: 0 }. */
+export function getMonthStats(month: string): MonthStats {
+  const { start, end } = monthRange(month);
+  const row = getDb().getFirstSync<{ total: number | null; count: number | null }>(
+    'SELECT SUM(amount) AS total, COUNT(*) AS count FROM entries WHERE date BETWEEN ? AND ?',
+    [start, end],
+  );
+  return { total: row?.total ?? 0, count: row?.count ?? 0 };
+}
+
+/**
+ * 역대 하루 합계 중 최댓값. excludeDate 를 주면 그 날짜는 빼고 센다(개인 최고 판정용).
+ * 비교 대상이 하나도 없으면 0. 빈 문자열은 어떤 날짜와도 같지 않아 "제외 없음" 으로 쓴다.
+ */
+export function getMaxDailyTotal(excludeDate?: string): number {
+  const row = getDb().getFirstSync<{ best: number | null }>(
+    `SELECT MAX(total) AS best FROM (
+       SELECT SUM(amount) AS total FROM entries WHERE date <> ? GROUP BY date
+     )`,
+    [excludeDate ?? ''],
+  );
+  return row?.best ?? 0;
+}
+
+/** 역대 월 합계 중 최댓값. excludeMonth('YYYY-MM') 를 주면 그 달은 빼고 센다. 없으면 0. */
+export function getMaxMonthlyTotal(excludeMonth?: string): number {
+  // substr(date, 1, 7) = 'YYYY-MM'
+  const row = getDb().getFirstSync<{ best: number | null }>(
+    `SELECT MAX(total) AS best FROM (
+       SELECT SUM(amount) AS total FROM entries
+       WHERE substr(date, 1, 7) <> ?
+       GROUP BY substr(date, 1, 7)
+     )`,
+    [excludeMonth ?? ''],
+  );
+  return row?.best ?? 0;
+}
+
 // ---------- entries: 쓰기 ----------
 
 /** 폼이 이미 막지만, 백업 복원(M5) 등 다른 경로도 같은 함수를 쓰므로 쿼리 계층에서 한 번 더 막는다. */
-function assertValidEntryInput(input: EntryInput): void {
+export function assertValidEntryInput(input: EntryInput): void {
   if (!Number.isInteger(input.amount) || input.amount <= 0) {
     throw new Error('금액은 1원 이상의 정수여야 합니다');
   }

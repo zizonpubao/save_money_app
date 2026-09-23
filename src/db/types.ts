@@ -28,6 +28,25 @@ export type EntryInput = {
   memo: string | null;
 };
 
+/** 그 달의 하루치 합계 (기록이 있는 날만) */
+export type DailyTotal = {
+  date: string; // 'YYYY-MM-DD'
+  total: number;
+};
+
+/** 그 달의 카테고리별 합계. categoryId 가 null 이면 미분류. */
+export type CategoryTotal = {
+  categoryId: number | null;
+  total: number;
+};
+
+/** 월 요약 숫자 */
+export type MonthStats = {
+  total: number;
+  /** 기록 건수 */
+  count: number;
+};
+
 /** SQLite 에서 읽어온 원본 행 (snake_case) */
 export type CategoryRow = {
   id: number;

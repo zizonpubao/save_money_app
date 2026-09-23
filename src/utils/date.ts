@@ -70,6 +70,12 @@ export function addMonths(month: string, delta: number): string {
   return dayjs(`${month}-01`, DATE_FORMAT).add(delta, 'month').format(MONTH_FORMAT);
 }
 
+/** 'YYYY-MM-DD' → 23 (그 달의 며칠인지). 잘못된 값이면 1. */
+export function dayOfMonth(date: string): number {
+  const d = dayjs(date, DATE_FORMAT);
+  return d.isValid() ? d.date() : 1;
+}
+
 /** 해당 월의 일 수. daysInMonth('2026-02') → 28 */
 export function daysInMonth(month: string): number {
   return dayjs(`${month}-01`, DATE_FORMAT).daysInMonth();

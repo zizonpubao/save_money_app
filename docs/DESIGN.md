@@ -23,7 +23,7 @@
 | 그림자 | `shadow.fab` / `shadow.sheet` | 떠 있는 것에만. 색은 `shadowColor: colors.text` |
 | 크기 | `size.touch/fab/fabIcon` | 44 / 56 / 30 |
 | | `size.swipeAction/headerAction/memoMin/toggleMin` | 88 / 56 / 80 / 120 |
-| | `size.barTrack` / `size.bar` | 120 / 10 (M3 그래프용) |
+| | `size.barTrack` / `size.bar` / `size.axisLabel` | 120 / 10 / 28 (M3 그래프용) |
 
 ## 컴포넌트 규칙
 - **카드**: `card` 배경 + `radius.lg` + `padding: sp.lg`. 그림자 없음, 테두리 없음 — 배경 대비로만 뜬다.
@@ -46,7 +46,7 @@
 - `primary` 는 다크에서 한 톤 밝게(`#5B8DEF`), 흰 글자 대비 유지. 순수 검정·순수 흰색 배경은 쓰지 않는다.
 
 ## M3 · M3.5 미리 정한 규칙
-- 일별 막대: 트랙 높이 `size.barTrack`, 막대 폭은 균등 `flex: 1` + `gap: sp.xs`, 색은 `primarySoft`, 최고값 막대만 `primary`. 눈금선·축 숫자 없이 아래에 1·15·말일만 `caption`.
+- 일별 막대: 트랙 높이 `size.barTrack`, 칸 폭은 균등 `flex: 1`(칸 전체가 탭 영역, gap 없음) + 막대는 칸 안 `70%` 폭, 색은 `primarySoft`, 최고값 막대만 `primary`. 눈금선·축 숫자 없이 아래에 1·15·말일만 `caption`(고정 폭 `size.axisLabel` 라벨을 칸 가운데에, 말일은 오른쪽 끝 정렬).
 - 카테고리 비율 바: 높이 `size.bar`, `radius.pill`, 트랙 `primarySoft` / 채움 `primary`, 오른쪽에 금액(`bodyStrong` + `numeric`)과 비율(`note`).
 - 목표 진행 바: 카드 큰 숫자 바로 아래 `marginTop: sp.md`, 높이 `size.bar`, 100% 초과분은 색을 바꾸지 말고 "달성! +12,000원 초과"를 `note` 로 덧붙인다.
 
