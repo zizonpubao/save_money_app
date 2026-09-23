@@ -158,6 +158,39 @@ export function getMaxMonthlyTotal(excludeMonth?: string): number {
   return row?.best ?? 0;
 }
 
+// ---------- settings (M3.5) ----------
+
+/** settings 테이블 키. 값은 항상 문자열로 저장하고, 해석은 쓰는 쪽(features)이 한다. */
+export const SETTING_KEYS = {
+  /** 월 목표 금액. 원 단위 정수 문자열 ('300000') */
+  monthlyGoal: 'monthly_goal',
+  /** 목표 달성을 축하한 달 ('YYYY-MM'). 한 달에 한 번만 축하하기 위해 기록한다. */
+  goalReachedMonth: 'goal_reached_month',
+} as const;
+
+export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];
+
+/** 설정 값. 없으면 null. */
+export function getSetting(key: SettingKey): string | null {
+  const row = getDb().getFirstSync<{ value: string }>('SELECT value FROM settings WHERE key = ?', [
+    key,
+  ]);
+  return row?.value ?? null;
+}
+
+/** 설정 값을 저장한다. 이미 있으면 덮어쓴다. */
+export function setSetting(key: SettingKey, value: string): void {
+  getDb().runSync(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    [key, value],
+  );
+}
+
+/** 설정 값을 지운다. 없는 키여도 아무 일 없다. */
+export function deleteSetting(key: SettingKey): void {
+  getDb().runSync('DELETE FROM settings WHERE key = ?', [key]);
+}
+
 // ---------- entries: 쓰기 ----------
 
 /** 폼이 이미 막지만, 백업 복원(M5) 등 다른 경로도 같은 함수를 쓰므로 쿼리 계층에서 한 번 더 막는다. */

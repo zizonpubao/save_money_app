@@ -38,10 +38,10 @@ describe('BarChart — 일별 막대 (월 모드)', () => {
     expect(screen.getAllByRole('button')).toHaveLength(28);
   });
 
-  it('축 라벨은 1 · 15 · 말일(31) 세 개만 보인다', async () => {
+  it('축 라벨은 1 · 5일 단위 · 말일(31) 만 보인다 (말일에 붙은 30은 뺀다)', async () => {
     await renderChart('2026-01');
     const labels = screen.getAllByText(/^\d+$/).map((el) => String(el.props.children));
-    expect(labels).toEqual(['1', '15', '31']);
+    expect(labels).toEqual(['1', '5', '10', '15', '20', '25', '31']);
   });
 
   it('처음에는 툴팁이 없다', async () => {
@@ -97,10 +97,10 @@ describe('BarChart — 월별 막대 (년 모드)', () => {
     expect(screen.getAllByRole('button')).toHaveLength(12);
   });
 
-  it('축 라벨은 1 · 6 · 12 세 개만 보인다', async () => {
+  it('축 라벨은 1~12 전부 보인다', async () => {
     await renderYearChart('2026');
     const labels = screen.getAllByText(/^\d+$/).map((el) => String(el.props.children));
-    expect(labels).toEqual(['1', '6', '12']);
+    expect(labels).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']);
   });
 
   it('막대를 탭하면 "9월 · 184,000원" 툴팁이 뜨고 다시 탭하면 닫힌다', async () => {

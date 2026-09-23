@@ -290,6 +290,25 @@ describe('useMonthlySummary', () => {
       expect(result.current.sections).toEqual([]);
     });
 
+    it('같은 모드를 다시 누르면 아무 일도 없다 (보던 기간·데이터 그대로)', async () => {
+      addEntry(input({ date: firstOf(LAST_MONTH) }));
+      const { result } = await setup();
+      await act(() => result.current.goPrev());
+      const barsBefore = result.current.bars;
+
+      await act(() => result.current.setMode('month'));
+      expect(result.current.mode).toBe('month');
+      expect(result.current.month).toBe(LAST_MONTH);
+      // 상태를 건드리지 않았으므로 막대 배열도 같은 참조 그대로다
+      expect(result.current.bars).toBe(barsBefore);
+
+      await act(() => result.current.setMode('year'));
+      const yearBars = result.current.bars;
+      await act(() => result.current.setMode('year'));
+      expect(result.current.year).toBe(toYear(LAST_MONTH));
+      expect(result.current.bars).toBe(yearBars);
+    });
+
     it('년 모드에서 삭제하면 그 해 합계가 바로 줄어든다', async () => {
       const created = addEntry(input({ date: NEW_YEAR, amount: 1000 }));
       addEntry(input({ date: today(), amount: 4500 }));

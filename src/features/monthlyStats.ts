@@ -51,11 +51,8 @@ export type CategoryBar = {
   percent: number;
 };
 
-/** 축 라벨을 붙일 날짜 후보 (DESIGN.md: 1 · 15 · 말일). 말일은 항상 붙인다. */
-const AXIS_DAYS = [1, 15];
-
-/** 년 모드 축 라벨을 붙일 달 (1 · 6 · 12월) */
-export const AXIS_MONTHS = [1, 6, 12] as const;
+/** 축 라벨을 붙일 날짜 후보 (DESIGN.md: 1 · 5일 단위 · 말일). 말일은 항상 붙인다. */
+const AXIS_DAYS = [1, 5, 10, 15, 20, 25, 30];
 
 const MONTHS_IN_YEAR = 12;
 
@@ -128,7 +125,7 @@ export function buildMonthlyBars(year: string, totals: readonly MonthlyTotal[]):
   return bars;
 }
 
-/** 일별 막대 → BarChart 칸. 축 라벨은 axis 에 든 날짜(1 · 15 · 말일)에만. */
+/** 일별 막대 → BarChart 칸. 축 라벨은 axis 에 든 날짜(1 · 5 · 10 … · 말일)에만. */
 export function toDailyChartBars(bars: readonly DayBar[], axis: readonly number[]): ChartBar[] {
   const axisSet = new Set(axis);
   return bars.map((bar) => ({
@@ -141,23 +138,25 @@ export function toDailyChartBars(bars: readonly DayBar[], axis: readonly number[
   }));
 }
 
-/** 월별 막대 → BarChart 칸. 축 라벨은 1 · 6 · 12월에만 (숫자만, 일별 축과 같은 모양). */
+/** 월별 막대 → BarChart 칸. 12칸이라 폭이 넉넉해 1~12 모두 축 라벨을 붙인다 (숫자만, 일별 축과 같은 모양). */
 export function toMonthlyChartBars(bars: readonly MonthBar[]): ChartBar[] {
-  const axisSet = new Set<number>(AXIS_MONTHS);
   return bars.map((bar) => ({
     key: bar.month,
     label: `${bar.monthNumber}월`,
-    axisLabel: axisSet.has(bar.monthNumber) ? String(bar.monthNumber) : null,
+    axisLabel: String(bar.monthNumber),
     total: bar.total,
     ratio: bar.ratio,
     isMax: bar.isMax,
   }));
 }
 
-/** 축 라벨을 붙일 날짜들. 말일과 겹치거나 말일을 넘는 후보는 뺀다. */
+/**
+ * 축 라벨을 붙일 날짜들. 말일과 겹치거나 바로 붙는 후보는 뺀다 — 30·31 처럼 붙은 라벨은 좁은 칸에서 겹친다.
+ * (31일 달 → …25, 31 / 30일 달 → …25, 30 / 2월 → …25, 28)
+ */
 export function axisDays(month: string): number[] {
   const last = daysInMonth(month);
-  return [...AXIS_DAYS.filter((d) => d < last), last];
+  return [...AXIS_DAYS.filter((d) => d < last - 1), last];
 }
 
 function percentOf(value: number, total: number): number {

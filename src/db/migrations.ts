@@ -70,6 +70,15 @@ export const migrations: readonly Migration[] = [
       );
     },
   },
+  {
+    // (M3.5) 월 목표 등 앱 설정을 담는 키-값 테이블. 새 테이블만 만들고 기존 데이터는 건드리지 않는다.
+    version: 3,
+    up: (db) => {
+      db.execSync(
+        'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);',
+      );
+    },
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations[migrations.length - 1]?.version ?? 0;

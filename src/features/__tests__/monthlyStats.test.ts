@@ -94,16 +94,20 @@ describe('buildDailyBars', () => {
 });
 
 describe('axisDays', () => {
-  it('31일 달은 1·15·31 세 개만 라벨을 붙인다', () => {
-    expect(axisDays('2026-10')).toEqual([1, 15, 31]);
+  it('31일 달은 25 다음이 말일 31이다 (말일에 붙은 30은 겹쳐서 뺀다)', () => {
+    expect(axisDays('2026-10')).toEqual([1, 5, 10, 15, 20, 25, 31]);
   });
 
-  it('30일 달은 1·15·30 이다', () => {
-    expect(axisDays('2026-09')).toEqual([1, 15, 30]);
+  it('30일 달은 1 · 5일 단위 · 30 이다 (말일과 겹치는 30은 한 번만)', () => {
+    expect(axisDays('2026-09')).toEqual([1, 5, 10, 15, 20, 25, 30]);
   });
 
-  it('2월은 말일이 28일이다', () => {
-    expect(axisDays('2026-02')).toEqual([1, 15, 28]);
+  it('2월은 25 다음이 말일 28이다', () => {
+    expect(axisDays('2026-02')).toEqual([1, 5, 10, 15, 20, 25, 28]);
+  });
+
+  it('윤년 2월은 말일이 29일이다', () => {
+    expect(axisDays('2028-02')).toEqual([1, 5, 10, 15, 20, 25, 29]);
   });
 });
 
@@ -210,24 +214,20 @@ describe('buildMonthlyBars', () => {
 });
 
 describe('BarChart 칸 변환', () => {
-  it('월별 칸은 "9월" 라벨이고 축 숫자는 1 · 6 · 12월에만 붙는다', () => {
+  it('월별 칸은 "9월" 라벨이고 축 숫자는 1~12월 전부 붙는다', () => {
     const bars = toMonthlyChartBars(buildMonthlyBars('2026', []));
     expect(bars[8]?.label).toBe('9월');
-    expect(bars.filter((b) => b.axisLabel !== null).map((b) => b.axisLabel)).toEqual([
-      '1',
-      '6',
-      '12',
+    expect(bars.map((b) => b.axisLabel)).toEqual([
+      '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
     ]);
   });
 
-  it('일별 칸은 "23일" 라벨이고 축 숫자는 1 · 15 · 말일에만 붙는다', () => {
+  it('일별 칸은 "23일" 라벨이고 축 숫자는 1 · 5일 단위 · 말일에만 붙는다', () => {
     const bars = toDailyChartBars(buildDailyBars('2026-09', []), axisDays('2026-09'));
     expect(bars[22]?.label).toBe('23일');
     expect(bars[22]?.key).toBe('2026-09-23');
     expect(bars.filter((b) => b.axisLabel !== null).map((b) => b.axisLabel)).toEqual([
-      '1',
-      '15',
-      '30',
+      '1', '5', '10', '15', '20', '25', '30',
     ]);
   });
 });

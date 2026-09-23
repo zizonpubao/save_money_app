@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { RangeMode } from '@/src/store/entryStore';
+import type { RangeMode } from '@/src/features/rangeMode';
 import { size, useTheme } from '@/src/theme';
 
 type Props = {

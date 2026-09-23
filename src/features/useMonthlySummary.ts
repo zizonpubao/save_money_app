@@ -15,7 +15,7 @@ import {
   type MonthlyTotal,
 } from '@/src/db';
 import { toCategoryMap, useCategoryStore } from '@/src/store/categoryStore';
-import { useEntryStore, type RangeMode } from '@/src/store/entryStore';
+import { useEntryStore } from '@/src/store/entryStore';
 import {
   addMonths,
   addYears,
@@ -29,6 +29,7 @@ import {
 } from '@/src/utils/date';
 
 import { groupEntriesByDate, groupEntriesByMonth } from './groupEntries';
+import type { RangeMode } from './rangeMode';
 import {
   axisDays,
   buildCategoryRows,

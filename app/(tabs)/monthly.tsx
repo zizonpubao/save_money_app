@@ -13,7 +13,7 @@ import { Screen } from '@/src/components/Screen';
 import type { Entry } from '@/src/db';
 import type { EntrySection } from '@/src/features/groupEntries';
 import { useMonthlySummary } from '@/src/features/useMonthlySummary';
-import type { RangeMode } from '@/src/store/entryStore';
+import type { RangeMode } from '@/src/features/rangeMode';
 import { useTheme } from '@/src/theme';
 
 const FALLBACK_EMOJI = '💰';

@@ -30,6 +30,12 @@ function sortOrderOf(db: SQLiteDatabase, name: string): number {
   );
 }
 
+function tableNames(db: SQLiteDatabase): string[] {
+  return db
+    .getAllSync<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'")
+    .map((r) => r.name);
+}
+
 function currentVersion(db: SQLiteDatabase): number {
   return (
     db.getFirstSync<{ version: number | null }>('SELECT MAX(version) AS version FROM schema_version')
@@ -85,9 +91,38 @@ describe('마이그레이션 실행', () => {
     resetDatabaseConnection();
   });
 
-  it('빈 DB 를 초기화하면 스키마 버전이 최신(2)이 된다', () => {
+  it('빈 DB 를 초기화하면 스키마 버전이 최신(3)이 된다 (0 → 3)', () => {
     initDatabase();
-    expect(currentVersion(getDb())).toBe(2);
+    expect(currentVersion(getDb())).toBe(3);
+    expect(
+      getDb().getAllSync<{ version: number }>('SELECT version FROM schema_version ORDER BY version'),
+    ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
+  });
+
+  it('초기화 후 settings 테이블이 있고 key 가 기본키다 (같은 키 두 번 넣기 실패)', () => {
+    initDatabase();
+    expect(tableNames(getDb())).toContain('settings');
+    getDb().runSync('INSERT INTO settings (key, value) VALUES (?, ?)', ['monthly_goal', '1']);
+    expect(() =>
+      getDb().runSync('INSERT INTO settings (key, value) VALUES (?, ?)', ['monthly_goal', '2']),
+    ).toThrow();
+  });
+
+  it('v2 까지만 올린 DB 를 최신으로 올리면 v3 만 추가로 적용되고 기록·카테고리는 그대로다', () => {
+    const db = getDb();
+    expect(runMigrationsUpTo(db, 2)).toBe(2);
+    expect(tableNames(db)).not.toContain('settings');
+    db.runSync(
+      'INSERT INTO entries (date, title, amount, category_id, memo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      ['2026-09-01', '아메리카노', 4500, 1, null, '2026-09-01T09:00:00+09:00', '2026-09-01T09:00:00+09:00'],
+    );
+
+    expect(runMigrations(db)).toBe(3);
+    expect(tableNames(db)).toContain('settings');
+    expect(db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM entries')?.n).toBe(1);
+    expect(categoryNames(db)).toEqual(V2_CATEGORY_NAMES);
+    // v3 는 빈 테이블만 만든다
+    expect(db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM settings')?.n).toBe(0);
   });
 
   it('초기화 후 categories · entries · schema_version 세 테이블이 생긴다', () => {
@@ -119,17 +154,17 @@ describe('마이그레이션 실행', () => {
     runMigrations(db);
     expect(categoryNames(db)).toEqual(V2_CATEGORY_NAMES);
     expect(sortOrderOf(db, '밥값')).toBe(1);
-    expect(currentVersion(db)).toBe(2);
+    expect(currentVersion(db)).toBe(3);
   });
 
-  it('v1 만 적용된 DB 에 runMigrations 를 돌리면 v2 만 추가로 적용된다', () => {
+  it('v1 만 적용된 DB 에 runMigrations 를 돌리면 v2 · v3 가 차례로 추가 적용된다', () => {
     const db = buildV1Database();
     expect(categoryNames(db)).toHaveLength(8);
 
-    expect(runMigrations(db)).toBe(2);
+    expect(runMigrations(db)).toBe(3);
     expect(
       db.getAllSync<{ version: number }>('SELECT version FROM schema_version ORDER BY version'),
-    ).toEqual([{ version: 1 }, { version: 2 }]);
+    ).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
   });
 
   it('v1 → v2 업그레이드는 기존 카테고리를 한 칸씩 밀고 밥값을 1번 자리에 넣는다', () => {
@@ -184,8 +219,8 @@ describe('마이그레이션 실행', () => {
     expect(currentVersion(db)).toBe(1);
     expect(categoryNames(db)).toHaveLength(8);
 
-    // 이어서 최신까지 올리면 v2 가 마저 적용된다
-    expect(runMigrations(db)).toBe(2);
+    // 이어서 최신까지 올리면 v2 · v3 가 마저 적용된다
+    expect(runMigrations(db)).toBe(3);
     expect(categoryNames(db)).toEqual(V2_CATEGORY_NAMES);
   });
 

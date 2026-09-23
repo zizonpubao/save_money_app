@@ -1,6 +1,21 @@
-import { addEntry, initDatabase, resetDatabaseConnection, type EntryInput } from '@/src/db';
+import {
+  addEntry,
+  getSetting,
+  initDatabase,
+  resetDatabaseConnection,
+  setSetting,
+  SETTING_KEYS,
+  type EntryInput,
+} from '@/src/db';
 import { computeRange, useEntryStore } from '@/src/store/entryStore';
+import { useSettingsStore } from '@/src/store/settingsStore';
 import { addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
+
+// 설정 조회가 실패하는 경우를 흉내 내려고 getSetting 만 갈아 끼울 수 있게 감싼다. 평소엔 실제 함수 그대로.
+jest.mock('@/src/db', () => {
+  const actual = jest.requireActual<typeof import('@/src/db')>('@/src/db');
+  return { ...actual, getSetting: jest.fn(actual.getSetting) };
+});
 
 const THIS_MONTH = thisMonth();
 const LAST_MONTH = addMonths(THIS_MONTH, -1);
@@ -27,22 +42,15 @@ function lastOf(month: string): string {
 }
 
 describe('computeRange', () => {
-  it('month 모드는 oldestMonth 1일부터 기준 달 말일까지다', () => {
-    expect(computeRange('month', '2026-07', '2026-09')).toEqual({
+  it('oldestMonth 1일부터 기준 달 말일까지다', () => {
+    expect(computeRange('2026-07', '2026-09')).toEqual({
       start: '2026-07-01',
       end: '2026-09-30',
     });
   });
 
-  it('year 모드는 기준 달이 속한 해 전체다', () => {
-    expect(computeRange('year', '2026-07', '2026-09')).toEqual({
-      start: '2026-01-01',
-      end: '2026-12-31',
-    });
-  });
-
   it('기준 달을 생략하면 이번 달을 쓴다', () => {
-    expect(computeRange('month', THIS_MONTH)).toEqual(monthRange(THIS_MONTH));
+    expect(computeRange(THIS_MONTH)).toEqual(monthRange(THIS_MONTH));
   });
 });
 
@@ -58,6 +66,8 @@ describe('entryStore', () => {
       hasMore: false,
       celebrateTick: 0,
       lastRecord: null,
+      goalReachedTick: 0,
+      lastGoalReached: false,
     });
   });
 
@@ -212,6 +222,117 @@ describe('entryStore', () => {
 
       useEntryStore.getState().remove(created.id);
       expect(useEntryStore.getState().lastRecord).toBeNull();
+    });
+  });
+
+  describe('월 목표 달성 (M3.5)', () => {
+    function setGoal(goal: number): void {
+      setSetting(SETTING_KEYS.monthlyGoal, String(goal));
+    }
+
+    it('이번 저장으로 목표를 처음 넘기면 goalReachedTick 이 오르고 이번 달을 축하한 달로 기록한다', () => {
+      setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 4500 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 0, lastGoalReached: false });
+
+      useEntryStore.getState().add(input({ amount: 6000 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 1, lastGoalReached: true });
+      expect(getSetting(SETTING_KEYS.goalReachedMonth)).toBe(THIS_MONTH);
+    });
+
+    it('목표와 딱 같아지는 저장도 달성이다', () => {
+      setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 10000 }));
+      expect(useEntryStore.getState().lastGoalReached).toBe(true);
+    });
+
+    it('이미 넘긴 뒤 더 쌓는 저장은 다시 축하하지 않는다 (월 1회)', () => {
+      setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 12000 }));
+      useEntryStore.getState().add(input({ amount: 1000 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 1, lastGoalReached: false });
+    });
+
+    it('이번 달 축하 기록이 남아 있으면(목표 그대로) 새로 넘어도 다시 뜨지 않는다', () => {
+      setSetting(SETTING_KEYS.goalReachedMonth, THIS_MONTH);
+      setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 12000 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 0, lastGoalReached: false });
+    });
+
+    it('목표를 올린 뒤 다시 넘기면 새 목표로 다시 축하한다', () => {
+      useSettingsStore.getState().setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 12000 }));
+      expect(useEntryStore.getState().goalReachedTick).toBe(1);
+
+      useSettingsStore.getState().setGoal(20000);
+      useEntryStore.getState().add(input({ amount: 9000 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 2, lastGoalReached: true });
+      expect(getSetting(SETTING_KEYS.goalReachedMonth)).toBe(THIS_MONTH);
+    });
+
+    it('이미 넘긴 금액보다 낮은 목표로 바꾸면 이펙트 없이 초과만 된다', () => {
+      useSettingsStore.getState().setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 12000 }));
+
+      useSettingsStore.getState().setGoal(5000);
+      useEntryStore.getState().add(input({ amount: 1000 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 1, lastGoalReached: false });
+    });
+
+    it('설정 조회가 실패해도 저장은 성공하고 축하만 건너뛴다', () => {
+      setGoal(10000);
+      jest.mocked(getSetting).mockImplementation(() => {
+        throw new Error('settings 조회 실패');
+      });
+      try {
+        const created = useEntryStore.getState().add(input({ amount: 12000 }));
+        expect(created.amount).toBe(12000);
+        expect(useEntryStore.getState()).toMatchObject({
+          monthTotal: 12000,
+          celebrateTick: 1,
+          goalReachedTick: 0,
+          lastGoalReached: false,
+        });
+      } finally {
+        jest.mocked(getSetting).mockImplementation(
+          jest.requireActual<typeof import('@/src/db')>('@/src/db').getSetting,
+        );
+      }
+    });
+
+    it('지난달에 축하한 기록은 이번 달 달성을 막지 않는다', () => {
+      setSetting(SETTING_KEYS.goalReachedMonth, LAST_MONTH);
+      setGoal(10000);
+      useEntryStore.getState().add(input({ amount: 12000 }));
+      expect(useEntryStore.getState().lastGoalReached).toBe(true);
+    });
+
+    it('목표가 없으면 아무리 많이 저장해도 달성이 아니다', () => {
+      useEntryStore.getState().add(input({ amount: 999999 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 0, lastGoalReached: false });
+      expect(getSetting(SETTING_KEYS.goalReachedMonth)).toBeNull();
+    });
+
+    it('지난달 날짜로 넣은 기록은 이번 달 목표를 채우지 않는다', () => {
+      setGoal(10000);
+      useEntryStore.getState().add(input({ date: firstOf(LAST_MONTH), amount: 50000 }));
+      expect(useEntryStore.getState().lastGoalReached).toBe(false);
+    });
+
+    it('수정으로 목표를 넘겨도 이펙트가 없다 (수정은 새로 절약한 게 아님)', () => {
+      setGoal(10000);
+      const created = useEntryStore.getState().add(input({ amount: 4500 }));
+      useEntryStore.getState().update(created.id, input({ amount: 20000 }));
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 0, lastGoalReached: false });
+    });
+
+    it('수정·삭제는 lastGoalReached 를 지운다 (tick 은 그대로)', () => {
+      setGoal(10000);
+      const created = useEntryStore.getState().add(input({ amount: 12000 }));
+      expect(useEntryStore.getState().lastGoalReached).toBe(true);
+      useEntryStore.getState().remove(created.id);
+      expect(useEntryStore.getState()).toMatchObject({ goalReachedTick: 1, lastGoalReached: false });
     });
   });
 

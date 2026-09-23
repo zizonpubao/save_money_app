@@ -14,7 +14,7 @@ import { useEntryList } from '@/src/features/useEntryList';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
 import { useTheme } from '@/src/theme';
-import { celebrateHaptic } from '@/src/utils/haptics';
+import { celebrateHaptic, goalReachedHaptic } from '@/src/utils/haptics';
 
 const FALLBACK_EMOJI = '💰';
 
@@ -37,7 +37,9 @@ export default function HomeScreen() {
       Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
       return;
     }
-    celebrateHaptic();
+    // 목표를 처음 넘긴 저장이면 성공 햅틱 대신 더 강한 2연타
+    if (useEntryStore.getState().lastGoalReached) goalReachedHaptic();
+    else celebrateHaptic();
     setFormVisible(false);
   };
 
@@ -62,8 +64,15 @@ export default function HomeScreen() {
               todayTotal={list.todayTotal}
               monthTotal={list.monthTotal}
               celebrateTick={list.celebrateTick}
+              goal={list.monthlyGoal}
+              goalReachedTick={list.goalReachedTick}
+              onGoalPress={() => router.push('/(tabs)/settings')}
             />
-            <RecordBanner best={list.lastRecord} celebrateTick={list.celebrateTick} />
+            <RecordBanner
+              best={list.lastRecord}
+              goalReached={list.lastGoalReached}
+              celebrateTick={list.celebrateTick}
+            />
           </View>
         }
         renderSectionHeader={({ section }) => (

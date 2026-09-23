@@ -1,6 +1,7 @@
 import {
   addEntry,
   deleteEntry,
+  deleteSetting,
   getAllCategories,
   getCategoryTotals,
   getCategoryTotalsBetween,
@@ -13,12 +14,15 @@ import {
   getMaxMonthlyTotal,
   getMonthStats,
   getMonthlyTotals,
+  getSetting,
   getStatsBetween,
   getSumBetween,
   getSumByDate,
   initDatabase,
   openDatabaseAt,
   resetDatabaseConnection,
+  setSetting,
+  SETTING_KEYS,
   updateEntry,
   type EntryInput,
 } from '@/src/db';
@@ -416,6 +420,46 @@ describe('queries', () => {
       const created = addEntry(input({ categoryId: coffee }));
       getDb().runSync('DELETE FROM categories WHERE id = ?', [coffee]);
       expect(getEntryById(created.id)?.categoryId).toBeNull();
+    });
+  });
+
+  describe('settings (M3.5)', () => {
+    it('없는 키는 null 이다', () => {
+      expect(getSetting(SETTING_KEYS.monthlyGoal)).toBeNull();
+    });
+
+    it('setSetting 한 값을 getSetting 으로 그대로 읽는다', () => {
+      setSetting(SETTING_KEYS.monthlyGoal, '300000');
+      expect(getSetting(SETTING_KEYS.monthlyGoal)).toBe('300000');
+    });
+
+    it('같은 키에 다시 저장하면 덮어쓰고 행은 하나다', () => {
+      setSetting(SETTING_KEYS.monthlyGoal, '300000');
+      setSetting(SETTING_KEYS.monthlyGoal, '500000');
+      expect(getSetting(SETTING_KEYS.monthlyGoal)).toBe('500000');
+      expect(getDb().getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM settings')?.n).toBe(1);
+    });
+
+    it('키끼리는 서로 영향을 주지 않는다', () => {
+      setSetting(SETTING_KEYS.monthlyGoal, '300000');
+      setSetting(SETTING_KEYS.goalReachedMonth, '2026-09');
+      deleteSetting(SETTING_KEYS.goalReachedMonth);
+      expect(getSetting(SETTING_KEYS.monthlyGoal)).toBe('300000');
+      expect(getSetting(SETTING_KEYS.goalReachedMonth)).toBeNull();
+    });
+
+    it('deleteSetting 하면 null 이 되고, 없는 키를 지워도 에러가 없다', () => {
+      setSetting(SETTING_KEYS.monthlyGoal, '300000');
+      deleteSetting(SETTING_KEYS.monthlyGoal);
+      expect(getSetting(SETTING_KEYS.monthlyGoal)).toBeNull();
+      expect(() => deleteSetting(SETTING_KEYS.monthlyGoal)).not.toThrow();
+    });
+
+    it('키 상수는 PRD 의 이름 그대로다', () => {
+      expect(SETTING_KEYS).toEqual({
+        monthlyGoal: 'monthly_goal',
+        goalReachedMonth: 'goal_reached_month',
+      });
     });
   });
 });
