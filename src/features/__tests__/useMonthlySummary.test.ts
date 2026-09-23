@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import { addEntry, initDatabase, resetDatabaseConnection, type EntryInput } from '@/src/db';
 import { useMonthlySummary } from '@/src/features/useMonthlySummary';
 import { useCategoryStore } from '@/src/store/categoryStore';
-import { addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
+import { addMonths, daysInMonth, monthRange, thisMonth, today } from '@/src/utils/date';
 
 // 네비게이터 밖에서 훅을 돌리기 위해 포커스 효과를 평범한 useEffect 로 대체한다.
 jest.mock('expo-router', () => ({
@@ -109,6 +109,34 @@ describe('useMonthlySummary', () => {
       await act(() => result.current.goPrev());
       expect(result.current.total).toBe(10000);
       expect(result.current.count).toBe(1);
+    });
+
+    it('지난달로 옮기면 막대 칸 수와 목록이 그 달 것으로 바뀐다', async () => {
+      addEntry(input({ date: today(), amount: 4500 }));
+      addEntry(input({ date: firstOf(LAST_MONTH), amount: 10000 }));
+      const { result } = await setup();
+      await act(() => result.current.goPrev());
+      expect(result.current.bars).toHaveLength(daysInMonth(LAST_MONTH));
+      expect(result.current.bars[0]?.total).toBe(10000);
+      expect(result.current.sections.map((s) => s.key)).toEqual([firstOf(LAST_MONTH)]);
+    });
+
+    it('지난달로 옮기면 하루 평균은 그 달 전체 일수로 나눈다', async () => {
+      addEntry(input({ date: firstOf(LAST_MONTH), amount: 90000 }));
+      const { result } = await setup();
+      await act(() => result.current.goPrev());
+      expect(result.current.average).toBe(Math.round(90000 / daysInMonth(LAST_MONTH)));
+    });
+
+    it('이전 달에 갔다가 다음 달로 돌아오면 이번 달 데이터로 돌아온다', async () => {
+      addEntry(input({ date: today(), amount: 4500 }));
+      addEntry(input({ date: firstOf(LAST_MONTH), amount: 10000 }));
+      const { result } = await setup();
+      await act(() => result.current.goPrev());
+      await act(() => result.current.goNext());
+      expect(result.current.month).toBe(THIS_MONTH);
+      expect(result.current.total).toBe(4500);
+      expect(result.current.canNext).toBe(false);
     });
 
     it('기록이 없는 달은 isEmpty 이고 막대는 모두 0이다', async () => {

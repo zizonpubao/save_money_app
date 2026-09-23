@@ -258,6 +258,19 @@ describe('queries', () => {
       addEntry(input({ date: '2026-09-02', amount: 2000, categoryId: null }));
       expect(getCategoryTotals('2026-09')).toEqual([{ categoryId: null, total: 3000 }]);
     });
+
+    it('지워진 카테고리 기록과 원래 미분류 기록이 NULL 한 줄로 합쳐진다', () => {
+      const coffee = categoryIdOf('커피');
+      addEntry(input({ date: '2026-09-01', amount: 4500, categoryId: coffee }));
+      addEntry(input({ date: '2026-09-02', amount: 1000, categoryId: null }));
+      getDb().runSync('DELETE FROM categories WHERE id = ?', [coffee]);
+      expect(getCategoryTotals('2026-09')).toEqual([{ categoryId: null, total: 5500 }]);
+    });
+
+    it('기록 없는 달은 빈 배열이다', () => {
+      addEntry(input({ date: '2026-08-31', amount: 1000, categoryId: categoryIdOf('커피') }));
+      expect(getCategoryTotals('2026-09')).toEqual([]);
+    });
   });
 
   describe('getMaxDailyTotal / getMaxMonthlyTotal', () => {
@@ -291,6 +304,18 @@ describe('queries', () => {
       addEntry(input({ date: '2026-09-02', amount: 30000 }));
       expect(getMaxMonthlyTotal('2026-09')).toBe(4500);
       expect(getMaxMonthlyTotal('2026-08')).toBe(60000);
+    });
+
+    it('excludeDate 는 정확히 그 날짜만 뺀다 (다른 달 같은 일자는 그대로 센다)', () => {
+      addEntry(input({ date: '2026-08-10', amount: 8000 }));
+      addEntry(input({ date: '2026-09-10', amount: 20000 }));
+      expect(getMaxDailyTotal('2026-09-10')).toBe(8000);
+    });
+
+    it('excludeMonth 는 정확히 그 달만 뺀다 (작년 같은 월은 그대로 센다)', () => {
+      addEntry(input({ date: '2025-09-15', amount: 7000 }));
+      addEntry(input({ date: '2026-09-15', amount: 30000 }));
+      expect(getMaxMonthlyTotal('2026-09')).toBe(7000);
     });
 
     it('비교할 다른 달이 없으면 excludeMonth 로 0이 된다 (첫 달)', () => {

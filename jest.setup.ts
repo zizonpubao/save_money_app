@@ -11,3 +11,10 @@ import { setSqlJs } from './__mocks__/sqlJsRuntime';
 beforeAll(async () => {
   setSqlJs(await initSqlJs());
 });
+
+/**
+ * 컴포넌트 렌더 테스트용: reanimated 4 는 react-native-worklets 네이티브 모듈을 import 시점에 찾으므로
+ * jest(노드)에서는 두 라이브러리가 제공하는 공식 mock 으로 바꾼다. 애니메이션은 즉시 끝난 값으로 보인다.
+ */
+jest.mock('react-native-worklets', () => jest.requireActual('react-native-worklets/src/mock'));
+jest.mock('react-native-reanimated', () => jest.requireActual('react-native-reanimated/mock'));
