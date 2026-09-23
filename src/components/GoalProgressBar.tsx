@@ -32,7 +32,8 @@ export function GoalProgressBar({ goal, progress }: Props) {
   const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
 
   return (
-    <View style={{ marginTop: sp.md }}>
+    // 위 간격은 쓰는 쪽(SummaryCard 의 목표 구획)이 정한다
+    <View>
       <View
         accessible
         accessibilityRole="progressbar"
@@ -53,7 +54,8 @@ export function GoalProgressBar({ goal, progress }: Props) {
       </View>
       <Text
         style={[
-          type.note,
+          // 큰 숫자(display·primary)와 톤을 확실히 다르게: 작은 굵은 회색
+          type.label,
           numeric,
           // 달성해도 색은 바꾸지 않는다 (DESIGN: 초과분은 문구로만)
           { color: colors.textMuted, marginTop: sp.sm },

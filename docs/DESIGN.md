@@ -27,6 +27,7 @@
 
 ## 컴포넌트 규칙
 - **카드**: `card` 배경 + `radius.lg` + `padding: sp.lg`. 그림자 없음, 테두리 없음 — 배경 대비로만 뜬다.
+- **홈 카드 구획** (한 카드, 줄별 분리): (오늘의 한 줄 `topLine`) → **숫자**(`caption` 회색 라벨 "이번 달 절약 · 2026년 9월" + `display` primary — 카드의 주인공은 이것 하나) → **목표**(`marginTop: sp.lg`, 바 + `label` 회색 한 줄) → hairline `divider`(`sp.md`) → **오늘** 행(왼쪽 `caption` "오늘 · 날짜", 오른쪽 `bodyStrong` 금액) → (이모지 적립·잔디 `bottomExtra`, `marginTop: sp.md`). 새 요소는 구획을 늘릴 뿐 큰 숫자 옆에 붙이지 않는다.
 - **목록 행**: `card` 배경, `paddingHorizontal: sp.md` / `paddingVertical: sp.smd`, `minHeight: size.touch`. 행 사이만 hairline `divider`, 섹션 마지막 행은 선 없음. 섹션의 첫/마지막 행에 `radius.md` 를 줘서 한 덩어리로 보이게 한다.
 - **섹션 헤더**: `bg` 위에 `paddingTop: sp.md` / `paddingBottom: sp.sm`, 왼쪽 날짜(`type.label`)·오른쪽 합계(`type.note`) 둘 다 `textMuted`. 카드 밖 요소라 배경색은 `bg`.
 - **칩**: `radius.pill`, `paddingHorizontal: sp.md` / `paddingVertical: sp.sm`, 테두리 1px. 선택 시 `primary` 배경 + `onPrimary` 글자(색만이 아니라 채움으로 구분).
@@ -47,8 +48,9 @@
 
 ## M3 · M3.5 미리 정한 규칙
 - 일별 막대: 트랙 높이 `size.barTrack`, 칸 폭은 균등 `flex: 1`(칸 전체가 탭 영역, gap 없음) + 막대는 칸 안 `70%` 폭, 색은 `primarySoft`, 최고값 막대만 `primary`. 눈금선 없이 아래 축 숫자는 `caption`(고정 폭 `size.axisLabel` 라벨을 칸 가운데에, 1일은 왼쪽 끝·말일은 오른쪽 끝 정렬). 월 모드는 **1 · 5 · 10 · 15 · 20 · 25 · 30 · 말일**(5일 단위, 말일과 겹치거나 바로 붙으면 말일만 — 31일 달은 …25·31, 30일 달은 …25·30, 2월은 …25·28), 년 모드 월별 막대 12개는 **1~12 전부**.
+  - 조작: 누른 채 좌우 쓸기, 날 바뀔 때 selection 햅틱 (단순 탭=선택/재탭 닫기, 선택 막대는 `primary`).
 - 카테고리 비율 바: 높이 `size.bar`, `radius.pill`, 트랙 `primarySoft` / 채움 `primary`, 오른쪽에 금액(`bodyStrong` + `numeric`)과 비율(`note`).
-- 목표 진행 바: 카드 큰 숫자 바로 아래 `marginTop: sp.md`, 높이 `size.bar`, 100% 초과분은 색을 바꾸지 말고 "달성! +12,000원 초과"를 `note` 로 덧붙인다.
+- 목표 진행 바: 카드 큰 숫자 아래 `marginTop: sp.lg`, 높이 `size.bar`, 아래 "목표 300,000원 · 62%" 는 `label` + `textMuted`. 100% 초과분은 색을 바꾸지 말고 "달성! +12,000원 초과"를 같은 줄에 덧붙인다.
 
 ## 하지 말 것
 - `theme.ts` 밖에서 색·폰트 크기·radius 숫자 하드코딩 (`fs`/`sp` 조합 즉석 계산 포함 — 필요하면 토큰을 추가한다).

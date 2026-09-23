@@ -93,7 +93,7 @@ export const typeScale = {
   body: { fontSize: fs.md, fontWeight: '400', lineHeight: 22 },
   /** 섹션 헤더 날짜, 작은 버튼 */
   label: { fontSize: fs.sm, fontWeight: '600', lineHeight: 20 },
-  /** 보조 문장 (오늘 절약액, 합계) */
+  /** 보조 문장 (섹션 합계, 기록 건수·평균) */
   note: { fontSize: fs.sm, fontWeight: '400', lineHeight: 20 },
   /** 필드 라벨, 메모 미리보기 */
   caption: { fontSize: fs.xs, fontWeight: '400', lineHeight: 16 },

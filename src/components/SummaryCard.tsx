@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -30,9 +30,16 @@ type Props = {
   goalReachedTick?: number;
   /** 목표가 없을 때 안내 줄을 탭하면 (설정 탭으로 이동) */
   onGoalPress?: () => void;
+  /** (M3.6 슬롯) 큰 숫자 위 "오늘의 한 줄". 없으면 자리도 차지하지 않는다 */
+  topLine?: ReactNode;
+  /** (M3.6 슬롯) 오늘 행 아래 — 이모지 적립 줄, 카드 안 잔디. 없으면 자리도 차지하지 않는다 */
+  bottomExtra?: ReactNode;
 };
 
-/** 홈 상단 카드: 이번 달 절약액(크게), 월 목표 진행 바, 오늘 절약액(작게) */
+/**
+ * 홈 상단 카드. 한 카드 안에서 구획을 위→아래로 나눈다:
+ * (한 줄) → 숫자(이번 달, 주인공) → 목표(진행 바 + 회색 한 줄) → 구분선 → 오늘 행 → (이모지·잔디)
+ */
 export function SummaryCard({
   todayTotal,
   monthTotal,
@@ -40,8 +47,11 @@ export function SummaryCard({
   goal = null,
   goalReachedTick = 0,
   onGoalPress,
+  topLine,
+  bottomExtra,
 }: Props) {
   const { colors, type, sp, radius, size } = useTheme();
+  const todayLabel = formatKoDate(today());
   const scale = useSharedValue(1);
   const tint = useSharedValue(0);
   // 마운트 시점의 tick 에서 시작해, 탭을 다시 그렸다고 지난 달성 틴트가 재생되지 않게 한다.
@@ -83,14 +93,24 @@ export function SummaryCard({
           tintStyle,
         ]}
       />
-      <Text style={[type.note, { color: colors.textMuted }]}>{formatKoMonth(thisMonth())}</Text>
-      <Text style={[type.bodyStrong, { color: colors.text, marginTop: sp.sm }]}>이번 달 절약</Text>
+
+      {/* ① (M3.6) 오늘의 한 줄 — 큰 숫자 위 */}
+      {topLine ? <View style={{ marginBottom: sp.md }}>{topLine}</View> : null}
+
+      {/* ② 숫자 구획: 작은 회색 라벨 + 주인공 숫자 (카드에서 display 크기는 이것 하나) */}
+      <Text style={[type.caption, { color: colors.textMuted }]}>
+        이번 달 절약 · {formatKoMonth(thisMonth())}
+      </Text>
       <AnimatedWon
         value={monthTotal}
         style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}
       />
+
+      {/* ③ 목표 구획: 큰 숫자와 sp.lg 띄워 별도 줄로 */}
       {goal !== null && progress !== null ? (
-        <GoalProgressBar goal={goal} progress={progress} />
+        <View style={{ marginTop: sp.lg }}>
+          <GoalProgressBar goal={goal} progress={progress} />
+        </View>
       ) : (
         <Pressable
           onPress={onGoalPress}
@@ -98,18 +118,38 @@ export function SummaryCard({
           accessibilityRole="link"
           style={({ pressed }) => [
             styles.goalHint,
-            { minHeight: size.touch, marginTop: sp.xs, opacity: pressed ? 0.7 : 1 },
+            // 터치 영역(44) 안의 위아래 여백이 있어 sp.smd 만 줘도 보이는 간격은 진행 바와 비슷하다
+            { minHeight: size.touch, marginTop: sp.smd, opacity: pressed ? 0.7 : 1 },
           ]}>
           <Text style={[type.label, { color: colors.primary }]}>목표를 정하면 진행률이 보여요 →</Text>
         </Pressable>
       )}
-      <Text style={[type.note, numeric, { color: colors.textMuted, marginTop: sp.sm }]}>
-        오늘 {formatWon(todayTotal)} · {formatKoDate(today())}
-      </Text>
+
+      {/* ④ 오늘 구획: 구분선 아래 한 줄 — 왼쪽 라벨·날짜, 오른쪽 금액 */}
+      <View
+        style={[styles.divider, { backgroundColor: colors.divider, marginTop: sp.md }]}
+      />
+      <View
+        accessible
+        accessibilityLabel={`오늘 ${formatWon(todayTotal)} · ${todayLabel}`}
+        style={[styles.todayRow, { marginTop: sp.md, gap: sp.sm }]}>
+        <Text style={[type.caption, styles.todayLabel, { color: colors.textMuted }]}>
+          오늘 · {todayLabel}
+        </Text>
+        <Text style={[type.bodyStrong, numeric, { color: colors.text }]}>
+          {formatWon(todayTotal)}
+        </Text>
+      </View>
+
+      {/* ⑤ (M3.6) 이모지 적립 줄 · 카드 안 잔디 */}
+      {bottomExtra ? <View style={{ marginTop: sp.md }}>{bottomExtra}</View> : null}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   goalHint: { justifyContent: 'center', alignSelf: 'flex-start' },
+  divider: { height: StyleSheet.hairlineWidth },
+  todayRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  todayLabel: { flexShrink: 1 },
 });

@@ -9,14 +9,17 @@ describe('SummaryCard (홈 상단 카드)', () => {
     expect(screen.getByText('1,234,567원')).toBeOnTheScreen();
   });
 
-  it('오늘 절약액을 "오늘 4,500원 · 날짜" 형식으로 보여준다', async () => {
+  it('오늘 행: 왼쪽 "오늘 · 날짜", 오른쪽 금액 (읽기는 "오늘 4,500원 · 날짜" 한 번에)', async () => {
     await render(<SummaryCard todayTotal={4500} monthTotal={10000} celebrateTick={0} />);
-    expect(screen.getByText(/^오늘 4,500원 · \d{4}년/)).toBeOnTheScreen();
+    expect(screen.getByText(/^오늘 · \d{4}년 \d{1,2}월 \d{1,2}일/)).toBeOnTheScreen();
+    expect(screen.getByText('4,500원')).toBeOnTheScreen();
+    expect(screen.getByLabelText(/^오늘 4,500원 · \d{4}년/)).toBeOnTheScreen();
   });
 
   it('이번 달 절약액이 0이면 "0원" 으로 보인다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={0} celebrateTick={0} />);
-    expect(screen.getByText('0원')).toBeOnTheScreen();
+    // 큰 숫자와 오늘 금액 둘 다 0원
+    expect(screen.getAllByText('0원')).toHaveLength(2);
   });
 });
 

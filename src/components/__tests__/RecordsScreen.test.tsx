@@ -43,7 +43,8 @@ describe('기록 탭 화면 (월 / 년 토글)', () => {
     expect(screen.getByText(formatKoYear(thisYear()))).toBeOnTheScreen();
     expect(screen.getByText('월별')).toBeOnTheScreen();
     expect(screen.getByText(/월 평균/)).toBeOnTheScreen();
-    expect(screen.getAllByLabelText(/^\d+월 /)).toHaveLength(12);
+    // 막대 칸은 버튼이 아니라 testID "bar-YYYY-MM" 로 센다 (조작은 차트 전체 제스처 하나)
+    expect(screen.getAllByTestId(/^bar-\d{4}-\d{2}$/)).toHaveLength(12);
     // 목록 섹션 헤더는 "2026년 9월" (월별 섹션)
     expect(screen.getAllByText(formatKoMonth(thisMonth())).length).toBeGreaterThan(0);
     expect(screen.getByText('아메리카노')).toBeOnTheScreen();

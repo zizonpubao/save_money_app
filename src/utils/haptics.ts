@@ -15,3 +15,8 @@ export function goalReachedHaptic(): void {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
   }, GOAL_HAPTIC_GAP_MS);
 }
+
+/** 막대 그래프를 쓸 때 칸(날·월)이 바뀔 때마다 주는 가벼운 틱. iOS 피커 휠과 같은 selection 햅틱. */
+export function scrubTick(): void {
+  Haptics.selectionAsync().catch(() => {});
+}
