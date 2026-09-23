@@ -4,7 +4,9 @@ import {
   addEntry,
   deleteEntry,
   getEarliestEntryDate,
+  getDailyTotals,
   getEntriesBetween,
+  getEntryEmojisForMonth,
   getMaxDailyTotal,
   getMaxMonthlyTotal,
   getSetting,
@@ -13,12 +15,15 @@ import {
   setSetting,
   SETTING_KEYS,
   updateEntry,
+  type DailyTotal,
   type Entry,
+  type EntryEmoji,
   type EntryInput,
 } from '@/src/db';
+import { isFirstOpenOfDay } from '@/src/features/firstOpen';
 import { detectGoalReached, parseGoal } from '@/src/features/goal';
 import { detectPersonalBest, type PersonalBest } from '@/src/features/personalBest';
-import { addMonths, monthRange, thisMonth, toMonth, today } from '@/src/utils/date';
+import { addDays, addMonths, monthRange, thisMonth, toMonth, today } from '@/src/utils/date';
 
 type EntryState = {
   /** 홈 목록에 로드한 가장 오래된 달 ('YYYY-MM'). 이번 달부터 한 달씩 뒤로 늘어난다. */
@@ -36,8 +41,20 @@ type EntryState = {
   goalReachedTick: number;
   /** 마지막 저장이 이번 달 목표를 처음 넘겼는지. "이번 달 목표 달성 🎉" 한 줄에 쓴다. */
   lastGoalReached: boolean;
+  /** (M3.6) DB 에서 한 번이라도 읽었는지. 읽기 전의 0원을 카운트업 시작점으로 쓰지 않게 한다. */
+  loaded: boolean;
+  /** (M3.6) 어제 합계. "오늘의 한 줄" 어제 대비 */
+  yesterdayTotal: number;
+  /** (M3.6) 이번 달 날짜별 합계 (기록 있는 날만). 잔디 */
+  dailyTotals: DailyTotal[];
+  /** (M3.6) 이번 달 기록 이모지, 등록 순. 이모지 적립 줄 */
+  monthEmojis: EntryEmoji[];
+  /** (M3.6) 그날 처음 홈을 연 횟수. 값이 커지면 카드 큰 숫자가 0부터 다시 카운트업한다. */
+  firstOpenTick: number;
 
   reload: () => void;
+  /** 홈이 포커스될 때: 다시 읽기 + 오늘 첫 오픈 판정을 한 번에 (카운트업 신호와 새 합계가 같은 렌더에 오게) */
+  openHome: () => void;
   loadMore: () => void;
   add: (input: EntryInput) => Entry;
   update: (id: number, input: EntryInput) => Entry | null;
@@ -87,16 +104,39 @@ function orFallback<T>(fn: () => T, fallback: T): T {
   }
 }
 
-/** 홈 목록 스냅숏. 홈은 월 단위(이번 달 + "이전 달 더 보기")만 쓴다. */
+/**
+ * 홈 스냅숏. 홈은 월 단위(이번 달 + "이전 달 더 보기")만 쓴다.
+ * 카드의 한 줄·잔디·이모지 줄 데이터도 여기서 함께 읽어, 저장·수정·삭제 뒤 같은 경로로 갱신된다.
+ */
 function fetchSnapshot(oldestMonth: string) {
   const range = computeRange(oldestMonth);
   const earliest = getEarliestEntryDate();
+  const now = today();
+  const month = thisMonth();
   return {
     entries: getEntriesBetween(range.start, range.end),
-    todayTotal: getSumByDate(today()),
-    monthTotal: getSumBetween(monthRange(thisMonth()).start, monthRange(thisMonth()).end),
+    todayTotal: getSumByDate(now),
+    monthTotal: getSumBetween(monthRange(month).start, monthRange(month).end),
     hasMore: earliest !== null && earliest < range.start,
+    yesterdayTotal: getSumByDate(addDays(now, -1)),
+    dailyTotals: getDailyTotals(month),
+    monthEmojis: getEntryEmojisForMonth(month),
+    loaded: true,
   };
+}
+
+/** 오늘 처음 연 거면 마지막 오픈 날짜를 오늘로 적고 true. 같은 날 두 번째부터는 false. */
+function markOpenedToday(): boolean {
+  const now = today();
+  if (!isFirstOpenOfDay(getSetting(SETTING_KEYS.lastOpenDate), now)) return false;
+  setSetting(SETTING_KEYS.lastOpenDate, now);
+  return true;
+}
+
+/** oldestMonth 는 이번 달에서 시작해 뒤로만 늘어나므로 이번 달보다 미래일 수 없다.
+ * 기기 시계가 과거로 돌아간 경우에만 이번 달로 당겨 빈 범위를 막는다. */
+function safeOldestMonth(oldestMonth: string): string {
+  return oldestMonth > thisMonth() ? thisMonth() : oldestMonth;
 }
 
 export const useEntryStore = create<EntryState>((set, get) => ({
@@ -109,13 +149,28 @@ export const useEntryStore = create<EntryState>((set, get) => ({
   lastRecord: null,
   goalReachedTick: 0,
   lastGoalReached: false,
+  loaded: false,
+  yesterdayTotal: 0,
+  dailyTotals: [],
+  monthEmojis: [],
+  firstOpenTick: 0,
 
   reload: () => {
-    const { oldestMonth } = get();
-    // oldestMonth 는 이번 달에서 시작해 뒤로만 늘어나므로 이번 달보다 미래일 수 없다.
-    // 기기 시계가 과거로 돌아간 경우에만 이번 달로 당겨 빈 범위를 막는다.
-    const safeOldest = oldestMonth > thisMonth() ? thisMonth() : oldestMonth;
+    const safeOldest = safeOldestMonth(get().oldestMonth);
     set({ oldestMonth: safeOldest, ...fetchSnapshot(safeOldest) });
+  },
+
+  openHome: () => {
+    const safeOldest = safeOldestMonth(get().oldestMonth);
+    const snapshot = fetchSnapshot(safeOldest);
+    // 날짜 기록이 실패해도 홈은 떠야 하므로 카운트업만 건너뛴다
+    const firstOpen = orFallback(markOpenedToday, false);
+    const { firstOpenTick } = get();
+    set({
+      oldestMonth: safeOldest,
+      ...snapshot,
+      firstOpenTick: firstOpen ? firstOpenTick + 1 : firstOpenTick,
+    });
   },
 
   loadMore: () => {

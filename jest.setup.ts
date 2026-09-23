@@ -16,5 +16,8 @@ beforeAll(async () => {
  * 컴포넌트 렌더 테스트용: reanimated 4 는 react-native-worklets 네이티브 모듈을 import 시점에 찾으므로
  * jest(노드)에서는 두 라이브러리가 제공하는 공식 mock 으로 바꾼다. 애니메이션은 즉시 끝난 값으로 보인다.
  */
+// 주의: 'react-native-worklets/src/mock' 은 패키지 내부 경로다 (공개 export 가 아님).
+// worklets 버전을 올리면 파일이 옮겨지거나 사라져 모든 컴포넌트 테스트가 import 단계에서 깨질 수 있다.
+// 그때는 node_modules/react-native-worklets 에서 mock 파일 위치를 다시 찾아 이 경로를 고친다.
 jest.mock('react-native-worklets', () => jest.requireActual('react-native-worklets/src/mock'));
 jest.mock('react-native-reanimated', () => jest.requireActual('react-native-reanimated/mock'));

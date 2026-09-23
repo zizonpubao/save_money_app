@@ -149,6 +149,7 @@ export function BarChart({ bars }: Props) {
           accessible
           accessibilityRole="adjustable"
           accessibilityLabel="막대 그래프"
+          accessibilityHint="위아래로 쓸어 날짜 이동"
           accessibilityValue={{
             text: selected ? `${selected.label} ${formatWon(selected.total)}` : '선택 없음',
           }}

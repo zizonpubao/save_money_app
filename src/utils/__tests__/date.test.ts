@@ -1,7 +1,10 @@
 import {
+  addDays,
   addMonths,
   addYears,
+  dayNumber,
   daysInMonth,
+  firstWeekday,
   formatKoDate,
   formatKoMonth,
   formatKoYear,
@@ -129,5 +132,24 @@ describe('toDate / fromDate', () => {
     expect(d.getMonth()).toBe(8);
     expect(d.getDate()).toBe(23);
     expect(d.getHours()).toBe(0);
+  });
+});
+
+describe('addDays / firstWeekday / dayNumber (M3.6)', () => {
+  it('addDays 는 달·해 경계를 넘는다', () => {
+    expect(addDays('2026-10-01', -1)).toBe('2026-09-30');
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+    expect(addDays('2028-03-01', -1)).toBe('2028-02-29');
+  });
+
+  it('firstWeekday 는 1일의 요일 (0 = 일요일)', () => {
+    expect(firstWeekday('2026-09')).toBe(2); // 화
+    expect(firstWeekday('2026-02')).toBe(0); // 일
+    expect(firstWeekday('2026-08')).toBe(6); // 토
+  });
+
+  it('dayNumber 는 하루에 1씩 늘고 달 경계에서도 이어진다', () => {
+    expect(dayNumber('1970-01-01')).toBe(0);
+    expect(dayNumber('2026-10-01') - dayNumber('2026-09-30')).toBe(1);
   });
 });

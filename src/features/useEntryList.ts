@@ -17,7 +17,7 @@ export function useEntryList() {
   const lastRecord = useEntryStore((s) => s.lastRecord);
   const goalReachedTick = useEntryStore((s) => s.goalReachedTick);
   const lastGoalReached = useEntryStore((s) => s.lastGoalReached);
-  const reload = useEntryStore((s) => s.reload);
+  const openHome = useEntryStore((s) => s.openHome);
   const loadMore = useEntryStore((s) => s.loadMore);
   const remove = useEntryStore((s) => s.remove);
 
@@ -29,14 +29,15 @@ export function useEntryList() {
   const settingsLoaded = useSettingsStore((s) => s.loaded);
   const loadSettings = useSettingsStore((s) => s.load);
 
-  // 탭으로 돌아올 때마다 다시 읽는다 (자정 넘김, 다른 화면에서의 변경 반영)
+  // 탭으로 돌아올 때마다 다시 읽는다 (자정 넘김, 다른 화면에서의 변경 반영).
+  // 읽으면서 "오늘 첫 오픈" 도 함께 판정한다 (카드 큰 숫자 카운트업)
   useFocusEffect(
     useCallback(() => {
       if (!categoriesLoaded) reloadCategories();
       // 목표는 설정 탭이 스토어를 바로 고치므로 처음 한 번만 DB 에서 읽으면 된다
       if (!settingsLoaded) loadSettings();
-      reload();
-    }, [categoriesLoaded, reloadCategories, settingsLoaded, loadSettings, reload]),
+      openHome();
+    }, [categoriesLoaded, reloadCategories, settingsLoaded, loadSettings, openHome]),
   );
 
   const sections = useMemo(() => groupEntriesByDate(entries), [entries]);

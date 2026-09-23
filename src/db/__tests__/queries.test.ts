@@ -10,6 +10,7 @@ import {
   getEarliestEntryDate,
   getEntriesBetween,
   getEntryById,
+  getEntryEmojisForMonth,
   getMaxDailyTotal,
   getMaxMonthlyTotal,
   getMonthStats,
@@ -23,6 +24,7 @@ import {
   resetDatabaseConnection,
   setSetting,
   SETTING_KEYS,
+  UNCATEGORIZED_EMOJI,
   updateEntry,
   type EntryInput,
 } from '@/src/db';
@@ -423,6 +425,41 @@ describe('queries', () => {
     });
   });
 
+  describe('getEntryEmojisForMonth (M3.6 이모지 적립 줄)', () => {
+    it('기록 날짜가 아니라 등록(created_at) 순서대로 이모지를 돌려준다', () => {
+      const coffee = categoryIdOf('커피');
+      const taxi = categoryIdOf('택시');
+      // 같은 초에 넣으면 created_at 이 같으므로 순서를 확실히 하려고 직접 적는다
+      const late = addEntry(input({ date: '2026-09-02', categoryId: coffee }));
+      const early = addEntry(input({ date: '2026-09-20', categoryId: taxi }));
+      getDb().runSync('UPDATE entries SET created_at = ? WHERE id = ?', ['2026-09-21T10:00:00+09:00', late.id]);
+      getDb().runSync('UPDATE entries SET created_at = ? WHERE id = ?', ['2026-09-20T09:00:00+09:00', early.id]);
+      expect(getEntryEmojisForMonth('2026-09')).toEqual([
+        { id: early.id, emoji: '🚕' },
+        { id: late.id, emoji: '☕' },
+      ]);
+    });
+
+    it('created_at 이 같으면 먼저 넣은(id 작은) 기록이 앞이다', () => {
+      const a = addEntry(input({ categoryId: categoryIdOf('커피') }));
+      const b = addEntry(input({ categoryId: categoryIdOf('술') }));
+      getDb().runSync('UPDATE entries SET created_at = ?', ['2026-09-15T12:00:00+09:00']);
+      expect(getEntryEmojisForMonth('2026-09').map((e) => e.id)).toEqual([a.id, b.id]);
+    });
+
+    it('미분류(카테고리 없음)는 📦 로 채운다', () => {
+      addEntry(input({ categoryId: null }));
+      expect(UNCATEGORIZED_EMOJI).toBe('📦');
+      expect(getEntryEmojisForMonth('2026-09').map((e) => e.emoji)).toEqual(['📦']);
+    });
+
+    it('다른 달 기록은 빼고, 기록 없는 달은 빈 배열이다', () => {
+      addEntry(input({ date: '2026-08-31' }));
+      addEntry(input({ date: '2026-10-01' }));
+      expect(getEntryEmojisForMonth('2026-09')).toEqual([]);
+    });
+  });
+
   describe('settings (M3.5)', () => {
     it('없는 키는 null 이다', () => {
       expect(getSetting(SETTING_KEYS.monthlyGoal)).toBeNull();
@@ -459,6 +496,7 @@ describe('queries', () => {
       expect(SETTING_KEYS).toEqual({
         monthlyGoal: 'monthly_goal',
         goalReachedMonth: 'goal_reached_month',
+        lastOpenDate: 'last_open_date',
       });
     });
   });

@@ -1,8 +1,14 @@
-import type { Category, CategoryTotal, DailyTotal, MonthlyTotal } from '@/src/db';
+import {
+  UNCATEGORIZED_EMOJI,
+  type Category,
+  type CategoryTotal,
+  type DailyTotal,
+  type MonthlyTotal,
+} from '@/src/db';
 import { dayOfMonth, daysInMonth, monthOfYear, toMonth, toYear } from '@/src/utils/date';
 
 /** 미분류(카테고리 없음 / 지워진 카테고리) 줄 */
-export const UNCATEGORIZED = { key: 'none', name: '미분류', emoji: '📦' } as const;
+export const UNCATEGORIZED = { key: 'none', name: '미분류', emoji: UNCATEGORIZED_EMOJI } as const;
 
 /** 막대 그래프 한 칸 = 그 달의 하루 */
 export type DayBar = {

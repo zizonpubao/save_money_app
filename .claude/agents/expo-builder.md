@@ -25,6 +25,10 @@ model: opus
 - 바텀시트, 스와이프는 `react-native-gesture-handler` + `react-native-reanimated`(둘 다 Expo Go 포함) 또는 순수 View/Modal로 해결
 - 차트는 무조건 View로 직접 그린다
 
+## 절대 하지 말 것
+- `npx prettier`, `eslint --fix` 같은 **포맷터를 프로젝트 전체에 돌리지 않는다** (설정 파일이 없어 수십 개 파일이 바뀐 사고가 있었음). 스타일은 손으로 맞춘다
+- `git add -A`, 커밋, push (메인 세션이 한다)
+
 ## 코드 스타일
 - 함수형 컴포넌트, 명명된 export
 - 금액은 항상 `number`(정수 원), 표시할 때만 `formatWon()` 사용

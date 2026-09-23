@@ -9,7 +9,7 @@ import {
 } from '@/src/db';
 import { computeRange, useEntryStore } from '@/src/store/entryStore';
 import { useSettingsStore } from '@/src/store/settingsStore';
-import { addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
+import { addDays, addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
 
 // 설정 조회가 실패하는 경우를 흉내 내려고 getSetting 만 갈아 끼울 수 있게 감싼다. 평소엔 실제 함수 그대로.
 jest.mock('@/src/db', () => {
@@ -68,6 +68,11 @@ describe('entryStore', () => {
       lastRecord: null,
       goalReachedTick: 0,
       lastGoalReached: false,
+      loaded: false,
+      yesterdayTotal: 0,
+      dailyTotals: [],
+      monthEmojis: [],
+      firstOpenTick: 0,
     });
   });
 
@@ -360,6 +365,59 @@ describe('entryStore', () => {
       useEntryStore.getState().reload();
       useEntryStore.getState().loadMore();
       expect(useEntryStore.getState().oldestMonth).toBe(THIS_MONTH);
+    });
+  });
+
+  describe('홈 활기 데이터 (M3.6)', () => {
+    it('reload 는 어제 합계·이번 달 일별 합계·이모지를 함께 읽고 loaded 가 된다', () => {
+      const coffee = addEntry(input({ date: today(), amount: 4500, categoryId: 1 }));
+      addEntry(input({ date: addDays(today(), -1), amount: 3000 }));
+      useEntryStore.getState().reload();
+      const s = useEntryStore.getState();
+      expect(s.loaded).toBe(true);
+      expect(s.yesterdayTotal).toBe(3000);
+      expect(s.dailyTotals).toContainEqual({ date: today(), total: 4500 });
+      expect(s.monthEmojis.map((e) => e.id)).toContain(coffee.id);
+    });
+
+    it('저장하면 새 이모지가 목록 끝에 붙고, 삭제하면 빠진다 (같은 재조회 경로)', () => {
+      useEntryStore.getState().reload();
+      const first = useEntryStore.getState().add(input({ categoryId: 1 }));
+      const second = useEntryStore.getState().add(input({ categoryId: null }));
+      expect(useEntryStore.getState().monthEmojis.map((e) => e.id)).toEqual([first.id, second.id]);
+      expect(useEntryStore.getState().monthEmojis.at(-1)?.emoji).toBe('📦');
+      useEntryStore.getState().remove(second.id);
+      expect(useEntryStore.getState().monthEmojis.map((e) => e.id)).toEqual([first.id]);
+    });
+  });
+
+  describe('openHome — 하루 첫 오픈 (M3.6)', () => {
+    it('last_open_date 키가 없으면(첫 설치) 첫 오픈: 카운트업 신호가 오르고 오늘 날짜를 적는다', () => {
+      expect(getSetting(SETTING_KEYS.lastOpenDate)).toBeNull();
+      useEntryStore.getState().openHome();
+      expect(useEntryStore.getState().firstOpenTick).toBe(1);
+      expect(useEntryStore.getState().loaded).toBe(true);
+      expect(getSetting(SETTING_KEYS.lastOpenDate)).toBe(today());
+    });
+
+    it('같은 날 다시 포커스하면 카운트업 신호가 그대로다', () => {
+      useEntryStore.getState().openHome();
+      useEntryStore.getState().openHome();
+      expect(useEntryStore.getState().firstOpenTick).toBe(1);
+    });
+
+    it('마지막 오픈이 어제면 첫 오픈으로 보고 오늘로 바꿔 적는다', () => {
+      setSetting(SETTING_KEYS.lastOpenDate, addDays(today(), -1));
+      useEntryStore.getState().openHome();
+      expect(useEntryStore.getState().firstOpenTick).toBe(1);
+      expect(getSetting(SETTING_KEYS.lastOpenDate)).toBe(today());
+    });
+
+    it('오늘 이미 열었으면(앱 재시작) 카운트업 없이 합계만 읽는다', () => {
+      setSetting(SETTING_KEYS.lastOpenDate, today());
+      addEntry(input({ amount: 7000 }));
+      useEntryStore.getState().openHome();
+      expect(useEntryStore.getState()).toMatchObject({ firstOpenTick: 0, monthTotal: 7000 });
     });
   });
 });

@@ -2,15 +2,19 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 
+import { DailyLine } from '@/src/components/DailyLine';
+import { EmojiStrip } from '@/src/components/EmojiStrip';
 import { EntryFormModal } from '@/src/components/EntryFormModal';
 import { EntryRow } from '@/src/components/EntryRow';
 import { EntrySectionHeader } from '@/src/components/EntrySectionHeader';
 import { Fab } from '@/src/components/Fab';
+import { MonthGrass } from '@/src/components/MonthGrass';
 import { RecordBanner } from '@/src/components/RecordBanner';
 import { Screen } from '@/src/components/Screen';
 import { SummaryCard } from '@/src/components/SummaryCard';
 import type { Entry, EntryInput } from '@/src/db';
 import { useEntryList } from '@/src/features/useEntryList';
+import { useHomeCard } from '@/src/features/useHomeCard';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
 import { useTheme } from '@/src/theme';
@@ -22,6 +26,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors, type, sp, radius, size } = useTheme();
   const list = useEntryList();
+  const card = useHomeCard();
   const categories = useCategoryStore((s) => s.categories);
   const add = useEntryStore((s) => s.add);
   const [formVisible, setFormVisible] = useState(false);
@@ -67,6 +72,16 @@ export default function HomeScreen() {
               goal={list.monthlyGoal}
               goalReachedTick={list.goalReachedTick}
               onGoalPress={() => router.push('/(tabs)/settings')}
+              ready={card.loaded}
+              firstOpenTick={card.firstOpenTick}
+              // DB 를 읽기 전 기본값(0원)으로 만든 문구가 한 프레임 비쳤다 바뀌지 않게, 읽은 뒤에만 그린다
+              topLine={card.loaded ? <DailyLine text={card.line.text} /> : undefined}
+              bottomExtra={
+                <View style={{ gap: sp.md }}>
+                  <EmojiStrip items={card.monthEmojis} celebrateTick={list.celebrateTick} />
+                  <MonthGrass grass={card.grass} />
+                </View>
+              }
             />
             <RecordBanner
               best={list.lastRecord}

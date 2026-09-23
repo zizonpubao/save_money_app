@@ -34,6 +34,12 @@ export type DailyTotal = {
   total: number;
 };
 
+/** 홈 이모지 적립 줄 한 칸. id 로 "방금 저장한 기록" 을 가려 그 칸만 톡 튀게 한다. */
+export type EntryEmoji = {
+  id: number;
+  emoji: string;
+};
+
 /** 그 해의 한 달치 합계 (기록이 있는 달만) */
 export type MonthlyTotal = {
   month: string; // 'YYYY-MM'

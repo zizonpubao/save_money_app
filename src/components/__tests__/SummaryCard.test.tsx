@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 
 import { MonthStatsCard } from '@/src/components/MonthStatsCard';
 import { SummaryCard } from '@/src/components/SummaryCard';
@@ -75,6 +76,52 @@ describe('SummaryCard — 월 목표 (M3.5)', () => {
     // 큰 숫자는 카운트업 중이라 보지 않고, 목표 줄이 새 합계로 바뀌었는지만 본다
     expect(screen.getByText('목표 300,000원 · 달성! +12,000원 초과')).toBeOnTheScreen();
     expect(screen.getByRole('progressbar').props.accessibilityValue).toMatchObject({ now: 100 });
+  });
+});
+
+describe('SummaryCard — M3.6 슬롯', () => {
+  it('슬롯을 주지 않으면 한 줄·아래 영역 없이 기존 구획만 그린다', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={1000} celebrateTick={0} />);
+    expect(screen.queryByTestId('slot-top')).toBeNull();
+    expect(screen.queryByTestId('slot-bottom')).toBeNull();
+    expect(screen.getByText('1,000원')).toBeOnTheScreen();
+  });
+
+  it('topLine 은 큰 숫자 위, bottomExtra 는 오늘 행 아래에 그린다', async () => {
+    await render(
+      <SummaryCard
+        todayTotal={0}
+        monthTotal={1000}
+        celebrateTick={0}
+        topLine={<Text testID="slot-top">한 줄</Text>}
+        bottomExtra={<Text testID="slot-bottom">아래</Text>}
+      />,
+    );
+    // 화면에 그려진 글자를 위→아래 순서로 모아 구획 순서를 본다
+    const order = screen
+      .getAllByText(/한 줄|이번 달 절약|오늘 ·|아래/)
+      .map((el) => String([el.props.children].flat().join('')));
+    expect(order[0]).toBe('한 줄');
+    expect(order[1]).toMatch(/^이번 달 절약/);
+    expect(order[2]).toMatch(/^오늘 ·/);
+    expect(order[3]).toBe('아래');
+  });
+
+  it('ready 전에는 합계를 그대로, 읽은 뒤 첫 값도 굴리지 않고 바로 보여준다 (같은 날 재오픈)', async () => {
+    const { rerender } = await render(
+      <SummaryCard todayTotal={0} monthTotal={0} celebrateTick={0} ready={false} />,
+    );
+    await rerender(<SummaryCard todayTotal={0} monthTotal={52000} celebrateTick={0} ready />);
+    expect(screen.getByText('52,000원')).toBeOnTheScreen();
+  });
+
+  it('firstOpenTick 이 있으면 큰 숫자가 0원에서 시작한다 (하루 첫 오픈 카운트업)', async () => {
+    await render(
+      <SummaryCard todayTotal={0} monthTotal={52000} celebrateTick={0} firstOpenTick={1} />,
+    );
+    // jest 의 reanimated mock 은 카운트업 진행을 화면에 반영하지 않으므로 시작값만 본다
+    expect(screen.queryByText('52,000원')).toBeNull();
+    expect(screen.getAllByText('0원')).toHaveLength(2);
   });
 });
 

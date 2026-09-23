@@ -11,6 +11,7 @@
 | | `primary` / `onPrimary` / `primarySoft` | `#2F6FED` `#FFF` `#E8EFFD` / `#5B8DEF` `#FFF` `#1F2A44` |
 | | `danger` | `#E5484D` / `#F2555A` |
 | | `border`(컨트롤 테두리) / `divider`(카드 안 구분선) | `#E5E7EB` `#EDEFF2` / `#2A2E36` `#2E333C` |
+| | `grass1~4`(잔디 농도) / `grassFuture`(잔디 미래 칸) | `#BACFF9` `#8CAFF5` `#5D8FF1` `#2F6FED` `#F5F6F8` / `#2E436F` `#3D5C9A` `#4C74C4` `#5B8DEF` `#22262D` |
 | 간격 | `sp.xs/sm/smd/md/lg/xl` | 4 / 8 / 12 / 16 / 24 / 32 (4의 배수만) |
 | 타이포 | `type.display` | 36 / 800 / 42 — 이번 달 절약액 |
 | | `type.title` | 28 / 700 / 34 — 화면 제목, 금액 입력값 |
@@ -24,6 +25,7 @@
 | 크기 | `size.touch/fab/fabIcon` | 44 / 56 / 30 |
 | | `size.swipeAction/headerAction/memoMin/toggleMin` | 88 / 56 / 80 / 120 |
 | | `size.barTrack` / `size.bar` / `size.axisLabel` | 120 / 10 / 28 (M3 그래프용) |
+| | `size.todayRing` / `size.emojiCell` | 2 / 24 (M3.6 잔디 오늘 테두리, 이모지 적립 칸) |
 
 ## 컴포넌트 규칙
 - **카드**: `card` 배경 + `radius.lg` + `padding: sp.lg`. 그림자 없음, 테두리 없음 — 배경 대비로만 뜬다.

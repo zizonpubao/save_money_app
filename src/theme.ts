@@ -13,8 +13,15 @@ export type ColorTokens = {
   danger: string;
   /** 컨트롤 테두리 (입력 필드, 칩, 토글) */
   border: string;
-  /** 카드 안쪽 구분선 (목록 행 사이, 헤더 아래) */
+  /** 카드 안쪽 구분선 (목록 행 사이, 헤더 아래). (M3.6) 잔디의 기록 없는 날 칸 */
   divider: string;
+  /** (M3.6) 잔디의 아직 오지 않은 날 칸. divider 보다 한 단계 연하다 */
+  grassFuture: string;
+  /** (M3.6) 잔디 농도 1~4단계. primarySoft → primary 사이를 4등분 (4 = primary) */
+  grass1: string;
+  grass2: string;
+  grass3: string;
+  grass4: string;
 };
 
 export const lightColors: ColorTokens = {
@@ -28,6 +35,11 @@ export const lightColors: ColorTokens = {
   danger: '#E5484D',
   border: '#E5E7EB',
   divider: '#EDEFF2',
+  grassFuture: '#F5F6F8',
+  grass1: '#BACFF9',
+  grass2: '#8CAFF5',
+  grass3: '#5D8FF1',
+  grass4: '#2F6FED',
 };
 
 export const darkColors: ColorTokens = {
@@ -41,6 +53,11 @@ export const darkColors: ColorTokens = {
   danger: '#F2555A',
   border: '#2A2E36',
   divider: '#2E333C',
+  grassFuture: '#22262D',
+  grass1: '#2E436F',
+  grass2: '#3D5C9A',
+  grass3: '#4C74C4',
+  grass4: '#5B8DEF',
 };
 
 /** 간격 토큰 (px) — 4의 배수만 */
@@ -138,6 +155,12 @@ export const size = {
   axisLabel: 28,
   /** (M3) 카테고리 비율 바 / (M3.5) 목표 진행 바 두께 */
   bar: 10,
+  /** (M3.6) 잔디 오늘 칸 테두리 두께 */
+  todayRing: 2,
+  /** (M3.6) 잔디 칸 한 변 최대. 넓은 화면에서 6줄 달력이 카드를 과하게 늘리지 않게 */
+  grassCellMax: 26,
+  /** (M3.6) 이모지 적립 줄 한 칸 (정사각형). 이모지 글자 크기는 fs.md */
+  emojiCell: 24,
 } as const;
 
 export type Theme = {

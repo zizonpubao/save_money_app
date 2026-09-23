@@ -105,3 +105,18 @@ export function daysInMonth(month: string): number {
 export function nowIso(): string {
   return dayjs().format();
 }
+
+/** 'YYYY-MM-DD'에 delta일을 더한다. addDays('2026-10-01', -1) → '2026-09-30' */
+export function addDays(date: string, delta: number): string {
+  return dayjs(date, DATE_FORMAT).add(delta, 'day').format(DATE_FORMAT);
+}
+
+/** 그 달 1일의 요일. 0 = 일요일 … 6 = 토요일. firstWeekday('2026-09') → 2 (화) */
+export function firstWeekday(month: string): number {
+  return dayjs(`${month}-01`, DATE_FORMAT).day();
+}
+
+/** 1970-01-01 부터 며칠째인지 (로컬 날짜 기준). 하루에 하나씩 차례로 돌리는 문구의 순번에 쓴다. */
+export function dayNumber(date: string): number {
+  return dayjs(date, DATE_FORMAT).diff(dayjs('1970-01-01', DATE_FORMAT), 'day');
+}

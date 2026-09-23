@@ -9,6 +9,7 @@ import {
   type CategoryTotal,
   type DailyTotal,
   type Entry,
+  type EntryEmoji,
   type EntryInput,
   type EntryRow,
   type MonthStats,
@@ -158,6 +159,26 @@ export function getMaxMonthlyTotal(excludeMonth?: string): number {
   return row?.best ?? 0;
 }
 
+// ---------- 홈 이모지 적립 줄 (M3.6) ----------
+
+/** 카테고리가 없거나 지워진 기록의 이모지 (기록 탭 카테고리 합계의 "미분류" 와 같은 글자) */
+export const UNCATEGORIZED_EMOJI = '📦';
+
+/**
+ * 그 달 기록의 카테고리 이모지를 등록한 순서(created_at, 같은 초면 id)대로.
+ * 기록 날짜가 아니라 등록 순서라서, 방금 저장한 기록이 항상 맨 끝에 온다.
+ */
+export function getEntryEmojisForMonth(month: string): EntryEmoji[] {
+  const { start, end } = monthRange(month);
+  return getDb().getAllSync<EntryEmoji>(
+    `SELECT e.id AS id, COALESCE(c.emoji, ?) AS emoji
+     FROM entries e LEFT JOIN categories c ON c.id = e.category_id
+     WHERE e.date BETWEEN ? AND ?
+     ORDER BY e.created_at ASC, e.id ASC`,
+    [UNCATEGORIZED_EMOJI, start, end],
+  );
+}
+
 // ---------- settings (M3.5) ----------
 
 /** settings 테이블 키. 값은 항상 문자열로 저장하고, 해석은 쓰는 쪽(features)이 한다. */
@@ -166,6 +187,8 @@ export const SETTING_KEYS = {
   monthlyGoal: 'monthly_goal',
   /** 목표 달성을 축하한 달 ('YYYY-MM'). 한 달에 한 번만 축하하기 위해 기록한다. */
   goalReachedMonth: 'goal_reached_month',
+  /** (M3.6) 홈을 마지막으로 연 날 ('YYYY-MM-DD'). 그날 처음 열 때만 월 합계를 0부터 카운트업한다. */
+  lastOpenDate: 'last_open_date',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

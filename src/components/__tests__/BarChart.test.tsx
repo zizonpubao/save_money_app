@@ -176,6 +176,18 @@ describe('BarChart — 일별 막대 (월 모드)', () => {
     expect(screen.getByText('1일 · 0원')).toBeOnTheScreen();
   });
 
+  it('VoiceOver: 힌트 "위아래로 쓸어 날짜 이동", 위로 쓸면(increment) 1일부터 한 칸씩, 아래로 쓸면 되돌아간다', async () => {
+    await renderChart('2026-01', TOTALS);
+    const track = screen.getByTestId('barchart-track');
+    expect(track.props.accessibilityHint).toBe('위아래로 쓸어 날짜 이동');
+    await fireEvent(track, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+    expect(screen.getByText('1일 · 0원')).toBeOnTheScreen();
+    await fireEvent(track, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+    expect(screen.getByText('2일 · 0원')).toBeOnTheScreen();
+    await fireEvent(track, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+    expect(screen.getByText('1일 · 0원')).toBeOnTheScreen();
+  });
+
   it('누른 채 쓸면 손가락 아래 날의 툴팁이 뜨고, 손을 떼도 남는다', async () => {
     await renderChart('2026-01', TOTALS);
     await scrub([xOf(4), xOf(10), xOf(22)]);

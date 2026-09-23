@@ -18,6 +18,8 @@ import { formatWon } from '@/src/utils/money';
 /** 목표 달성 틴트: 빠르게 번졌다가 천천히 빠진다. 합계 0.8초. */
 const TINT_IN_MS = 200;
 const TINT_OUT_MS = 600;
+/** (M3.6) 하루 첫 오픈 카운트업 0 → 월 합계 시간 */
+const FIRST_OPEN_COUNT_UP_MS = 800;
 
 type Props = {
   todayTotal: number;
@@ -34,6 +36,13 @@ type Props = {
   topLine?: ReactNode;
   /** (M3.6 슬롯) 오늘 행 아래 — 이모지 적립 줄, 카드 안 잔디. 없으면 자리도 차지하지 않는다 */
   bottomExtra?: ReactNode;
+  /**
+   * (M3.6) 합계를 DB 에서 읽었는지. 읽기 전(스토어 기본값 0원)에는 굴리지 않고 그대로 보여주다가,
+   * 읽은 뒤 첫 값은 카운트업 없이 바로 보여준다 (같은 날 두 번째 오픈은 즉시 표시).
+   */
+  ready?: boolean;
+  /** (M3.6) 그날 첫 오픈 횟수. 1 이상이 되거나 커질 때마다 큰 숫자가 0 → 월 합계로 0.8초 카운트업 */
+  firstOpenTick?: number;
 };
 
 /**
@@ -49,6 +58,8 @@ export function SummaryCard({
   onGoalPress,
   topLine,
   bottomExtra,
+  ready = true,
+  firstOpenTick = 0,
 }: Props) {
   const { colors, type, sp, radius, size } = useTheme();
   const todayLabel = formatKoDate(today());
@@ -77,6 +88,7 @@ export function SummaryCard({
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const tintStyle = useAnimatedStyle(() => ({ opacity: tint.value }));
   const progress = useMemo(() => goalProgress(monthTotal, goal), [monthTotal, goal]);
+  const bigNumberStyle = [type.display, numeric, { color: colors.primary, marginTop: sp.xs }];
 
   return (
     <Animated.View
@@ -101,10 +113,18 @@ export function SummaryCard({
       <Text style={[type.caption, { color: colors.textMuted }]}>
         이번 달 절약 · {formatKoMonth(thisMonth())}
       </Text>
-      <AnimatedWon
-        value={monthTotal}
-        style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}
-      />
+      {ready ? (
+        // key 가 바뀌면 새로 마운트돼 from(0) 부터 다시 굴러간다 (자정 넘겨 다시 포커스된 경우 포함)
+        <AnimatedWon
+          key={firstOpenTick}
+          value={monthTotal}
+          from={firstOpenTick > 0 ? 0 : undefined}
+          fromDuration={FIRST_OPEN_COUNT_UP_MS}
+          style={bigNumberStyle}
+        />
+      ) : (
+        <Text style={bigNumberStyle}>{formatWon(monthTotal)}</Text>
+      )}
 
       {/* ③ 목표 구획: 큰 숫자와 sp.lg 띄워 별도 줄로 */}
       {goal !== null && progress !== null ? (

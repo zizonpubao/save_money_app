@@ -5,6 +5,7 @@ export type {
   CategoryTotal,
   DailyTotal,
   Entry,
+  EntryEmoji,
   EntryInput,
   MonthStats,
   MonthlyTotal,
