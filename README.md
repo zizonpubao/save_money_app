@@ -1,0 +1,193 @@
+<div align="center">
+
+# 💰 SaveLog
+
+### "오늘 참은 소비"를 기록하는 절약 앱
+
+커피 한 잔, 배달 한 번을 참을 때마다 항목과 금액을 적으면
+**날짜별 · 월별 · 연별로 얼마를 아꼈는지** 보여주고, 저장하는 순간마다 작은 성취감을 돌려주는 개인용 iOS 앱입니다.
+
+![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-280%20passing-C21325?logo=jest&logoColor=white)
+![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
+
+</div>
+
+---
+
+## 📖 소개
+
+가계부는 "쓴 돈"을 적지만 SaveLog는 **"안 쓴 돈"** 을 적습니다.
+실제 지출은 추적하지 않고, 참은 소비만 쌓아서 "이번 달에 이만큼 아꼈다"는 숫자를 키워 갑니다.
+
+- 서버 없음, 로그인 없음. 데이터는 아이폰 안 SQLite에만 있습니다
+- Windows PC + 아이폰 Expo Go만으로 개발합니다 (Mac 없음)
+- 기획 → 구현 → 리뷰 → 테스트를 역할별 AI 서브 에이전트가 나눠 맡고, 사람은 결정만 합니다
+
+## ✨ 주요 기능
+
+| # | 기능 | 요약 |
+|---|---|---|
+| 1 | 기록 입력 | 금액(자동 콤마) · 항목 · 카테고리 칩 · 날짜 · 메모. 저장 시 햅틱 + 금액 카운트업 + 카드 펄스 |
+| 2 | 홈 | 이번 달 절약액 카드, 날짜별 목록, 스와이프 삭제, 수정 화면 |
+| 3 | 기록 탭 | 월 / 년 단위 전환, 기간 이동, 일별·월별 막대 그래프(탭 툴팁), 카테고리별 비율 바 |
+| 4 | 개인 최고 | 하루 · 한 달 역대 최고를 처음 넘기는 순간 "최고 기록! 🏆" |
+| 5 | 월 목표 | 목표 금액 설정, 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 (M3.5) |
+| 6 | 홈 활기 | 오늘의 한 줄(환산 · 절약 명언), 하루 첫 오픈 카운트업, 이번 달 잔디, 이모지 적립 (M3.6) |
+| 7 | 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 (M5) |
+
+### 🎯 저장 순간의 이펙트
+
+기록을 저장하면 **햅틱 → 이번 달 절약액이 이전 값에서 새 값으로 카운트업 → 카드가 살짝 커졌다 돌아옴**이 1초 안에 이어집니다.
+역대 최고를 넘기면 배너가 1.5초 뜨고, 수정 저장에는 이펙트가 없습니다. "새로 아꼈을 때만" 기뻐하게 설계했습니다.
+
+### 📊 막대 그래프는 View로 직접
+
+외부 차트 라이브러리를 쓰지 않고 `View`로 그립니다. Expo Go 호환 리스크를 없애기 위해서입니다.
+월 모드는 31칸, 년 모드는 12칸이며 칸 전체가 터치 영역이고 막대는 그 안에서 70% 폭입니다.
+
+## 🛠 기술 스택
+
+| 구분 | 기술 | 비고 |
+|---|---|---|
+| 앱 | Expo SDK 57 · React Native · Expo Router | 파일 기반 라우팅, 탭 3개 |
+| 언어 | TypeScript (strict, `any` 금지) | |
+| 저장 | expo-sqlite (동기 API) | `schema_version` 테이블로 마이그레이션 관리 |
+| 상태 | Zustand | 화면 로컬 상태는 `useState` |
+| 애니메이션 | react-native-reanimated 4 · gesture-handler | 카운트업, 펄스, 스와이프 |
+| 날짜 | dayjs (locale ko) | `2026년 9월 23일 (수)` |
+| 테스트 | jest-expo · @testing-library/react-native · sql.js | sql.js로 expo-sqlite를 대역해 DB 계층까지 PC에서 검증 |
+| 개발 도구 | Claude Code 서브 에이전트 7개 | 아래 "개발 방식" 참고 |
+
+## 🏗 아키텍처
+
+한 번의 저장이 지나가는 길입니다. **SQL은 `src/db/` 안에만** 있고, 화면과 훅은 함수 이름만 압니다.
+
+```mermaid
+flowchart TD
+    A["app/ 화면<br/>(Expo Router)"] -->|"① 저장 누름"| B["src/features/ 훅<br/>입력 검증 · 상태 갱신"]
+    B -->|"② addEntry(entry)<br/>그냥 함수 호출"| C["src/db/queries.ts<br/>여기에만 SQL"]
+    C -->|"③ INSERT (파라미터 바인딩)"| D[("expo-sqlite<br/>savelog.db")]
+    C -->|"④ 결과"| E["src/store/ Zustand<br/>목록 · 합계 캐시"]
+    E -->|"⑤ 다시 그림"| A
+    T["src/theme.ts<br/>색 · 간격 · 타이포 토큰"] -.-> A
+    M["src/db/migrations.ts<br/>v1 → v2 → v3"] -->|"앱 시작 시 1회"| D
+```
+
+## 🗄 데이터 모델
+
+```mermaid
+erDiagram
+    entries {
+        int id PK
+        text date "YYYY-MM-DD (로컬)"
+        text title
+        int amount "원 단위 정수, 0 초과"
+        int category_id FK "NULL 허용"
+        text memo
+        text created_at
+        text updated_at
+    }
+    categories {
+        int id PK
+        text name UK
+        text emoji
+        int sort_order
+        int is_default "1이면 삭제 불가"
+    }
+    settings {
+        text key PK
+        text value
+    }
+    categories ||--o{ entries : "ON DELETE SET NULL"
+```
+
+카테고리를 지워도 기록은 남고 `category_id`만 NULL이 됩니다. 기록은 절대 연쇄 삭제되지 않습니다.
+마이그레이션은 한 번 적용되면 수정하지 않고 새 버전을 덧붙입니다 (v1 초기 스키마 → v2 밥값 카테고리 → v3 settings).
+
+## 📁 프로젝트 구조
+
+```
+savelog/
+├── app/                    # Expo Router 화면 (라우팅과 조립만)
+│   ├── (tabs)/
+│   │   ├── index.tsx       # 홈: 이번 달 카드 + 입력 + 최근 기록
+│   │   ├── monthly.tsx     # 기록: 월/년 토글, 막대, 카테고리, 전체 목록
+│   │   └── settings.tsx    # 설정: 월 목표, 백업/복원, 카테고리
+│   └── entry/[id].tsx      # 기록 수정
+├── src/
+│   ├── db/                 # SQLite 연결, 마이그레이션, 쿼리 (SQL은 여기만)
+│   ├── store/              # Zustand 스토어
+│   ├── features/           # 화면별 훅 + 순수 계산 함수
+│   ├── components/         # 재사용 UI
+│   ├── utils/              # 금액 · 날짜 포맷
+│   └── theme.ts            # 디자인 토큰
+├── __mocks__/expo-sqlite.ts  # sql.js 기반 대역 (jest 전용)
+├── docs/
+│   ├── PRD.md              # 제품 요구사항, 마일스톤
+│   └── DESIGN.md           # 디자인 가이드
+└── .claude/
+    ├── agents/             # 서브 에이전트 7개
+    └── commands/           # /feature, /check 등
+```
+
+## 🤖 개발 방식
+
+Claude Code 위에서 역할별 서브 에이전트가 기능 하나를 구현 → 리뷰 → 테스트 순서로 처리하고, 사람은 범위와 디자인 방향을 결정합니다.
+
+```mermaid
+flowchart LR
+    U["사용자<br/>결정 · 아이폰 확인"] --> M["메인 세션<br/>지휘"]
+    M --> B["expo-builder<br/>구현"]
+    B --> R["code-reviewer<br/>읽기 전용 리뷰"]
+    R -->|"🔴🟠 있으면"| B
+    R -->|"머지 가능"| Q["qa-tester<br/>테스트"]
+    M -.-> C["product-coach<br/>동기 부여 제안"]
+    M -.-> D["ui-designer<br/>토큰 · 폴리싱"]
+    M -.-> K["dashboard-keeper<br/>현황판 갱신"]
+```
+
+리뷰어는 구현 과정을 보지 못한 새 컨텍스트에서 결과물만 봅니다. 그게 의도된 설계입니다.
+
+> 💡 실제로 잡은 것들: 년 모드가 일별 섹션으로 나오던 PRD 불일치, 동기 SQLite 쓰기에 try/catch가 없던 것, 연결을 다시 열면 `PRAGMA foreign_keys`가 꺼지는 문제.
+
+## 🚀 로컬 실행
+
+Windows + 아이폰 기준입니다. Mac은 필요 없습니다.
+
+```bash
+npm install
+npx expo start
+```
+
+아이폰에 **Expo Go**를 설치하고, PC와 같은 Wi-Fi에서 터미널의 QR을 카메라로 찍으면 열립니다.
+
+```bash
+npx tsc --noEmit   # 타입 검사
+npx expo lint      # 린트
+npx jest           # 테스트 (sql.js로 DB 계층까지)
+npx expo-doctor    # 의존성 호환 점검
+```
+
+> 💡 Expo Go에 로그인돼 있으면 PC의 CLI도 같은 계정이어야 합니다. 구글 SSO 계정은 expo.dev에서 액세스 토큰을 만들어 `EXPO_TOKEN` 환경 변수로 넣으면 됩니다.
+
+## 🗺 로드맵
+
+| 단계 | 내용 | 상태 |
+|---|---|---|
+| M1 뼈대 | 프로젝트, 탭, 테마, SQLite 초기화 | ✅ |
+| M2 기록 | 입력 모달, 목록, 수정 · 삭제, 저장 이펙트 | ✅ |
+| M3 통계 | 월 · 년 이동, 막대, 카테고리 합계, 개인 최고 | ✅ |
+| M3.5 월 목표 | settings, 진행 바, 달성 이펙트 | 🔨 |
+| M3.6 홈 활기 | 오늘의 한 줄, 첫 오픈 카운트업, 잔디, 이모지 적립 | 예정 |
+| M4 편의 | 빠른 입력 칩, 연속 기록일, 누적 이정표, 회고 카드 | 예정 |
+| M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | 예정 |
+
+## 👤 Author
+
+**zizonpubao** · Built with [Claude Code](https://claude.com/claude-code)
+
+개인용 앱이라 앱스토어 출시 계획은 없습니다. 안드로이드는 같은 코드로 동작하며 EAS Build로 APK를 만들 수 있습니다.
