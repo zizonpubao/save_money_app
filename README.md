@@ -11,7 +11,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-280%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-344%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
@@ -68,7 +68,7 @@ flowchart LR
 | 기록 수정 · 삭제 | 행 탭 / 왼쪽 스와이프 | 수정 화면 또는 확인 후 삭제. 이펙트 없음 |
 | 이번 달 절약액 보기 | 앱 열기 | 카드 큰 숫자, 목표 진행 바, 오늘의 한 줄 |
 | 월 · 년 통계 | 기록 탭 | 합계 · 건수 · 평균, 막대, 카테고리 비율, 전체 목록 |
-| 월 목표 정하기 | 설정 탭 | 프리셋 또는 직접 입력, 홈 카드에 즉시 반영 |
+| 월 목표 정하기 | 설정 탭 | 프리셋 또는 직접 입력, 홈 카드에 즉시 반영. 달성 시 축하(목표당 월 1회) |
 | 백업 · 복원 | 설정 탭 | JSON 내보내기 → 공유 시트 / JSON 선택 → 병합 또는 덮어쓰기 |
 
 ### 🔁 저장 한 번의 시퀀스
@@ -101,9 +101,9 @@ sequenceDiagram
 |---|---|---|
 | 1 | 기록 입력 | 금액(자동 콤마) · 항목 · 카테고리 칩 · 날짜 · 메모. 저장 시 햅틱 + 금액 카운트업 + 카드 펄스 |
 | 2 | 홈 | 이번 달 절약액 카드, 날짜별 목록, 스와이프 삭제, 수정 화면 |
-| 3 | 기록 탭 | 월 / 년 단위 전환, 기간 이동, 일별·월별 막대 그래프(탭 툴팁), 카테고리별 비율 바 |
+| 3 | 기록 탭 | 월 / 년 단위 전환, 기간 이동, 막대 그래프(월: 일별 31칸 · 년: 월별 12칸, 탭 툴팁), 카테고리별 비율 바, 년 모드는 월별 섹션으로 목록 표시 |
 | 4 | 개인 최고 | 하루 · 한 달 역대 최고를 처음 넘기는 순간 "최고 기록! 🏆" |
-| 5 | 월 목표 | 목표 금액 설정, 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 (M3.5) |
+| 5 | 월 목표 | 목표 금액 설정(프리셋 · 직접 입력), 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 |
 | 6 | 홈 활기 | 오늘의 한 줄(환산 · 절약 명언), 하루 첫 오픈 카운트업, 이번 달 잔디, 이모지 적립 (M3.6) |
 | 7 | 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 (M5) |
 
@@ -249,8 +249,8 @@ npx expo-doctor    # 의존성 호환 점검
 | M1 뼈대 | 프로젝트, 탭, 테마, SQLite 초기화 | ✅ |
 | M2 기록 | 입력 모달, 목록, 수정 · 삭제, 저장 이펙트 | ✅ |
 | M3 통계 | 월 · 년 이동, 막대, 카테고리 합계, 개인 최고 | ✅ |
-| M3.5 월 목표 | settings, 진행 바, 달성 이펙트 | 🔨 |
-| M3.6 홈 활기 | 오늘의 한 줄, 첫 오픈 카운트업, 잔디, 이모지 적립 | 예정 |
+| M3.5 월 목표 | settings, 진행 바, 달성 이펙트 | ✅ |
+| M3.6 홈 활기 | 오늘의 한 줄, 첫 오픈 카운트업, 잔디, 이모지 적립 | 🔨 |
 | M4 편의 | 빠른 입력 칩, 연속 기록일, 누적 이정표, 회고 카드 | 예정 |
 | M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | 예정 |
 
