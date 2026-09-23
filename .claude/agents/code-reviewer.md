@@ -27,7 +27,7 @@ model: inherit
 - `any` 사용, `@ts-ignore`, 타입 단언 남용
 - `theme.ts` 토큰 대신 색상/간격 하드코딩
 - `npm install` 로 직접 버전 박은 의존성 (`npx expo install` 안 쓴 흔적)
-- PRD와 다른 동작 (예: 저장 버튼 활성 조건, 카테고리 기본값 8개)
+- PRD와 다른 동작 (예: 저장 버튼 활성 조건, 카테고리 기본값 9개)
 
 ### 🟡 개선 — 품질
 - 목록이 `ScrollView` + map 으로 되어 있어 기록 수백 개면 느려질 것

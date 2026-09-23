@@ -10,7 +10,9 @@ savelog/
 │   ├── agents/
 │   │   ├── expo-builder.md      # 구현 담당
 │   │   ├── code-reviewer.md     # 리뷰 담당 (읽기 전용)
-│   │   └── expo-doctor.md       # 에러 해결 담당
+│   │   ├── expo-doctor.md       # 에러 해결 담당
+│   │   ├── dashboard-keeper.md  # 실시간 현황판 갱신 (sonnet, 백그라운드)
+│   │   └── product-coach.md     # 제품·동기부여 기능 제안 (읽기 전용)
 │   └── commands/
 │       ├── init-project.md      # /init-project  — M1 뼈대 생성
 │       ├── feature.md           # /feature <기능> — 구현→리뷰→수정 사이클
@@ -51,6 +53,8 @@ claude
 | 커밋 전 검사 | `/check` |
 | 아이폰에서 안 뜸 | `/run-ios` 또는 에러 메시지 붙여넣고 "expo-doctor 에이전트로 봐줘" |
 | 코드만 리뷰 받고 싶음 | "code-reviewer 에이전트로 지금 변경사항 리뷰해줘" |
+| 새 기능 아이디어·동기부여 장치가 필요함 | "product-coach 에이전트로 제안 받아줘" |
+| 현황판이 안 바뀜 | "dashboard-keeper 로 현황판 갱신해줘" |
 | PRD에 없는 걸 추가하고 싶음 | 먼저 `docs/PRD.md` 에 적어달라고 한 뒤 `/feature` |
 
 ## 5. 알아둘 것
