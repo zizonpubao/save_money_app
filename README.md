@@ -11,7 +11,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-520%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-599%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
@@ -64,7 +64,7 @@ flowchart LR
 
 | 유스케이스 | 트리거 | 결과 |
 |---|---|---|
-| 참은 소비 기록하기 | 홈의 `+` | 기록 저장, 햅틱 + 카운트업 + 펄스, 금액에 따라 컨페티. 최고 기록·목표 달성 시 배너 |
+| 참은 소비 기록하기 | 홈의 `+` | 기록 저장, 카드 움츠림 → 타격(햅틱 + 효과음) → 카운트업 + 적립 라벨 + 글로우. 1만원↑ 컨페티, 5만원↑ 두 번 터짐 + 플래시. 최고 기록·목표 달성 시 배너 |
 | 기록 수정 · 삭제 | 행 탭 / 왼쪽 스와이프 | 수정 화면 또는 확인 후 삭제. 이펙트 없음 |
 | 이번 달 절약액 보기 | 앱 열기 | 카드 큰 숫자, 목표 진행 바, 오늘의 한 줄, 이번 달 잔디, 이모지 적립 줄 |
 | 월 · 년 통계 | 기록 탭 | 합계 · 건수 · 평균, 막대, 카테고리 비율, 전체 목록 |
@@ -99,7 +99,7 @@ sequenceDiagram
 
 | # | 기능 | 요약 |
 |---|---|---|
-| 1 | 기록 입력 | 금액(자동 콤마) · 항목 · 카테고리 칩(10개) · 빠른 입력 칩 · 날짜 · 메모. 저장 시 햅틱 + 금액 카운트업 + 카드 펄스, 1만원 이상 컨페티 20개 · 5만원 이상 40개 |
+| 1 | 기록 입력 | 금액(자동 콤마) · 항목 · 카테고리 칩(10개) · 빠른 입력 칩 · 날짜 · 메모. 저장 시 햅틱 + 효과음 + 금액 카운트업 + 카드 타격, 1만원 이상 컨페티 · 5만원 이상 두 번 터짐 + 플래시 |
 | 2 | 홈 | 이번 달 절약액 카드, 날짜별 목록, 스와이프 삭제, 수정 화면, 🔥 연속 기록일, 누적 금액, 매달 초 지난달 회고 카드 |
 | 3 | 기록 탭 | 월 / 년 단위 전환, 기간 이동, 막대 그래프(월: 일별 31칸 · 년: 월별 12칸, 막대는 누른 채 좌우로 쓸기), 카테고리별 비율 바, 년 모드 목록은 월별 섹션 |
 | 4 | 개인 최고 | 하루 · 한 달 역대 최고를 처음 넘길 때 "최고 기록! 🏆" |
@@ -109,9 +109,9 @@ sequenceDiagram
 
 ### 🎯 저장 순간의 이펙트
 
-기록을 저장하면 **햅틱 → 이번 달 절약액 카운트업 → 카드 펄스**가 1초 안에 이어집니다.
-역대 최고를 넘기면 배너가 1.5초 뜹니다. 수정 저장에는 이펙트가 없습니다.
-금액이 1만원 이상이면 컨페티 20개, 5만원 이상이면 40개가 떨어지고 카운트업 숫자 스케일도 커집니다.
+기록을 저장하면 시트가 내려간 순간 카드가 움츠러들었다 튀어 오르며 햅틱·효과음과 함께 숫자가 카운트업합니다.
+"+4,500원 적립" 라벨과 글로우가 뜨고, 수정 저장에는 이펙트가 없습니다.
+1만원 이상은 컨페티, 5만원 이상은 컨페티 두 번 터짐과 화면 플래시가 더해집니다. 효과음은 사인파로 생성한 WAV로 무음 스위치를 따르고 설정에서 끌 수 있습니다.
 
 ### 📊 막대 그래프는 View로 직접
 
@@ -132,6 +132,7 @@ sequenceDiagram
 | 저장 | expo-sqlite (동기 API) | `schema_version` 테이블로 마이그레이션 관리 |
 | 상태 | Zustand | 화면 로컬 상태는 `useState` |
 | 애니메이션 | react-native-reanimated 4 · gesture-handler | 카운트업, 펄스, 스와이프 |
+| 효과음 | expo-audio · 생성 WAV | 무음 스위치 준수 |
 | 날짜 | dayjs (locale ko) | `2026년 9월 23일 (수)` |
 | 테스트 | jest-expo · @testing-library/react-native · sql.js | sql.js로 expo-sqlite를 대역해 DB 계층까지 PC에서 검증 |
 | 개발 도구 | Claude Code 서브 에이전트 7개 | 아래 "개발 방식" 참고 |
@@ -200,6 +201,8 @@ savelog/
 │   ├── utils/              # 금액 · 날짜 포맷
 │   └── theme.ts            # 디자인 토큰
 ├── __mocks__/expo-sqlite.ts  # sql.js 기반 대역 (jest 전용)
+├── assets/sounds/          # 저장 효과음 WAV (생성 파일)
+├── scripts/gen-sounds.mjs  # 효과음 WAV 생성 스크립트
 ├── docs/
 │   ├── PRD.md              # 제품 요구사항, 마일스톤
 │   └── DESIGN.md           # 디자인 가이드
