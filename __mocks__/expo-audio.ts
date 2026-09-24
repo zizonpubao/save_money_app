@@ -7,7 +7,12 @@ import { useRef } from 'react';
  */
 export type MockAudioPlayer = {
   source: unknown;
+  options: unknown;
   volume: number;
+  /** 테스트가 "재생 중" · "끝까지 재생됨"(currentTime > 0) 상태를 흉내 낼 때 바꾼다 */
+  playing: boolean;
+  currentTime: number;
+  isLoaded: boolean;
   play: jest.Mock;
   pause: jest.Mock;
   seekTo: jest.Mock;
@@ -16,10 +21,14 @@ export type MockAudioPlayer = {
 
 export const mockPlayers: MockAudioPlayer[] = [];
 
-function makePlayer(source: unknown): MockAudioPlayer {
+function makePlayer(source: unknown, options?: unknown): MockAudioPlayer {
   const player: MockAudioPlayer = {
     source,
+    options,
     volume: 1,
+    playing: false,
+    currentTime: 0,
+    isLoaded: true,
     play: jest.fn(),
     pause: jest.fn(),
     seekTo: jest.fn(() => Promise.resolve()),
@@ -29,14 +38,14 @@ function makePlayer(source: unknown): MockAudioPlayer {
   return player;
 }
 
-export function useAudioPlayer(source: unknown): MockAudioPlayer {
+export function useAudioPlayer(source: unknown, options?: unknown): MockAudioPlayer {
   const ref = useRef<MockAudioPlayer | null>(null);
-  if (ref.current === null) ref.current = makePlayer(source);
+  if (ref.current === null) ref.current = makePlayer(source, options);
   return ref.current;
 }
 
-export function createAudioPlayer(source: unknown): MockAudioPlayer {
-  return makePlayer(source);
+export function createAudioPlayer(source: unknown, options?: unknown): MockAudioPlayer {
+  return makePlayer(source, options);
 }
 
 export const setAudioModeAsync = jest.fn(() => Promise.resolve());

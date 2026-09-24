@@ -1,62 +1,93 @@
-// 저장 축하 효과음 4개를 만든다 (DESIGN "저장 축하 연출" 효과음 규격).
+// 저장 축하 효과음 4개를 합성한다 (DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영).
 // Node 기본 모듈만 쓴다. 실행: node scripts/gen-sounds.mjs → assets/sounds/*.wav
-// 형식: WAV PCM16 mono 16kHz, 피크 -6 dBFS, 음마다 5ms 어택 + 지수 감쇠(τ = 음 길이/4), 끝 10ms 는 0 으로 페이드.
+// 형식: WAV PCM16 mono 22.05kHz, 각 40KB 이하. 음을 겹쳐 합성 → 전체 앞뒤 5ms 페이드(클릭 제거) → 마지막에 피크 -1 dBFS 로 정규화.
+// 노이즈는 시드 고정 난수라 다시 돌려도 같은 파일이 나온다.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const RATE = 16000;
-const PEAK = 0.5; // -6 dBFS
-const ATTACK_S = 0.005;
-const TAIL_S = 0.01;
+const RATE = 22050;
+const NYQUIST = RATE / 2;
+const PEAK = 10 ** (-1 / 20); // -1 dBFS ≈ 0.891
+const FADE_S = 0.005;
 
 const C5 = 523.25;
 const E5 = 659.25;
 const G5 = 783.99;
 const C6 = 1046.5;
 
-/**
- * 음 하나. partials 는 [주파수(Hz) 또는 시간→주파수 함수, 진폭] 목록.
- * 위상을 누적해서 주파수가 바뀌어도(급하강) 파형이 끊기지 않는다.
- */
-function note(seconds, partials) {
-  const n = Math.round(seconds * RATE);
-  const out = new Float64Array(n);
-  const tau = seconds / 4;
-  for (const [freq, amp] of partials) {
-    let phase = 0;
-    for (let i = 0; i < n; i += 1) {
-      const t = i / RATE;
-      const f = typeof freq === 'function' ? freq(t) : freq;
-      phase += (2 * Math.PI * f) / RATE;
-      out[i] += amp * Math.sin(phase);
-    }
-  }
-  for (let i = 0; i < n; i += 1) {
-    const t = i / RATE;
-    const attack = Math.min(1, t / ATTACK_S);
-    out[i] *= attack * Math.exp(-t / tau);
-  }
-  return out;
+/** 길이(ms)만큼 빈 버퍼. 샘플 수 = round(RATE × 길이) — 테스트도 같은 식으로 확인한다 */
+function buffer(ms) {
+  return new Float64Array(Math.round((RATE * ms) / 1000));
 }
 
-/** 음을 이어 붙이고 피크를 맞춘 뒤 끝 10ms 를 0 으로 */
-function render(notes) {
-  const total = notes.reduce((sum, part) => sum + part.length, 0);
-  const out = new Float64Array(total);
-  let offset = 0;
-  for (const part of notes) {
-    out.set(part, offset);
-    offset += part.length;
+/**
+ * 파형 한 주기 값. 삼각파·사각파는 나이퀴스트 아래 홀수 배음만 더해 만든다(에일리어싱 잡음 방지).
+ * mix 는 사각파 비율(0 = 순수 삼각파).
+ */
+function wave(kind, phase, freq, mix = 0) {
+  if (kind === 'sine') return Math.sin(phase);
+  let tri = 0;
+  let sq = 0;
+  for (let k = 1; k * freq < NYQUIST * 0.9; k += 2) {
+    const sign = ((k - 1) / 2) % 2 === 0 ? 1 : -1;
+    tri += (sign / (k * k)) * Math.sin(k * phase);
+    if (mix > 0) sq += Math.sin(k * phase) / k;
   }
-  const max = out.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
-  const tail = Math.round(TAIL_S * RATE);
-  for (let i = 0; i < total; i += 1) {
-    const fromEnd = total - 1 - i;
-    const fade = fromEnd < tail ? fromEnd / tail : 1;
-    out[i] = (out[i] / max) * PEAK * fade;
+  tri *= 8 / (Math.PI * Math.PI);
+  sq *= 4 / Math.PI;
+  return (1 - mix) * tri + mix * sq;
+}
+
+/**
+ * 음 하나를 buf 에 더한다.
+ * freq 는 Hz 또는 시간→Hz 함수(위상 누적이라 주파수가 바뀌어도 파형이 끊기지 않는다).
+ * 포락선 = 어택(선형) × 지수 감쇠(tau) × 끝 release 구간 선형 감소. 음이 버퍼 끝을 넘으면 잘린다.
+ */
+function tone(buf, { at, dur, freq, amp, tau, attack = 0.002, release = 0.01, kind = 'sine', mix = 0 }) {
+  const start = Math.round(at * RATE);
+  const n = Math.min(Math.round(dur * RATE), buf.length - start);
+  let phase = 0;
+  for (let i = 0; i < n; i += 1) {
+    const t = i / RATE;
+    const f = typeof freq === 'function' ? freq(t) : freq;
+    phase += (2 * Math.PI * f) / RATE;
+    const env =
+      Math.min(1, t / attack) * Math.exp(-t / tau) * Math.min(1, (dur - t) / release);
+    buf[start + i] += amp * env * wave(kind, phase, f, mix);
   }
-  return out;
+}
+
+/** 짧은 노이즈 버스트("팝"의 타격). 이웃 샘플 차분으로 저음을 덜어 또렷한 클릭이 된다 */
+function noise(buf, { at, dur, amp, tau, seed }) {
+  let state = seed >>> 0;
+  const rand = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 2 ** 32 - 0.5;
+  };
+  const start = Math.round(at * RATE);
+  const n = Math.min(Math.round(dur * RATE), buf.length - start);
+  let prev = 0;
+  for (let i = 0; i < n; i += 1) {
+    const t = i / RATE;
+    const white = rand();
+    buf[start + i] += amp * (white - prev) * Math.exp(-t / tau);
+    prev = white;
+  }
+}
+
+/** 앞뒤 5ms 페이드(첫·끝 샘플 0) 후 피크를 -1 dBFS 로. 페이드를 먼저 해야 정규화 뒤 피크가 정확하다 */
+function finish(buf) {
+  const fade = Math.round(FADE_S * RATE);
+  const last = buf.length - 1;
+  for (let i = 0; i <= fade; i += 1) {
+    const g = i / fade;
+    buf[i] *= g;
+    buf[last - i] *= g;
+  }
+  const max = buf.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
+  for (let i = 0; i < buf.length; i += 1) buf[i] = (buf[i] / max) * PEAK;
+  return buf;
 }
 
 function wav(samples) {
@@ -81,32 +112,61 @@ function wav(samples) {
   return buf;
 }
 
-const SOUNDS = {
-  // "톡": 880 → 660 Hz 로 20ms 안에 급하강
-  tap: () => render([note(0.1, [[(t) => 660 + 220 * Math.exp(-t / 0.02), 1]])]),
-  // 맑은 종소리: 1320 Hz + 한 옥타브 위 2640 Hz(0.3)
-  ding: () =>
-    render([
-      note(0.25, [
-        [1320, 1],
-        [2640, 0.3],
-      ]),
-    ]),
-  // 도 → 솔
-  tada: () => render([note(0.12, [[C5, 1]]), note(0.22, [[G5, 1]])]),
-  // 도 · 미 · 솔 → 높은 도. 마지막 음 아래에 미·솔을 약하게 깔아 화음으로 끝난다
-  fanfare: () =>
-    render([
-      note(0.08, [[C5, 1]]),
-      note(0.08, [[E5, 1]]),
-      note(0.08, [[G5, 1]]),
-      note(0.16, [
-        [C6, 1],
-        [G5, 0.35],
-        [E5, 0.25],
-      ]),
-    ]),
-};
+/** "팝" 90ms: 700 → 320 Hz 지수 하강 + 한 옥타브 위 배음(폰 스피커에서 잘 들리게) + 3ms 노이즈 타격 */
+function tap() {
+  const buf = buffer(90);
+  const pitch = (t) => 320 + 380 * Math.exp(-t / 0.015);
+  tone(buf, { at: 0, dur: 0.09, freq: pitch, amp: 1, tau: 0.028, attack: 0.001, release: 0.015 });
+  tone(buf, { at: 0, dur: 0.09, freq: (t) => 2 * pitch(t), amp: 0.35, tau: 0.018, attack: 0.001 });
+  noise(buf, { at: 0, dur: 0.003, amp: 1.2, tau: 0.0012, seed: 7 });
+  return finish(buf);
+}
+
+/** 종 320ms: 1320 Hz + 2.4배·3.9배 비조화 배음(작게, 더 빨리 사라짐). 비브라토 없이 맑게 */
+function ding() {
+  const buf = buffer(320);
+  const common = { at: 0, dur: 0.32, attack: 0.002, release: 0.04 };
+  tone(buf, { ...common, freq: 1320, amp: 1, tau: 0.13 });
+  tone(buf, { ...common, freq: 1320 * 2.4, amp: 0.3, tau: 0.05 });
+  tone(buf, { ...common, freq: 1320 * 3.9, amp: 0.15, tau: 0.025 });
+  return finish(buf);
+}
+
+/** 짠 380ms: 도·미·솔 삼각파 상행(각 90ms, 앞 음이 살짝 겹쳐 울림) + 마지막 음에 4~6kHz 반짝임 3개 */
+function tada() {
+  const buf = buffer(380);
+  const note = { kind: 'triangle', attack: 0.004, release: 0.02 };
+  tone(buf, { ...note, at: 0, dur: 0.11, freq: C5, amp: 1, tau: 0.08 });
+  tone(buf, { ...note, at: 0.09, dur: 0.11, freq: E5, amp: 1, tau: 0.08 });
+  tone(buf, { ...note, at: 0.18, dur: 0.2, freq: G5, amp: 1, tau: 0.12, release: 0.05 });
+  // 옥타브 위를 얹어 삼각파의 뭉툭함을 덜어 준다
+  tone(buf, { at: 0.18, dur: 0.2, freq: G5 * 2, amp: 0.2, tau: 0.08, attack: 0.004, release: 0.05 });
+  const sparkle = { dur: 0.1, attack: 0.001, tau: 0.03, release: 0.02 };
+  tone(buf, { ...sparkle, at: 0.18, freq: 4186, amp: 0.22 });
+  tone(buf, { ...sparkle, at: 0.21, freq: 5274, amp: 0.18 });
+  tone(buf, { ...sparkle, at: 0.24, freq: 5920, amp: 0.14 });
+  return finish(buf);
+}
+
+/** 팡파르 450ms: 도·미·솔·높은 도 상행 → 높은 도에서 도·미·솔 화음을 200ms 유지 후 감쇠. 사각파 20% 로 밝게 */
+function fanfare() {
+  const buf = buffer(450);
+  const brass = { kind: 'triangle', mix: 0.2, attack: 0.005, release: 0.012 };
+  const step = 0.065;
+  tone(buf, { ...brass, at: 0, dur: step + 0.01, freq: C5, amp: 1, tau: 0.2 });
+  tone(buf, { ...brass, at: step, dur: step + 0.01, freq: E5, amp: 1, tau: 0.2 });
+  tone(buf, { ...brass, at: step * 2, dur: step + 0.01, freq: G5, amp: 1, tau: 0.2 });
+  // 마지막 음(0.195s~): 높은 도 + 화음. 200ms 동안 거의 유지(tau 길게)하다 끝 55ms 에 내려간다
+  const chordAt = step * 3;
+  const hold = { ...brass, at: chordAt, dur: 0.45 - chordAt, tau: 0.6, release: 0.07 };
+  tone(buf, { ...hold, freq: C6, amp: 1 });
+  tone(buf, { ...hold, freq: G5, amp: 0.45 });
+  tone(buf, { ...hold, freq: E5, amp: 0.4 });
+  tone(buf, { ...hold, freq: C5, amp: 0.35 });
+  return finish(buf);
+}
+
+const SOUNDS = { tap, ding, tada, fanfare };
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'sounds');
 mkdirSync(outDir, { recursive: true });

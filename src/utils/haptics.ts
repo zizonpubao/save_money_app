@@ -74,3 +74,8 @@ export function saveTapHaptic(): void {
 export function scrubTick(): void {
   fire('selection');
 }
+
+/** 설정 탭 "진동 느껴 보기". 저장 기본 연출과 같은 Medium 한 번 */
+export function previewHaptic(): void {
+  fire('medium');
+}

@@ -125,17 +125,17 @@
 
 **효과음 규격 (빌더 작업)**
 - `npx expo install expo-audio` (Expo SDK 모듈, 재생만이라 config plugin 불필요) → `npx expo-doctor`. 소리는 **생성**한다(CC0 다운로드 대신): `scripts/gen-sounds.mjs`, Node 기본 모듈만, `assets/sounds/*.wav` 로 출력하고 결과 파일을 커밋.
-- 형식: WAV PCM16 mono **16 kHz**(0.5초 = 16KB, 20KB 이하), 피크 −6 dBFS, 앞 5ms 어택 + 지수 감쇠(τ = 길이/4) + 끝 10ms 0 으로 페이드(클릭 잡음 방지).
+- 형식: WAV PCM16 mono **22.05 kHz**, 각 40KB 이하, 피크 −1 dBFS 정규화, 앞뒤 5ms 페이드(클릭 잡음 방지). 사인파 하나가 아니라 합성(배음·피치 변화·노이즈·화음)으로 풍성하게. 노이즈 시드 고정(재생성해도 같은 파일).
 
 | 파일 | 소리 | 길이 |
 | --- | --- | --- |
-| `tap.wav` | 사인 880 → 660 Hz 급하강 "톡" | 100ms |
-| `ding.wav` | 1320 Hz + 2640 Hz(진폭 0.3) | 250ms |
-| `tada.wav` | C5 523 Hz 120ms → G5 784 Hz 220ms | 340ms |
-| `fanfare.wav` | C5 · E5 · G5 각 80ms → C6 1047 Hz 160ms | 400ms |
+| `tap.wav` | "팝": 700 → 320 Hz 지수 하강 + 3ms 노이즈 버스트 | 90ms · 4.0KB |
+| `ding.wav` | 종소리: 1320 Hz + 배음 2.4×·3.9×(작게), 배음별 감쇠 | 320ms · 14.2KB |
+| `tada.wav` | 상행 C5·E5·G5 삼각파 각 90ms + 끝에 4~6kHz 반짝임 | 380ms · 16.8KB |
+| `fanfare.wav` | 상행 C5·E5·G5·C6 + 끝 C·E·G 화음 200ms, 사각파 20% | 450ms · 19.9KB |
 
-- 재생: `useCelebrationSound` 훅이 홈 마운트 때 4개를 `useAudioPlayer` 로 미리 로드, 트리거 시 `seekTo(0)` → `play()`. 볼륨 0.35(fanfare 0.5). `setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' })` — 무음 스위치를 따르고 사용자 음악을 끊지 않는다(옵션 이름은 설치된 SDK 문서로 확인).
-- 설정 탭에 "효과" 구획: `효과음` · `햅틱` 스위치 2줄(`SettingsRow`), 기본 켬. settings 키 `sound_enabled` / `haptics_enabled` = `'1'|'0'`(스키마 변경 없음). 햅틱 스위치는 `src/utils/haptics.ts` 한 곳에서 검사해 앱 전체 햅틱을 끈다.
+- 재생: `useCelebrationSound` 훅이 홈 마운트 때 4개를 `useAudioPlayer` 로 미리 로드, 소스는 `downloadFirst: true` 로 기기에 먼저 내려받아 재생(Expo Go 에서는 에셋 주소가 개발 서버 URL 이라 스트리밍이 조용히 실패할 수 있음). 트리거 시 재생 중이면 `pause()` → `seekTo(0)` 완료 후 `play()`. 볼륨 1. `setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false, allowsRecording: false })` — 무음 스위치를 따르고 사용자 음악을 끊지 않는다(옵션 이름은 설치된 SDK 문서로 확인).
+- 설정 탭에 "효과" 구획: `효과음` · `햅틱` 스위치 2줄(`SettingsRow`), 기본 켬. 효과음 아래 미리 듣기 칩 4개(톡/띵/짠/팡파르, 스위치 꺼지면 비활성)와 "무음 스위치가 켜져 있으면 나지 않습니다" 안내, 햅틱 아래 "진동 느껴 보기". settings 키 `sound_enabled` / `haptics_enabled` = `'1'|'0'`(스키마 변경 없음). 햅틱 스위치는 `src/utils/haptics.ts` 한 곳에서 검사해 앱 전체 햅틱을 끈다.
 
 **동작 줄이기 (`useReduceMotion()` 이 참)**
 - 생략: 컨페티 · 플래시 · 플로팅 라벨 · 글로우 · 카드 움츠림/타격 · 숫자 오버슈트 · 칩 튐/흔들림 · 배너 이동(opacity 150ms 로만 등장).
