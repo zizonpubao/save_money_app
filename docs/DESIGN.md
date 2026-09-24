@@ -79,7 +79,7 @@
 - 저장 탭 순간(시트가 아직 위): `Haptics.selectionAsync()` 한 번 — "눌렸다" 확인이자 기대감. 소리 없음.
 - **t0 = 시트가 다 내려간 순간.** pageSheet 가 닫히는 ~300ms 동안 카드가 가려져 있어 그 전에 친 타격은 안 보인다. `EntryFormModal` 의 `onDismiss`(iOS)가 이미 `onClose` 에 붙어 있으니 "저장으로 닫힘" 플래그로 구분해 t0 를 쏘고, 400ms 안전 타이머로 폴백한다. 아래 표의 시간은 모두 t0 기준.
 - 파티클·플래시·라벨·글로우는 홈 루트의 `CelebrationLayer`(absolute fill, `pointerEvents="none"`, FAB 위) 에 그린다. 저장 직전 카드의 사각형 `{x, y, w, h}` 를 잰다(`measureCardCenter` 를 확장) — 컨페티·라벨 원점은 그 가운데, `GlowRing` 은 그 사각형 그대로. 목록 행의 `overflow: 'hidden'` 영향을 받지 않게 카드 안에 넣지 않는다.
-- 연출이 아닌 것: 수정 저장(`update`), 첫 오픈 카운트업(0 → 월 합계). 햅틱·소리·라벨 없음.
+- 연출이 아닌 것: 수정 저장(`update`), 첫 오픈 카운트업(0 → 월 합계). 소리·라벨 없음, 수정 저장은 selection 햅틱 하나만.
 
 **기본 연출 — 모든 새 저장 (base, 1만원 미만)**
 | 시간(ms) | 요소 | 값 | 이징 |
