@@ -65,6 +65,94 @@
 - 카테고리 비율 바: 높이 `size.bar`, `radius.pill`, 트랙 `primarySoft` / 채움 `primary`, 오른쪽에 금액(`bodyStrong` + `numeric`)과 비율(`note`).
 - 목표 진행 바: 카드 오늘 줄 아래 `marginTop: sp.md`, 높이 `size.bar`. 바 아래 한 줄 — 왼쪽 "목표 300,000원"(`caption` 회색), 오른쪽 끝 "62%"(`bodyStrong` + `numeric` + `primary`). 100% 를 넘어도 바는 가득에서 멈추고 % 는 계속 오르며("104%") 앞에 "+12,000원 초과"(`caption` 회색)를 붙인다.
 
+## 저장 축하 연출
+사용자 요청 "듀오링고처럼 생동감·타격감, 희열". 이 절이 PRD M4 구간 이펙트 세부(Medium 2연타 120ms · 컨페티 20/40 · 숫자 1.1), 위 분위기 문단의 "펄스·햅틱에만", 홈 배치 4번의 "🔥 칩 1.15 spring" 보다 우선한다. 도구는 reanimated 4 · expo-haptics · expo-audio · View 파티클뿐(Lottie 등 금지).
+
+**원리 5개**
+1. **3박자** — 기대(움츠림 80ms) → 타격(오버슈트 + 햅틱 + 소리가 같은 프레임) → 여운(숫자·라벨·파티클이 흩어지며 settle).
+2. **오버슈트** — 목표값을 넘겼다 돌아온다. 카드 1.08 · 큰 숫자 1.15(big 1.2) · 칩 1.3 → 1. 카드는 358pt 라 1.08(387pt)이 화면 폭 390 안에 드는 한계, 크게 튀는 역할은 숫자·라벨이 맡는다.
+3. **시간차** — 한꺼번에 움직이지 않는다. 타격 기준 +0 숫자·글로우 / +40 플로팅 라벨 / +120 이모지 칩 / +160 🔥 칩 / +200 목표 바 (`motion.stagger` 40ms 단위).
+4. **값에 비례** — 금액 구간(base < 1만 ≤ mid < 5만 ≤ big)과 사건(목표·이정표·최고)이 커질수록 층을 **더한다**. 아래 등급은 위 등급의 부분집합.
+5. **질리지 않게** — 매번 시드(저장 시각)로 모양을 바꾸고, 전체는 짧게(타격 후 ~900ms 안에 정지).
+
+**기준 시각 t0와 레이어**
+- 저장 탭 순간(시트가 아직 위): `Haptics.selectionAsync()` 한 번 — "눌렸다" 확인이자 기대감. 소리 없음.
+- **t0 = 시트가 다 내려간 순간.** pageSheet 가 닫히는 ~300ms 동안 카드가 가려져 있어 그 전에 친 타격은 안 보인다. `EntryFormModal` 의 `onDismiss`(iOS)가 이미 `onClose` 에 붙어 있으니 "저장으로 닫힘" 플래그로 구분해 t0 를 쏘고, 400ms 안전 타이머로 폴백한다. 아래 표의 시간은 모두 t0 기준.
+- 파티클·플래시·라벨·글로우는 홈 루트의 `CelebrationLayer`(absolute fill, `pointerEvents="none"`, FAB 위) 에 그린다. 저장 직전 카드의 사각형 `{x, y, w, h}` 를 잰다(`measureCardCenter` 를 확장) — 컨페티·라벨 원점은 그 가운데, `GlowRing` 은 그 사각형 그대로. 목록 행의 `overflow: 'hidden'` 영향을 받지 않게 카드 안에 넣지 않는다.
+- 연출이 아닌 것: 수정 저장(`update`), 첫 오픈 카운트업(0 → 월 합계). 햅틱·소리·라벨 없음.
+
+**기본 연출 — 모든 새 저장 (base, 1만원 미만)**
+| 시간(ms) | 요소 | 값 | 이징 |
+| --- | --- | --- | --- |
+| 0 | 카드 움츠림 | scale 1 → 0.97, 80ms | `withTiming` `Easing.out(quad)` |
+| 80 | **타격** 카드 | 0.97 → 1.08 (100ms) → 1 | `withTiming` `Easing.out(cubic)` → `withSpring(1, springSettle)` |
+| 80 | 햅틱 · 소리 | Medium impact · `tap.wav` | 같은 프레임 |
+| 80 | 큰 숫자 | scale 1 → 1.15 → 1 + 카운트업 600ms | `springHit` → `springSettle` / 카운트업 `Easing.out(cubic)` |
+| 80 | `GlowRing` 1겹 | 카드와 같은 사각형(`radius.lg`), 테두리 4pt `primary`, 바깥으로 12pt 퍼짐(inset 0 → −12), opacity 0.35(다크 0.45) → 0, 600ms | `Easing.out(quad)` |
+| 120 | `FloatingLabel` | "+4,500원" `heading`(20/700) `primary` `numeric`, 카드 가운데에서 translateY 0 → −40, scale 0.6 → 1.3(150ms) → 1, opacity 0 → 1(80ms) · 유지 · 마지막 250ms 에 → 0, 전체 700ms | Y `Easing.out(cubic)` / scale `springHit` |
+| 200 | 이모지 칩 새 이모지 | scale 0 → 1.3 → 1 | `springHit` → `springSettle` |
+| 240 | 🔥 칩 (연속 기록일이 늘었을 때만) | 아래 "사건별" 참조 | |
+| 280 | 목표 바 | 이전 % → 새 % | `withSpring {damping 16, stiffness 180}` |
+| ~900 | 전부 정지 | 카운트업 끝 680 · 라벨 끝 820 · 글로우 끝 680 (big·목표도 880 안) | |
+
+스프링 시작값: `springHit {damping 12, stiffness 320, mass 0.8}` · `springSettle {damping 18, stiffness 200}`.
+
+**mid (1만원↑) — base 에 더하거나 바꾸는 것**
+| 시간 | 요소 | 값 |
+| --- | --- | --- |
+| 80 | 햅틱 | Medium(80) → Heavy(160) 2단 |
+| 80 | 소리 | `tap` 대신 `ding.wav` |
+| 80 | `Confetti` | 24개, 카드 가운데에서 방사, 800ms (기존 궤적 규칙) |
+| 80 / 160 | `GlowRing` 2겹 | 1겹째 그대로 + 2겹째 80ms 뒤, 테두리 2pt, inset → −16 (좌우 여백 16 안) |
+| 120 | `FloatingLabel` | `title`(28/700) — 1.5배 급 |
+
+**big (5만원↑) — mid 에 더하거나 바꾸는 것**
+| 시간 | 요소 | 값 |
+| --- | --- | --- |
+| 80 / 180 | `Confetti` | 24 + 24 = **총 48개**, 두 번 터짐(두 번째는 700ms 로 짧게 + 각도 범위를 좌우로 20° 더 벌림 → 880 에 끝) |
+| 80 | `ScreenFlash` | 화면 전체 `primary` opacity 0 → 0.10(다크 0.14) 40ms → 0 80ms, 합 120ms. `primarySoft` 는 라이트·다크 모두 배경과 대비가 없어 안 보여 `primary` 를 쓴다 — "primary 넓은 면적 금지"의 유일한 예외 |
+| 80 | 큰 숫자 | 1 → **1.2** → 1 |
+| 80 / 170 / 300 | 햅틱 | Heavy 3연타 (0/90/220 리듬 — 마지막 박을 늦춰 "쿵쿵—쿵") |
+| 80 | 소리 | `tada.wav` |
+| 120 | `FloatingLabel` | `display`(36/800), "+55,000원 🔥" |
+
+**사건별 (금액 구간 위에 얹는다)**
+- 사건은 연출 등급의 **바닥**을 올린다: 목표 달성 → big + 아래 목표 층 / 이정표 → 최소 big / 최고 기록 → 최소 mid / 🔥 증가 → 등급 그대로.
+- **목표 달성**: t0+280 바가 100% 까지 `withSpring {damping 11, stiffness 220}` · 카드 틴트 `primarySoft` 0 → 1 → 0, t0+80(타격과 함께) 시작 → 880 끝 · 컨페티 색 비율 `good` 50% / `primary` 25% / `warn` 25% · 소리 `fanfare.wav`(tada 대신) · 햅틱 big 3연타 + t0+480 Success 1회(피날레) · 배너 "이번 달 목표 달성 🎉" 가 t0+300 에 **위에서 튕겨 내려옴** translateY −20 → 0 `withSpring {damping 11, stiffness 260}` + opacity 0 → 1 120ms.
+- **최고 기록 · 이정표 배너**: t0+300 에 scale 0.8 → 1 `withSpring {damping 10, stiffness 300}`(1.04 쯤 넘쳤다 돌아옴) + opacity 0 → 1 100ms. 이정표는 소리 `tada`, 최고 기록은 등급 소리 그대로.
+- **🔥 칩**: t0+240 에 scale 1 → 1.3 → 1(`springHit` → `springSettle`) + rotate 0 → −6° → +6° → −3° → 0, 각 60ms(합 240ms) `Easing.inOut(quad)` — 불꽃이 흔들리듯.
+- 배너는 정보라 기존대로 1.5초 머물지만 **등장 모션은 400ms 안**. 배너·소리·축하 햅틱 **패턴**은 한 저장에 하나씩만(저장 탭 selection 은 확인이라 별개): 우선순위 목표 > 이정표 > 최고 기록 > 금액 구간.
+
+**효과음 규격 (빌더 작업)**
+- `npx expo install expo-audio` (Expo SDK 모듈, 재생만이라 config plugin 불필요) → `npx expo-doctor`. 소리는 **생성**한다(CC0 다운로드 대신): `scripts/gen-sounds.mjs`, Node 기본 모듈만, `assets/sounds/*.wav` 로 출력하고 결과 파일을 커밋.
+- 형식: WAV PCM16 mono **16 kHz**(0.5초 = 16KB, 20KB 이하), 피크 −6 dBFS, 앞 5ms 어택 + 지수 감쇠(τ = 길이/4) + 끝 10ms 0 으로 페이드(클릭 잡음 방지).
+
+| 파일 | 소리 | 길이 |
+| --- | --- | --- |
+| `tap.wav` | 사인 880 → 660 Hz 급하강 "톡" | 100ms |
+| `ding.wav` | 1320 Hz + 2640 Hz(진폭 0.3) | 250ms |
+| `tada.wav` | C5 523 Hz 120ms → G5 784 Hz 220ms | 340ms |
+| `fanfare.wav` | C5 · E5 · G5 각 80ms → C6 1047 Hz 160ms | 400ms |
+
+- 재생: `useCelebrationSound` 훅이 홈 마운트 때 4개를 `useAudioPlayer` 로 미리 로드, 트리거 시 `seekTo(0)` → `play()`. 볼륨 0.35(fanfare 0.5). `setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' })` — 무음 스위치를 따르고 사용자 음악을 끊지 않는다(옵션 이름은 설치된 SDK 문서로 확인).
+- 설정 탭에 "효과" 구획: `효과음` · `햅틱` 스위치 2줄(`SettingsRow`), 기본 켬. settings 키 `sound_enabled` / `haptics_enabled` = `'1'|'0'`(스키마 변경 없음). 햅틱 스위치는 `src/utils/haptics.ts` 한 곳에서 검사해 앱 전체 햅틱을 끈다.
+
+**동작 줄이기 (`useReduceMotion()` 이 참)**
+- 생략: 컨페티 · 플래시 · 플로팅 라벨 · 글로우 · 카드 움츠림/타격 · 숫자 오버슈트 · 칩 튐/흔들림 · 배너 이동(opacity 150ms 로만 등장).
+- 유지: 햅틱 · 소리 · 카운트업 · 목표 바(spring 대신 `withTiming` 300ms).
+
+**질리지 않게**
+- 시드 = 저장 시각: 컨페티 각도·속도·회전·색 순서, 카드 타격 최고값 1.06~1.08 사이(1.08 상한).
+- 플로팅 라벨은 **금액이 항상 주인공**, 꼬리말만 시드로 돌린다: "+4,500원" / "+4,500원 적립" / "+4,500원 아꼈다". big 은 꼬리말 대신 🔥.
+- 연속 저장: 새 t0 가 오면 `runId` 를 올리고 모든 shared value 에 `cancelAnimation` → 쉬는 값(scale 1 · opacity 0)으로 되돌린 뒤 새로 시작. 예전 `setTimeout`(햅틱 박자) 은 모두 `clearTimeout`, 컨페티·라벨은 `key={runId}` 로 다시 마운트, 이전 runId 의 완료 콜백은 무시.
+
+**토큰 (빌더가 `theme.ts` 에 추가)**: `motion.shrink 0.97` · `motion.cardHit 1.08` · `motion.numberHit 1.15` / `numberHitBig 1.2` · `motion.chipHit 1.3` · `motion.stagger 40` · `motion.floatRise 40` · `motion.glowSpread 12` / `16` · `motion.flashOpacity 0.10` / 다크 `0.14` · `motion.springHit` · `motion.springSettle` · `size.glowBorder 4` / `2`.
+
+**하지 말 것 (연출)**
+- t0 이후 1초를 넘는 움직임(배너가 머무는 시간 제외), 화면을 가리는 불투명 오버레이, 탭을 막는 레이어(`pointerEvents` 가 `none` 이 아닌 것), 연출 중 입력·스크롤 잠그기.
+- 큰 기본 볼륨, 한 저장에 소리 둘 이상, Success 알림 햅틱과 impact 를 같은 박자에 겹치기.
+- 컨페티 50개 초과(View 파티클 성능), 카드 scale 1.08 초과(화면 밖으로 삐져나감).
+
 ## 하지 말 것
 - `theme.ts` 밖에서 색·폰트 크기·radius 숫자 하드코딩 (`fs`/`sp` 조합 즉석 계산 포함 — 필요하면 토큰을 추가한다).
 - 카드·행·칩에 그림자 넣기, 테두리와 그림자 동시에 쓰기.
