@@ -176,6 +176,84 @@ export const size = {
   /** (M4) 저장 컨페티 한 조각 (가로 × 세로 사각형) */
   confettiWidth: 6,
   confettiHeight: 10,
+  /** (M4 축하 연출) 카드 글로우 테두리 두께: 1겹째 / 2겹째 */
+  glowBorder: 4,
+  glowBorder2: 2,
+} as const;
+
+/**
+ * (M4) 저장 축하 연출 토큰 (DESIGN "저장 축하 연출" 절).
+ * 시각(…At)은 모두 t0(입력 시트가 다 내려간 순간) 기준 ms. 타격은 hitAt, 이후 요소는 stagger(40) 단위로 뒤따른다.
+ */
+export const motion = {
+  /** 움츠림 크기 · 카드 타격 최고값(시드로 cardHitMin~cardHit) · 큰 숫자 오버슈트 · 칩 오버슈트 */
+  shrink: 0.97,
+  cardHit: 1.08,
+  cardHitMin: 1.06,
+  numberHit: 1.15,
+  numberHitBig: 1.2,
+  chipHit: 1.3,
+  stagger: 40,
+  /** 플로팅 라벨이 떠오르는 거리(pt) · 시작 크기 */
+  floatRise: 40,
+  labelFrom: 0.6,
+  /** 글로우가 카드 밖으로 퍼지는 거리(pt): 1겹째 / 2겹째 (2겹째는 화면 좌우 여백 16 안) */
+  glowSpread: 12,
+  glowSpread2: 16,
+  /** 글로우 시작 투명도: 라이트 / 다크 */
+  glowOpacity: 0.35,
+  glowOpacityDark: 0.45,
+  /** 화면 플래시 최고 투명도: 라이트 / 다크 */
+  flashOpacity: 0.1,
+  flashOpacityDark: 0.14,
+  springHit: { damping: 12, stiffness: 320, mass: 0.8 },
+  springSettle: { damping: 18, stiffness: 200 },
+  /** 목표 바: 평소 / 목표 달성 */
+  springBar: { damping: 16, stiffness: 180 },
+  springBarGoal: { damping: 11, stiffness: 220 },
+  /** 배너 등장: 목표(위에서 튕겨 내려옴) / 이정표·최고(작게 시작해 넘쳤다 돌아옴) */
+  springBannerDrop: { damping: 11, stiffness: 260 },
+  springBannerPop: { damping: 10, stiffness: 300 },
+
+  /** 시트 onDismiss 가 안 오면(Android·테스트) 이 시간 뒤 t0 로 친다 */
+  t0FallbackMs: 400,
+  /** 움츠림 끝 = 타격(햅틱·소리·카드·숫자·글로우·컨페티·플래시) */
+  hitAt: 80,
+  cardHitMs: 100,
+  countUpMs: 600,
+  labelAt: 120,
+  labelMs: 700,
+  labelPopMs: 150,
+  labelFadeInMs: 80,
+  labelFadeOutMs: 250,
+  glowMs: 600,
+  glow2At: 160,
+  flashInMs: 40,
+  flashOutMs: 80,
+  confettiMs: 800,
+  confetti2At: 180,
+  confetti2Ms: 700,
+  /** 두 번째 컨페티가 좌우로 더 벌어지는 각도(도) */
+  confetti2Spread: 20,
+  emojiAt: 200,
+  streakAt: 240,
+  /** 🔥 칩 흔들림 한 박(ms)과 각도 순서(도) */
+  wiggleMs: 60,
+  wiggle: [-6, 6, -3, 0],
+  goalBarAt: 280,
+  bannerAt: 300,
+  bannerFadeGoalMs: 120,
+  bannerFadeMs: 100,
+  /** 목표 달성 카드 틴트: 번짐 / 빠짐 (hitAt 부터 합 800ms) */
+  tintInMs: 200,
+  tintOutMs: 600,
+  /** 목표 달성 Success 햅틱(피날레) */
+  goalSuccessAt: 480,
+  /** 동작 줄이기: 목표 바 · 배너 등장 */
+  reducedBarMs: 300,
+  reducedBannerMs: 150,
+  /** 오버레이를 걷는 시각. 가장 늦은 컨페티(180 + 700)가 끝난 뒤 */
+  layerMs: 900,
 } as const;
 
 export type Theme = {
@@ -187,6 +265,7 @@ export type Theme = {
   type: typeof typeScale;
   shadow: typeof shadow;
   size: typeof size;
+  motion: typeof motion;
 };
 
 /** 시스템 색상 모드에 따라 테마 토큰을 돌려준다. */
@@ -202,5 +281,6 @@ export function useTheme(): Theme {
     type: typeScale,
     shadow,
     size,
+    motion,
   };
 }

@@ -21,3 +21,6 @@ beforeAll(async () => {
 // 그때는 node_modules/react-native-worklets 에서 mock 파일 위치를 다시 찾아 이 경로를 고친다.
 jest.mock('react-native-worklets', () => jest.requireActual('react-native-worklets/src/mock'));
 jest.mock('react-native-reanimated', () => jest.requireActual('react-native-reanimated/mock'));
+
+/** expo-audio 는 네이티브 모듈이라 jest 에서는 __mocks__/expo-audio.ts 대역으로 바꾼다 (홈 화면이 효과음 훅을 쓴다) */
+jest.mock('expo-audio');

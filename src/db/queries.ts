@@ -238,6 +238,10 @@ export const SETTING_KEYS = {
   milestoneReached: 'milestone_reached',
   /** (M4) 닫은 회고 카드의 대상 달 ('YYYY-MM', 지난달). 같은 달 회고는 다시 띄우지 않는다. */
   reviewDismissedMonth: 'review_dismissed_month',
+  /** (M4) 저장 효과음 켬/끔 ('1' | '0'). 없으면 켬 */
+  soundEnabled: 'sound_enabled',
+  /** (M4) 앱 전체 햅틱 켬/끔 ('1' | '0'). 없으면 켬 */
+  hapticsEnabled: 'haptics_enabled',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

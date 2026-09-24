@@ -5,7 +5,8 @@ import {
   setSetting,
   SETTING_KEYS,
 } from '@/src/db';
-import { useSettingsStore } from '@/src/store/settingsStore';
+import { parseFlag, useSettingsStore } from '@/src/store/settingsStore';
+import { isHapticsEnabled, setHapticsEnabled } from '@/src/utils/haptics';
 
 describe('settingsStore', () => {
   beforeEach(() => {
@@ -68,5 +69,50 @@ describe('settingsStore', () => {
     setSetting(SETTING_KEYS.goalReachedMonth, '2026-09');
     useSettingsStore.getState().clearGoal();
     expect(getSetting(SETTING_KEYS.goalReachedMonth)).toBeNull();
+  });
+});
+
+describe('settingsStore — 효과음·햅틱 스위치 (M4)', () => {
+  beforeEach(() => {
+    resetDatabaseConnection();
+    initDatabase();
+    useSettingsStore.setState({ soundEnabled: true, hapticsEnabled: true, loaded: false });
+    setHapticsEnabled(true);
+  });
+
+  afterAll(() => {
+    resetDatabaseConnection();
+    setHapticsEnabled(true);
+  });
+
+  it('키가 없으면(첫 설치) 둘 다 켬', () => {
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState()).toMatchObject({ soundEnabled: true, hapticsEnabled: true });
+  });
+
+  it("DB 의 '0' 은 끔, '1' 은 켬으로 읽고 햅틱 값은 utils/haptics 에도 넣는다", () => {
+    setSetting(SETTING_KEYS.soundEnabled, '0');
+    setSetting(SETTING_KEYS.hapticsEnabled, '0');
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState()).toMatchObject({ soundEnabled: false, hapticsEnabled: false });
+    expect(isHapticsEnabled()).toBe(false);
+  });
+
+  it("끄고 켜면 DB 에 '0' / '1' 로 적는다", () => {
+    useSettingsStore.getState().setSoundEnabled(false);
+    useSettingsStore.getState().setHapticsEnabled(false);
+    expect(getSetting(SETTING_KEYS.soundEnabled)).toBe('0');
+    expect(getSetting(SETTING_KEYS.hapticsEnabled)).toBe('0');
+    expect(isHapticsEnabled()).toBe(false);
+    useSettingsStore.getState().setHapticsEnabled(true);
+    expect(getSetting(SETTING_KEYS.hapticsEnabled)).toBe('1');
+    expect(isHapticsEnabled()).toBe(true);
+  });
+
+  it('parseFlag: 없음·이상한 값은 켬, "0" 만 끔', () => {
+    expect(parseFlag(null)).toBe(true);
+    expect(parseFlag('1')).toBe(true);
+    expect(parseFlag('yes')).toBe(true);
+    expect(parseFlag('0')).toBe(false);
   });
 });

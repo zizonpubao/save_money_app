@@ -167,6 +167,21 @@ describe('entryStore', () => {
       useEntryStore.getState().remove(created.id);
       expect(useEntryStore.getState().celebrateTick).toBe(tick);
     });
+
+    it('(M4) addDeferred 는 DB 에 바로 저장하고, 화면 반영(목록·합계·tick)은 publish 때 한다', () => {
+      const { entry, publish } = useEntryStore.getState().addDeferred(input({ amount: 12000 }));
+      expect(entry.id).toBeGreaterThan(0);
+      // 시트가 내려가기 전: 스토어는 그대로
+      expect(useEntryStore.getState()).toMatchObject({ entries: [], monthTotal: 0, celebrateTick: 0 });
+      // DB 에는 이미 있어서 다시 읽으면 보인다 (앱이 그 사이 꺼져도 기록은 남는다)
+      publish();
+      expect(useEntryStore.getState()).toMatchObject({
+        monthTotal: 12000,
+        celebrateTick: 1,
+        celebrateTier: 'mid',
+      });
+      expect(useEntryStore.getState().entries).toHaveLength(1);
+    });
   });
 
   describe('금액 구간 이펙트 (M4 celebrateTier)', () => {

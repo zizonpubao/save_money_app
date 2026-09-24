@@ -1,46 +1,79 @@
 import * as Haptics from 'expo-haptics';
 
-import type { CelebrationTier } from '@/src/features/celebration';
-
-/** 저장 성공 햅틱. 실패해도(시뮬레이터 등) 앱 흐름을 막지 않는다. */
-export function celebrateHaptic(): void {
-  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-}
-
-/** 두 번째 진동까지 간격 (ms) */
-const GOAL_HAPTIC_GAP_MS = 150;
-
-/** 월 목표 달성 햅틱. 저장 성공(Success)보다 강하게 Heavy 2연타. */
-export function goalReachedHaptic(): void {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-  setTimeout(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-  }, GOAL_HAPTIC_GAP_MS);
-}
-
-/** (M4) 1만원 이상 저장의 두 번째 진동까지 간격 (ms) */
-const MID_TIER_GAP_MS = 120;
+import type { HapticPattern } from '@/src/features/celebration';
 
 /**
- * (M4) 저장 금액 구간별 햅틱. 1만원 미만은 기존 Success, 1만원 이상은 Medium 2연타, 5만원 이상은 Heavy 한 번.
- * 목표 달성과 겹치면 부르지 않는다 (goalReachedHaptic 만 낸다).
+ * 앱 전체 햅틱 스위치. 설정 탭 "햅틱" 토글(settings `haptics_enabled`)을 settingsStore 가 읽어 넣는다.
+ * 모든 햅틱이 아래 fire() 한 곳을 지나므로 여기서만 검사한다.
  */
-export function celebrateTierHaptic(tier: CelebrationTier): void {
-  if (tier === 'big') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-    return;
+let hapticsEnabled = true;
+
+export function setHapticsEnabled(enabled: boolean): void {
+  hapticsEnabled = enabled;
+}
+
+export function isHapticsEnabled(): boolean {
+  return hapticsEnabled;
+}
+
+export type HapticKind = 'selection' | 'medium' | 'heavy' | 'success';
+
+/** 햅틱 한 번. 꺼져 있으면 아무것도 안 한다. 실패해도(시뮬레이터 등) 앱 흐름을 막지 않는다. */
+function fire(kind: HapticKind): void {
+  if (!hapticsEnabled) return;
+  const done =
+    kind === 'selection'
+      ? Haptics.selectionAsync()
+      : kind === 'success'
+        ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        : Haptics.impactAsync(
+            kind === 'heavy' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium,
+          );
+  done.catch(() => {});
+}
+
+export type HapticStep = { at: number; kind: HapticKind };
+
+/**
+ * (M4 축하 연출) 패턴별 박자. at 은 타격(t0 + 80) 기준 ms.
+ * - base: Medium 한 번 · mid: Medium → Heavy(80) · big: Heavy 3연타 0/90/220 ("쿵쿵—쿵")
+ * - goal: big 3연타 + t0+480 Success 피날레 (impact 와 같은 박자에 겹치지 않는다)
+ */
+const BIG_STEPS: HapticStep[] = [
+  { at: 0, kind: 'heavy' },
+  { at: 90, kind: 'heavy' },
+  { at: 220, kind: 'heavy' },
+];
+
+export const HAPTIC_PATTERNS: Record<HapticPattern, readonly HapticStep[]> = {
+  base: [{ at: 0, kind: 'medium' }],
+  mid: [
+    { at: 0, kind: 'medium' },
+    { at: 80, kind: 'heavy' },
+  ],
+  big: BIG_STEPS,
+  goal: [...BIG_STEPS, { at: 480 - 80, kind: 'success' }],
+};
+
+/**
+ * 축하 햅틱 패턴을 지금(타격 순간)부터 재생한다. 돌려받은 함수로 남은 박자를 취소한다
+ * (연속 저장 때 새 연출이 이전 박자를 끊는다).
+ */
+export function playCelebrationHaptic(pattern: HapticPattern): () => void {
+  const timers: ReturnType<typeof setTimeout>[] = [];
+  for (const step of HAPTIC_PATTERNS[pattern]) {
+    if (step.at === 0) fire(step.kind);
+    else timers.push(setTimeout(() => fire(step.kind), step.at));
   }
-  if (tier === 'mid') {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setTimeout(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }, MID_TIER_GAP_MS);
-    return;
-  }
-  celebrateHaptic();
+  return () => timers.forEach(clearTimeout);
+}
+
+/** 저장 버튼을 누른 순간 "눌렸다" 확인. 축하 패턴과 별개 */
+export function saveTapHaptic(): void {
+  fire('selection');
 }
 
 /** 막대 그래프를 쓸 때 칸(날·월)이 바뀔 때마다 주는 가벼운 틱. iOS 피커 휠과 같은 selection 햅틱. */
 export function scrubTick(): void {
-  Haptics.selectionAsync().catch(() => {});
+  fire('selection');
 }

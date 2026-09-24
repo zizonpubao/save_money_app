@@ -1,8 +1,14 @@
 import {
+  buildCelebrationPlan,
+  cardHitPeak,
+  CONFETTI_BURSTS,
   CONFETTI_COUNT,
   celebrationTier,
   confettiFrame,
+  floatingLabelText,
   makeConfettiPieces,
+  NO_EVENTS,
+  type CelebrationEvents,
 } from '@/src/features/celebration';
 
 describe('celebrationTier (M4 금액 구간)', () => {
@@ -17,8 +23,17 @@ describe('celebrationTier (M4 금액 구간)', () => {
     expect(celebrationTier(amount)).toBe(tier);
   });
 
-  it('구간별 컨페티 수: 1만원 미만 0 · 1만원 이상 20 · 5만원 이상 40', () => {
-    expect(CONFETTI_COUNT).toEqual({ base: 0, mid: 20, big: 40 });
+  it('구간별 컨페티 수: 1만원 미만 0 · 1만원 이상 24 · 5만원 이상 24 + 24 (50개 이하)', () => {
+    expect(CONFETTI_COUNT).toEqual({ base: 0, mid: 24, big: 48 });
+    expect(CONFETTI_COUNT.big).toBeLessThanOrEqual(50);
+  });
+
+  it('두 번째 터짐은 t0+180 에 700ms 로 짧게 — 둘 다 t0+880 안에 끝난다', () => {
+    expect(CONFETTI_BURSTS.map((b) => [b.at, b.ms, b.spread])).toEqual([
+      [80, 800, 0],
+      [180, 700, 20],
+    ]);
+    for (const b of CONFETTI_BURSTS) expect(b.at + b.ms).toBeLessThanOrEqual(880);
   });
 });
 
@@ -62,6 +77,26 @@ describe('makeConfettiPieces', () => {
   it('0개면 빈 목록', () => {
     expect(makeConfettiPieces(0, 1)).toEqual([]);
   });
+
+  it('spread 20 이면 각도 범위가 좌우로 20° 더 벌어진다 (-180°~0°)', () => {
+    const pieces = makeConfettiPieces(200, 7, 20);
+    const angles = pieces.map((p) => (Math.atan2(p.vy, p.vx) * 180) / Math.PI);
+    for (const a of angles) {
+      expect(a).toBeGreaterThanOrEqual(-180);
+      expect(a).toBeLessThanOrEqual(0);
+    }
+    // 기본 범위(-160~-20) 밖으로 나간 조각이 있다
+    expect(angles.some((a) => a < -160 || a > -20)).toBe(true);
+  });
+
+  it('목표 달성 팔레트는 good 50% · primary 25% · warn 25% (primarySoft 없음)', () => {
+    const pieces = makeConfettiPieces(2000, 11, 0, 'goal');
+    const share = (c: number) => pieces.filter((p) => p.color === c).length / pieces.length;
+    expect(share(2)).toBeCloseTo(0.5, 1);
+    expect(share(0)).toBeCloseTo(0.25, 1);
+    expect(share(3)).toBeCloseTo(0.25, 1);
+    expect(share(1)).toBe(0);
+  });
 });
 
 describe('confettiFrame', () => {
@@ -96,5 +131,101 @@ describe('confettiFrame', () => {
     const dy1 = confettiFrame(piece, 0.8).y - confettiFrame(piece, 0.7).y;
     const dy2 = confettiFrame(piece, 1).y - confettiFrame(piece, 0.9).y;
     expect(dy2).toBeGreaterThan(dy1);
+  });
+});
+
+describe('buildCelebrationPlan (등급 + 사건 → 연출 플랜)', () => {
+  const ev = (over: Partial<CelebrationEvents>): CelebrationEvents => ({ ...NO_EVENTS, ...over });
+
+  it('base: 글로우 1겹 · 컨페티·플래시 없음 · Medium · tap · heading · 배너 없음', () => {
+    expect(buildCelebrationPlan('base', NO_EVENTS)).toEqual({
+      tier: 'base',
+      layers: { confettiBursts: 0, glowRings: 1, flash: false, numberHit: 1.15, goal: false, streak: false },
+      haptics: 'base',
+      sound: 'tap',
+      label: 'heading',
+      banner: null,
+    });
+  });
+
+  it('mid: base 에 컨페티 1번 · 글로우 2겹을 더하고 ding · title', () => {
+    const plan = buildCelebrationPlan('mid', NO_EVENTS);
+    expect(plan.layers).toMatchObject({ confettiBursts: 1, glowRings: 2, flash: false, numberHit: 1.15 });
+    expect([plan.haptics, plan.sound, plan.label, plan.banner]).toEqual(['mid', 'ding', 'title', null]);
+  });
+
+  it('big: 컨페티 2번 · 플래시 · 숫자 1.2 · Heavy 3연타 · tada · display', () => {
+    const plan = buildCelebrationPlan('big', NO_EVENTS);
+    expect(plan.layers).toMatchObject({ confettiBursts: 2, glowRings: 2, flash: true, numberHit: 1.2 });
+    expect([plan.haptics, plan.sound, plan.label]).toEqual(['big', 'tada', 'display']);
+  });
+
+  it('목표 달성은 base 금액이어도 big + 목표 층, 햅틱·소리·배너 모두 목표 것 하나', () => {
+    const plan = buildCelebrationPlan('base', ev({ goal: true }));
+    expect(plan.tier).toBe('big');
+    expect(plan.layers).toMatchObject({ goal: true, flash: true, confettiBursts: 2 });
+    expect([plan.haptics, plan.sound, plan.banner]).toEqual(['goal', 'fanfare', 'goal']);
+  });
+
+  it('이정표는 최소 big, 소리 tada, 배너 이정표', () => {
+    const plan = buildCelebrationPlan('base', ev({ milestone: true }));
+    expect([plan.tier, plan.haptics, plan.sound, plan.banner]).toEqual(['big', 'big', 'tada', 'milestone']);
+    expect(plan.layers.goal).toBe(false);
+  });
+
+  it('최고 기록은 최소 mid, 소리는 올린 등급 것 (base → ding)', () => {
+    const plan = buildCelebrationPlan('base', ev({ best: true }));
+    expect([plan.tier, plan.haptics, plan.sound, plan.banner]).toEqual(['mid', 'mid', 'ding', 'best']);
+  });
+
+  it('최고 기록 + big 금액은 big 그대로 (바닥은 내리지 않는다)', () => {
+    const plan = buildCelebrationPlan('big', ev({ best: true }));
+    expect([plan.tier, plan.sound, plan.banner]).toEqual(['big', 'tada', 'best']);
+  });
+
+  it('🔥 증가는 등급을 바꾸지 않고 칩 층만 켠다', () => {
+    const plan = buildCelebrationPlan('base', ev({ streak: true }));
+    expect(plan.tier).toBe('base');
+    expect(plan.layers.streak).toBe(true);
+    expect([plan.haptics, plan.sound, plan.banner]).toEqual(['base', 'tap', null]);
+  });
+
+  it('하나만 규칙: 목표 > 이정표 > 최고 — 다 겹쳐도 배너·소리·햅틱은 목표 것 하나', () => {
+    const plan = buildCelebrationPlan('mid', ev({ goal: true, milestone: true, best: true, streak: true }));
+    expect([plan.banner, plan.sound, plan.haptics]).toEqual(['goal', 'fanfare', 'goal']);
+    expect(plan.layers.streak).toBe(true);
+  });
+
+  it('이정표 + 최고: 이정표가 이긴다', () => {
+    const plan = buildCelebrationPlan('mid', ev({ milestone: true, best: true }));
+    expect([plan.tier, plan.banner, plan.sound, plan.haptics]).toEqual(['big', 'milestone', 'tada', 'big']);
+  });
+
+  it('아래 등급의 층은 위 등급의 부분집합이다 (컨페티·글로우·숫자 오버슈트가 줄지 않는다)', () => {
+    const [b, m, g] = (['base', 'mid', 'big'] as const).map((t) => buildCelebrationPlan(t, NO_EVENTS).layers);
+    expect(b.confettiBursts).toBeLessThanOrEqual(m.confettiBursts);
+    expect(m.confettiBursts).toBeLessThanOrEqual(g.confettiBursts);
+    expect(b.glowRings).toBeLessThanOrEqual(m.glowRings);
+    expect(m.numberHit).toBeLessThanOrEqual(g.numberHit);
+  });
+});
+
+describe('질리지 않게 (시드)', () => {
+  it('카드 타격 최고값은 1.06~1.08 사이, 1.08 을 넘지 않는다', () => {
+    for (let seed = 0; seed < 200; seed += 1) {
+      const peak = cardHitPeak(1727150400000 + seed * 997);
+      expect(peak).toBeGreaterThanOrEqual(1.06);
+      expect(peak).toBeLessThanOrEqual(1.08);
+    }
+  });
+
+  it('플로팅 라벨은 금액이 주인공, 꼬리말만 돈다: "+4,500원" · "+4,500원 적립" · "+4,500원 아꼈다"', () => {
+    const labels = new Set(Array.from({ length: 60 }, (_, i) => floatingLabelText(4500, 'base', i * 131)));
+    expect([...labels].sort()).toEqual(['+4,500원', '+4,500원 아꼈다', '+4,500원 적립']);
+  });
+
+  it('big 은 꼬리말 대신 🔥', () => {
+    expect(floatingLabelText(55000, 'big', 1)).toBe('+55,000원 🔥');
+    expect(floatingLabelText(55000, 'big', 2)).toBe('+55,000원 🔥');
   });
 });

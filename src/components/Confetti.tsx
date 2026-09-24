@@ -1,47 +1,51 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 
 import {
-  CONFETTI_MS,
+  CONFETTI_BURSTS,
+  CONFETTI_PER_BURST,
   confettiFrame,
   makeConfettiPieces,
+  type ConfettiPalette,
   type ConfettiPiece,
 } from '@/src/features/celebration';
 import { useTheme } from '@/src/theme';
 
 type Props = {
-  /** 저장 성공 횟수. 이 값이 커질 때마다 한 번 터진다 (마운트 시점의 값으로는 터지지 않는다) */
-  tick: number;
-  /** 조각 수. 0이면 그리지 않는다 (1만원 미만 저장) */
-  count: number;
+  /** 터짐 횟수 (0이면 그리지 않는다). 한 번에 CONFETTI_PER_BURST 개, 두 번째는 늦게·짧게·넓게 */
+  bursts: number;
   /** 조각 배치 시드 (저장 시각) */
   seed: number;
   /** 동작 줄이기 설정이 켜져 있으면 그리지 않는다 */
   reduceMotion?: boolean;
   /** 터지는 점 (부모 기준 pt, 보통 카드 가운데). 아직 못 쟀으면 부모 위쪽 가운데 */
   origin?: ConfettiOrigin | null;
+  /** 색 섞기. 목표 달성은 good 50% */
+  palette?: ConfettiPalette;
 };
 
 export type ConfettiOrigin = { x: number; y: number };
 
-function Piece({ piece, color }: { piece: ConfettiPiece; color: string }) {
+function Piece({ piece, color, at, ms }: { piece: ConfettiPiece; color: string; at: number; ms: number }) {
   const { size } = useTheme();
   const t = useSharedValue(0);
 
   useEffect(() => {
-    t.value = withTiming(1, { duration: CONFETTI_MS, easing: Easing.linear });
-  }, [t]);
+    t.value = withDelay(at, withTiming(1, { duration: ms, easing: Easing.linear }));
+  }, [t, at, ms]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const f = confettiFrame(piece, t.value);
     return {
-      opacity: f.opacity,
+      // 터지기 전(두 번째 터짐 대기 중)에는 가운데에 뭉쳐 보이지 않게 숨긴다
+      opacity: t.value === 0 ? 0 : f.opacity,
       transform: [{ translateX: f.x }, { translateY: f.y }, { rotate: `${f.rotate}deg` }],
     };
   });
@@ -65,41 +69,52 @@ function Piece({ piece, color }: { piece: ConfettiPiece; color: string }) {
 }
 
 /**
- * (M4) 저장 컨페티. origin 점에서 사방으로 터졌다가 떨어지며 0.8초 안에 사라진다.
- * 스크롤 목록 안에 두면 목록 위쪽 바깥으로 튄 조각이 잘리므로, 화면 전체를 덮는 오버레이로 그린다
- * (부모의 마지막 형제로 두고 origin 은 부모 기준 좌표). 터치는 막지 않는다.
+ * (M4) 저장 컨페티. 마운트하면 origin 점에서 사방으로 터졌다가 떨어지며 사라진다 (t0 기준 80ms 에 첫 터짐).
+ * 언제 걷을지는 부모(CelebrationLayer)가 정한다 — 연출마다 key 로 새로 마운트된다.
+ * 스크롤 목록 안에 두면 목록 위쪽 바깥으로 튄 조각이 잘리므로, 화면 전체를 덮는 오버레이로 그린다. 터치는 막지 않는다.
  */
-export function Confetti({ tick, count, seed, reduceMotion = false, origin = null }: Props) {
+export function Confetti({
+  bursts,
+  seed,
+  reduceMotion = false,
+  origin = null,
+  palette = 'default',
+}: Props) {
   const { colors } = useTheme();
-  // 이미 끝난 저장 횟수. 마운트 시점 값으로 시작해 탭을 다시 그렸다고 지난 컨페티가 다시 터지지 않게 한다
-  const [finished, setFinished] = useState(tick);
 
-  useEffect(() => {
-    if (tick === 0) return;
-    const timer = setTimeout(() => setFinished(tick), CONFETTI_MS);
-    return () => clearTimeout(timer);
-  }, [tick]);
+  const groups = useMemo(
+    () =>
+      CONFETTI_BURSTS.slice(0, Math.max(0, bursts)).map((burst, i) => ({
+        burst,
+        // 두 번째 터짐은 다른 시드로 모양을 바꾼다
+        pieces: makeConfettiPieces(CONFETTI_PER_BURST, seed + i * 7919, burst.spread, palette),
+      })),
+    [bursts, seed, palette],
+  );
+  const colorOf = [colors.primary, colors.primarySoft, colors.good, colors.warn];
 
-  const pieces = useMemo(() => makeConfettiPieces(count, seed), [count, seed]);
-  const palette = [colors.primary, colors.primarySoft, colors.good, colors.warn];
-
-  if (reduceMotion || count <= 0 || tick <= finished) return null;
+  if (reduceMotion || groups.length === 0) return null;
 
   return (
-    <View pointerEvents="none" testID="confetti" style={[StyleSheet.absoluteFill, styles.overlay]}>
+    <View pointerEvents="none" testID="confetti" style={StyleSheet.absoluteFill}>
       <View style={[styles.origin, origin ? { left: origin.x, top: origin.y } : styles.fallback]}>
-        {pieces.map((p, i) => (
-          // key 에 tick 을 넣어 연달아 저장해도 새 조각으로 처음부터 다시 재생한다
-          <Piece key={`${tick}-${i}`} piece={p} color={palette[p.color] ?? colors.primary} />
-        ))}
+        {groups.map(({ burst, pieces }, g) =>
+          pieces.map((p, i) => (
+            <Piece
+              key={`${g}-${i}`}
+              piece={p}
+              color={colorOf[p.color] ?? colors.primary}
+              at={burst.at}
+              ms={burst.ms}
+            />
+          )),
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // 조각이 목록·칩 위로 떨어져도 가려지지 않게 형제들보다 한 층 위
-  overlay: { zIndex: 1 },
   // 터지는 한 점. 조각은 이 점을 기준으로 transform 만 바꾼다
   origin: { position: 'absolute', width: 0, height: 0 },
   fallback: { top: 0, left: '50%' },

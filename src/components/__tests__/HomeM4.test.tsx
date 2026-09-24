@@ -13,8 +13,12 @@ import {
 } from '@/src/db';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
+import type * as AudioMock from '@/__mocks__/expo-audio';
+import { SOUND_FILES } from '@/src/features/useCelebrationSound';
 import { useSettingsStore } from '@/src/store/settingsStore';
+import { motion } from '@/src/theme';
 import { addDays, addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
+import { setHapticsEnabled } from '@/src/utils/haptics';
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
@@ -32,6 +36,14 @@ jest.mock('@/src/components/EntryRow', () => {
     EntryRow: ({ entry }: { entry: { title: string } }) => <Text>{entry.title}</Text>,
   };
 });
+
+// jest 는 모든 에셋을 같은 값으로 바꾸므로, 어느 효과음을 재생했는지 가리려고 파일마다 다른 id 를 준다
+jest.mock('../../../assets/sounds/tap.wav', () => 101);
+jest.mock('../../../assets/sounds/ding.wav', () => 102);
+jest.mock('../../../assets/sounds/tada.wav', () => 103);
+jest.mock('../../../assets/sounds/fanfare.wav', () => 104);
+
+const { mockPlayers } = jest.requireMock<typeof AudioMock>('expo-audio');
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -98,24 +110,64 @@ function resetAll() {
   initDatabase();
   useCategoryStore.setState({ categories: [], loaded: false });
   useEntryStore.setState(EMPTY_HOME);
-  useSettingsStore.setState({ monthlyGoal: null, loaded: false });
+  useSettingsStore.setState({ monthlyGoal: null, soundEnabled: true, hapticsEnabled: true, loaded: false });
+  setHapticsEnabled(true);
   jest.mocked(Haptics.impactAsync).mockClear();
   jest.mocked(Haptics.notificationAsync).mockClear();
+  jest.mocked(Haptics.selectionAsync).mockClear();
+  for (const p of mockPlayers) p.play.mockClear();
 }
+
+let sheetOnDismiss: (() => void) | null = null;
 
 /** + 버튼 → 금액·항목 입력 → 저장 (실제 사용자 흐름 그대로) */
 async function saveViaSheet(amount: string, title: string) {
   await fireEvent.press(screen.getByLabelText('기록 추가'));
+  // jest 의 Modal 은 닫히면 트리에서 빠지므로, 떠 있을 때 onDismiss 를 잡아 두고 "다 내려감"을 흉내 낸다
+  sheetOnDismiss = screen.getByTestId('entry-form-modal').props.onDismiss;
   await fireEvent.changeText(screen.getByPlaceholderText('0'), amount);
   await fireEvent.changeText(screen.getByPlaceholderText('예: 아메리카노'), title);
   await fireEvent.press(screen.getByText('저장'));
 }
 
-/** 두 번째 진동(120·150ms 뒤)까지 기다린다 */
-async function waitHaptics() {
+/** 실제 시간으로 ms 만큼 기다린다 (화면 렌더가 멈추지 않게 진짜 타이머) */
+async function wait(ms: number) {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, ms));
   });
+}
+
+/** iOS: 입력 시트가 다 내려간 순간(onDismiss) = t0 */
+async function sheetDismissed() {
+  await act(async () => {
+    sheetOnDismiss?.();
+  });
+}
+
+/** t0 이후 목표 피날레(t0+480)까지 */
+async function waitCelebration() {
+  await wait(motion.goalSuccessAt + 100);
+}
+
+/** 지금까지 울린 햅틱을 순서대로 (impact 는 세기, Success 는 'success', selection 은 'selection') */
+function hapticsFired(): string[] {
+  const calls: { order: number; kind: string }[] = [];
+  const collect = (mock: jest.Mock, kind: (args: unknown[]) => string) =>
+    mock.mock.calls.forEach((args, i) =>
+      calls.push({ order: mock.mock.invocationCallOrder[i] ?? 0, kind: kind(args) }),
+    );
+  collect(jest.mocked(Haptics.impactAsync), (args) => String(args[0]));
+  collect(jest.mocked(Haptics.notificationAsync), () => 'success');
+  collect(jest.mocked(Haptics.selectionAsync), () => 'selection');
+  return calls.sort((a, b) => a.order - b.order).map((c) => c.kind);
+}
+
+/** 재생한 효과음 이름들 */
+function soundsPlayed(): string[] {
+  const names = Object.entries(SOUND_FILES);
+  return mockPlayers.flatMap((p) =>
+    p.play.mock.calls.map(() => names.find(([, id]) => id === p.source)?.[0] ?? '?'),
+  );
 }
 
 describe('홈 화면 — 칩 행 (M4 연속 기록일 · 누적)', () => {
@@ -146,70 +198,123 @@ describe('홈 화면 — 칩 행 (M4 연속 기록일 · 누적)', () => {
   });
 });
 
-describe('홈 화면 — 금액 구간 이펙트 (M4)', () => {
+describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)', () => {
   beforeEach(resetAll);
-  afterAll(() => resetDatabaseConnection());
+  afterAll(() => {
+    resetDatabaseConnection();
+    setHapticsEnabled(true);
+  });
 
-  it('9,999원 저장: Success 햅틱만, 컨페티 없음', async () => {
+  it('저장 탭 순간엔 selection 햅틱만, 시트가 내려가기 전(t0 전)에는 목록·연출이 바뀌지 않는다', async () => {
+    await render(<HomeScreen />);
+    await saveViaSheet('4500', '커피');
+    expect(hapticsFired()).toEqual(['selection']);
+    expect(screen.queryByText('커피')).toBeNull();
+    expect(screen.queryByTestId('celebration-layer')).toBeNull();
+    expect(soundsPlayed()).toEqual([]);
+  });
+
+  it('9,999원(base): t0 에 글로우·라벨, 타격에 Medium 한 번 + tap, 컨페티 없음', async () => {
     await render(<HomeScreen />);
     await saveViaSheet('9999', '간식');
-    await waitHaptics();
-    expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1);
-    expect(Haptics.impactAsync).not.toHaveBeenCalled();
+    await sheetDismissed();
+    expect(screen.getByText('간식')).toBeOnTheScreen();
+    expect(screen.getByTestId('floating-label')).toHaveTextContent(/^\+9,999원/);
     expect(screen.queryByTestId('confetti')).toBeNull();
+    await waitCelebration();
+    expect(hapticsFired()).toEqual(['selection', 'medium']);
+    expect(soundsPlayed()).toEqual(['tap']);
   });
 
-  it('10,000원 저장: Medium 2연타 + 컨페티 20개', async () => {
+  it('10,000원(mid): Medium → Heavy + ding + 컨페티 24개', async () => {
     await render(<HomeScreen />);
     await saveViaSheet('10000', '택시');
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(20);
-    await waitHaptics();
-    expect(jest.mocked(Haptics.impactAsync).mock.calls).toEqual([['medium'], ['medium']]);
+    await sheetDismissed();
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(24);
+    await waitCelebration();
+    expect(hapticsFired()).toEqual(['selection', 'medium', 'heavy']);
+    expect(soundsPlayed()).toEqual(['ding']);
   });
 
-  it('50,000원 저장: Heavy 한 번 + 컨페티 40개', async () => {
+  it('50,000원(big): Heavy 3연타 + tada + 컨페티 48개 + 화면 플래시 + "🔥" 라벨', async () => {
     await render(<HomeScreen />);
     await saveViaSheet('50000', '운동화');
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(40);
-    await waitHaptics();
-    expect(jest.mocked(Haptics.impactAsync).mock.calls).toEqual([['heavy']]);
+    await sheetDismissed();
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(screen.getByTestId('screen-flash')).toBeOnTheScreen();
+    expect(screen.getByTestId('floating-label')).toHaveTextContent('+50,000원 🔥');
+    await waitCelebration();
+    expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy']);
+    expect(soundsPlayed()).toEqual(['tada']);
   });
 
-  it('55,000원 저장: 컨페티 40개가 스크롤 목록 밖 화면 전체 오버레이에 그려진다 (목록 경계에 잘리지 않게)', async () => {
+  it('onDismiss 가 안 와도(Android) 400ms 안전 타이머로 t0 가 온다', async () => {
     await render(<HomeScreen />);
+    await saveViaSheet('10000', '택시');
     expect(screen.queryByTestId('confetti')).toBeNull();
+    await wait(motion.t0FallbackMs + 50);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(24);
+  });
+
+  it('55,000원: 오버레이는 스크롤 목록 밖, FAB 다음 형제(FAB 위)이고 터치를 막지 않는다', async () => {
+    await render(<HomeScreen />);
     await saveViaSheet('55000', '운동화');
-    const overlay = screen.getByTestId('confetti');
-    expect(within(overlay).getAllByTestId('confetti-piece')).toHaveLength(40);
-    expect(overlay).toHaveStyle({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 });
-    // 목록 행은 스크롤 뷰 안에 있고, 컨페티 오버레이는 그 밖에 있다
-    const inScroll = (el: typeof overlay) => {
+    await sheetDismissed();
+    const layer = screen.getByTestId('celebration-layer');
+    expect(layer.props.pointerEvents).toBe('none');
+    expect(within(layer).getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(layer).toHaveStyle({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 });
+    const inScroll = (el: typeof layer) => {
       for (let node = el.parent; node; node = node.parent) {
         if (node.type === 'RCTScrollView') return true;
       }
       return false;
     };
     expect(inScroll(screen.getByText('운동화'))).toBe(true);
-    expect(inScroll(overlay)).toBe(false);
+    expect(inScroll(layer)).toBe(false);
+    // Screen 의 자식 순서: 홈 영역 → FAB → 오버레이. 뒤에 오는 형제가 위에 그려진다
+    const screenRoot = layer.parent;
+    const kids = (screenRoot?.children ?? []).filter((c) => typeof c !== 'string');
+    const fabAt = kids.indexOf(screen.getByLabelText('기록 추가'));
+    expect(fabAt).toBeGreaterThanOrEqual(0);
+    expect(kids.indexOf(layer)).toBeGreaterThan(fabAt);
   });
 
-  it('목표 달성과 겹치면 햅틱은 목표 것(Heavy 2연타)만, 컨페티는 그대로', async () => {
-    setSetting(SETTING_KEYS.monthlyGoal, '30000');
+  it('목표 달성: 금액이 작아도 big 연출 + 목표 햅틱(Heavy 3연타 → Success) + fanfare 하나 + 배너 하나', async () => {
+    setSetting(SETTING_KEYS.monthlyGoal, '3000');
     await render(<HomeScreen />);
-    await saveViaSheet('50000', '운동화');
+    await saveViaSheet('4500', '커피');
+    await sheetDismissed();
     expect(screen.getByText('이번 달 목표 달성 🎉')).toBeOnTheScreen();
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(40);
-    await waitHaptics();
-    expect(jest.mocked(Haptics.impactAsync).mock.calls).toEqual([['heavy'], ['heavy']]);
-    expect(Haptics.notificationAsync).not.toHaveBeenCalled();
+    expect(screen.getAllByTestId('record-banner')).toHaveLength(1);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    await waitCelebration();
+    expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy', 'success']);
+    expect(soundsPlayed()).toEqual(['fanfare']);
   });
 
-  it('누적 10만원을 넘는 저장은 "누적 10만원 돌파 🎉" 배너', async () => {
+  it('누적 10만원을 넘는 저장은 "누적 10만원 돌파 🎉" 배너 + tada (이정표는 최소 big)', async () => {
     addEntry(entry({ date: monthRange(addMonths(thisMonth(), -1)).start, amount: 95000 }));
     await render(<HomeScreen />);
     await saveViaSheet('5000', '커피');
+    await sheetDismissed();
     expect(screen.getByText('누적 10만원 돌파 🎉')).toBeOnTheScreen();
     expect(getSetting(SETTING_KEYS.milestoneReached)).toBe('100000');
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    await waitCelebration();
+    expect(soundsPlayed()).toEqual(['tada']);
+  });
+
+  it('설정에서 효과음·햅틱을 끄면 저장해도 소리·진동이 없다 (연출은 그대로)', async () => {
+    useSettingsStore.getState().setSoundEnabled(false);
+    useSettingsStore.getState().setHapticsEnabled(false);
+    await render(<HomeScreen />);
+    await saveViaSheet('50000', '운동화');
+    await sheetDismissed();
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    await waitCelebration();
+    expect(hapticsFired()).toEqual([]);
+    expect(soundsPlayed()).toEqual([]);
   });
 });
 

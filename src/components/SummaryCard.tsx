@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
+  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withSequence,
   withSpring,
   withTiming,
@@ -10,28 +13,32 @@ import Animated, {
 
 import { AnimatedWon } from '@/src/components/AnimatedWon';
 import { GoalProgressBar } from '@/src/components/GoalProgressBar';
-import type { CelebrationTier } from '@/src/features/celebration';
 import { goalProgress } from '@/src/features/goal';
 import { numeric, useTheme } from '@/src/theme';
 import { formatKoDate, formatKoMonth, thisMonth, today } from '@/src/utils/date';
 import { formatWon } from '@/src/utils/money';
 
-/** 목표 달성 틴트: 빠르게 번졌다가 천천히 빠진다. 합계 0.8초. */
-const TINT_IN_MS = 200;
-const TINT_OUT_MS = 600;
 /** (M3.6) 하루 첫 오픈 카운트업 0 → 월 합계 시간 */
 const FIRST_OPEN_COUNT_UP_MS = 800;
-/** (M4) 5만원 이상 저장 때 큰 숫자가 커졌다 돌아오는 크기 */
-const BIG_NUMBER_POP = 1.1;
+
+/** (M4) 저장 한 번의 카드 타격. runId 가 커질 때마다 한 번 재생한다 */
+export type CardHit = {
+  runId: number;
+  /** 카드 타격 최고값 (시드로 1.06~1.08) */
+  cardHit: number;
+  /** 큰 숫자 오버슈트 최고값 (1.15, big 1.2) */
+  numberHit: number;
+};
 
 type Props = {
   todayTotal: number;
   monthTotal: number;
-  /** 값이 바뀔 때마다 스케일 펄스를 재생한다 (0이면 재생 안 함) */
-  celebrateTick: number;
-  /** (M4) 마지막 저장의 이펙트 구간. 'big' 이면 펄스와 함께 큰 숫자가 1 → 1.1 → 1 로 튄다 */
-  celebrateTier?: CelebrationTier;
-  /** (M4) 동작 줄이기 설정. 켜져 있으면 큰 숫자 스케일을 생략한다 */
+  /**
+   * (M4) 저장 축하 타격. runId 가 바뀔 때마다: 움츠림(0.97, 80ms) → 카드 cardHit 오버슈트 + 큰 숫자 numberHit 오버슈트
+   * → settle (DESIGN 저장 축하 연출 표). 없거나 마운트 시점 값이면 재생하지 않는다.
+   */
+  hit?: CardHit | null;
+  /** (M4) 동작 줄이기 설정. 켜져 있으면 움츠림·타격·숫자 오버슈트를 생략한다 (카운트업·틴트는 그대로) */
   reduceMotion?: boolean;
   /** 월 목표(원). 없으면 진행 바 대신 "목표를 정하면…" 안내 한 줄 */
   goal?: number | null;
@@ -60,8 +67,7 @@ type Props = {
 export function SummaryCard({
   todayTotal,
   monthTotal,
-  celebrateTick,
-  celebrateTier = 'base',
+  hit = null,
   reduceMotion = false,
   goal = null,
   goalReachedTick = 0,
@@ -71,42 +77,57 @@ export function SummaryCard({
   ready = true,
   firstOpenTick = 0,
 }: Props) {
-  const { colors, type, sp, radius, size } = useTheme();
+  const { colors, type, sp, radius, size, motion } = useTheme();
   const todayLabel = formatKoDate(today());
   const scale = useSharedValue(1);
   const numberScale = useSharedValue(1);
   const tint = useSharedValue(0);
-  // 마운트 시점의 tick 에서 시작해, 탭을 다시 그렸다고 지난 달성 틴트가 재생되지 않게 한다.
+  // 마운트 시점의 값에서 시작해, 탭을 다시 그렸다고 지난 타격·달성 틴트가 재생되지 않게 한다.
   const seenGoalTick = useRef(goalReachedTick);
+  const hitRunId = hit?.runId ?? 0;
+  const seenHit = useRef(hitRunId);
+  const cardHit = hit?.cardHit ?? motion.cardHit;
+  const numberHit = hit?.numberHit ?? motion.numberHit;
 
+  // 3박자: 기대(움츠림) → 타격(오버슈트, 햅틱·소리와 같은 t0+80) → 여운(settle).
+  // 연달아 저장하면 이전 연출을 끊고 쉬는 값(1)에서 다시 시작한다.
   useEffect(() => {
-    if (celebrateTick === 0) return;
+    if (hitRunId === seenHit.current) return;
+    seenHit.current = hitRunId;
+    cancelAnimation(scale);
+    cancelAnimation(numberScale);
+    scale.value = 1;
+    numberScale.value = 1;
+    if (hitRunId === 0 || reduceMotion) return;
     scale.value = withSequence(
-      withSpring(1.06, { damping: 9, stiffness: 420 }),
-      withSpring(1, { damping: 14, stiffness: 220 }),
+      withTiming(motion.shrink, { duration: motion.hitAt, easing: Easing.out(Easing.quad) }),
+      withTiming(cardHit, { duration: motion.cardHitMs, easing: Easing.out(Easing.cubic) }),
+      withSpring(1, motion.springSettle),
     );
-  }, [celebrateTick, scale]);
-
-  // 새 저장(tick 증가)에서만 튄다. 동작 줄이기 설정만 바뀐 렌더나 다시 마운트된 렌더에서는 재생하지 않는다
-  const seenPopTick = useRef(celebrateTick);
-  useEffect(() => {
-    if (celebrateTick === seenPopTick.current) return;
-    seenPopTick.current = celebrateTick;
-    if (celebrateTier !== 'big' || reduceMotion) return;
-    numberScale.value = withSequence(
-      withSpring(BIG_NUMBER_POP, { damping: 8, stiffness: 380 }),
-      withSpring(1, { damping: 14, stiffness: 220 }),
+    // 오르는 스프링은 최고값에서 끊고(overshootClamping) 돌아오는 스프링이 출렁임을 맡는다 — 전체가 ~900ms 안에 멈춘다
+    numberScale.value = withDelay(
+      motion.hitAt,
+      withSequence(
+        withSpring(numberHit, { ...motion.springHit, overshootClamping: true }),
+        withSpring(1, motion.springSettle),
+      ),
     );
-  }, [celebrateTick, celebrateTier, reduceMotion, numberScale]);
+  }, [hitRunId, cardHit, numberHit, reduceMotion, scale, numberScale, motion]);
 
+  // 목표 달성 틴트: 타격과 함께 번졌다가 천천히 빠진다 (t0+80 → 880)
   useEffect(() => {
     if (goalReachedTick <= seenGoalTick.current) return;
     seenGoalTick.current = goalReachedTick;
-    tint.value = withSequence(
-      withTiming(1, { duration: TINT_IN_MS }),
-      withTiming(0, { duration: TINT_OUT_MS }),
+    cancelAnimation(tint);
+    tint.value = 0;
+    tint.value = withDelay(
+      motion.hitAt,
+      withSequence(
+        withTiming(1, { duration: motion.tintInMs }),
+        withTiming(0, { duration: motion.tintOutMs }),
+      ),
     );
-  }, [goalReachedTick, tint]);
+  }, [goalReachedTick, tint, motion]);
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const tintStyle = useAnimatedStyle(() => ({ opacity: tint.value }));
@@ -146,6 +167,9 @@ export function SummaryCard({
             value={monthTotal}
             from={firstOpenTick > 0 ? 0 : undefined}
             fromDuration={FIRST_OPEN_COUNT_UP_MS}
+            // 저장 카운트업은 타격(t0+80)에 맞춰 시작한다
+            duration={motion.countUpMs}
+            delay={motion.hitAt}
             style={bigNumberStyle}
           />
         ) : (
@@ -164,7 +188,13 @@ export function SummaryCard({
       {/* ④ 목표 구획: 숫자 묶음과 sp.md 띄워 별도 줄로 */}
       {goal !== null && progress !== null ? (
         <View style={{ marginTop: sp.md }}>
-          <GoalProgressBar goal={goal} progress={progress} />
+          <GoalProgressBar
+            goal={goal}
+            progress={progress}
+            delay={motion.goalBarAt}
+            reachedTick={goalReachedTick}
+            reduceMotion={reduceMotion}
+          />
         </View>
       ) : (
         <Pressable

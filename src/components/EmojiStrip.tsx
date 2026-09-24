@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 
 import type { EntryEmoji } from '@/src/db';
 import { useTheme } from '@/src/theme';
@@ -9,9 +15,6 @@ import { useTheme } from '@/src/theme';
 export const EMOJI_MAX_LINES = 3;
 /** "+N" 칸에 숫자로 쓰는 최대값. 넘으면 "999+" */
 const MORE_MAX = 999;
-/** 새 이모지가 들어올 때 시작 크기 */
-const POP_FROM = 0.5;
-const POP_SPRING = { damping: 12, stiffness: 320 } as const;
 
 type Props = {
   /** 이번 달 기록 이모지, 등록 순 (오래된 것 → 방금 저장한 것) */
@@ -20,6 +23,8 @@ type Props = {
   celebrateTick: number;
   /** 최대 줄 수. 넘치면 오래된 것을 "+N" 으로 접는다 (홈 칩 행은 1줄) */
   maxLines?: number;
+  /** (M4) 동작 줄이기: 새 이모지를 튀기지 않고 바로 보여준다 */
+  reduceMotion?: boolean;
 };
 
 /**
@@ -43,14 +48,20 @@ export function hiddenLabel(hidden: number): string {
   return hidden > MORE_MAX ? `${MORE_MAX}+` : `+${hidden}`;
 }
 
-/** 저장 직후 새 이모지 한 칸: 0.5 → 1 스프링 */
+/** 저장 직후 새 이모지 한 칸: t0+200 에 0 → 1.3 → 1 (springHit → springSettle) */
 function PopIn({ children }: { children: string }) {
-  const { fs, size } = useTheme();
-  const scale = useSharedValue(POP_FROM);
+  const { fs, size, motion } = useTheme();
+  const scale = useSharedValue(0);
 
   useEffect(() => {
-    scale.value = withSpring(1, POP_SPRING);
-  }, [scale]);
+    scale.value = withDelay(
+      motion.emojiAt,
+      withSequence(
+        withSpring(motion.chipHit, { ...motion.springHit, overshootClamping: true }),
+        withSpring(1, motion.springSettle),
+      ),
+    );
+  }, [scale, motion]);
 
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -70,7 +81,12 @@ type Tracked = { items: EntryEmoji[]; tick: number; popId: number | null };
  * 저장하면 새 이모지가 오른쪽 끝에서 톡 들어온다. 수정·삭제·다시 읽기는 애니메이션 없이 바뀐다.
  * 기록이 없으면 아무것도 그리지 않는다.
  */
-export function EmojiStrip({ items, celebrateTick, maxLines = EMOJI_MAX_LINES }: Props) {
+export function EmojiStrip({
+  items,
+  celebrateTick,
+  maxLines = EMOJI_MAX_LINES,
+  reduceMotion = false,
+}: Props) {
   const { colors, type, fs, sp, size } = useTheme();
   const [width, setWidth] = useState(0);
   // 직전 렌더의 목록·저장 횟수를 기억해 "이번 저장으로 새로 생긴 칸" 을 렌더 중에 가린다
@@ -110,7 +126,7 @@ export function EmojiStrip({ items, celebrateTick, maxLines = EMOJI_MAX_LINES }:
         </View>
       ) : null}
       {shown.map((e) =>
-        e.id === popId ? (
+        e.id === popId && !reduceMotion ? (
           <PopIn key={e.id}>{e.emoji}</PopIn>
         ) : (
           <Text key={e.id} style={cellStyle}>

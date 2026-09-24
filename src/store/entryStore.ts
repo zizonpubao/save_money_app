@@ -79,6 +79,11 @@ type EntryState = {
   openHome: () => void;
   loadMore: () => void;
   add: (input: EntryInput) => Entry;
+  /**
+   * (M4 축하 연출) DB 에는 지금 저장하고, 화면 반영(목록·합계·celebrateTick)은 돌려받은 publish() 때 한다.
+   * 홈은 입력 시트가 다 내려간 순간(t0)에 publish 해서, 카운트업·이모지·배너가 시트에 가려지지 않게 한다.
+   */
+  addDeferred: (input: EntryInput) => { entry: Entry; publish: () => void };
   update: (id: number, input: EntryInput) => Entry | null;
   remove: (id: number) => void;
   /** (M4) 회고 카드 닫기. 지난달을 닫은 달로 적어 이번 달엔 다시 띄우지 않는다 */
@@ -234,6 +239,12 @@ export const useEntryStore = create<EntryState>((set, get) => ({
   },
 
   add: (input) => {
+    const { entry, publish } = get().addDeferred(input);
+    publish();
+    return entry;
+  },
+
+  addDeferred: (input) => {
     // 저장 전 시점의 "다른 날 / 다른 달" 최고값(자기 자신은 빼고)과 그날·그달 합계를 먼저 재 둔다.
     // 저장 전 합계가 있어야 "이번 저장으로 처음 넘었는지"를 가릴 수 있다.
     const month = toMonth(input.date);
@@ -269,19 +280,22 @@ export const useEntryStore = create<EntryState>((set, get) => ({
     );
 
     const lastMilestone = orFallback(() => checkMilestone(totalBefore, getTotalSum()), null);
+    const celebratedAt = Date.now();
 
-    const { oldestMonth, celebrateTick, goalReachedTick } = get();
-    set({
-      ...fetchSnapshot(oldestMonth),
-      celebrateTick: celebrateTick + 1,
-      celebrateTier: celebrationTier(input.amount),
-      celebratedAt: Date.now(),
-      lastRecord,
-      goalReachedTick: lastGoalReached ? goalReachedTick + 1 : goalReachedTick,
-      lastGoalReached,
-      lastMilestone,
-    });
-    return created;
+    const publish = () => {
+      const { oldestMonth, celebrateTick, goalReachedTick } = get();
+      set({
+        ...fetchSnapshot(oldestMonth),
+        celebrateTick: celebrateTick + 1,
+        celebrateTier: celebrationTier(input.amount),
+        celebratedAt,
+        lastRecord,
+        goalReachedTick: lastGoalReached ? goalReachedTick + 1 : goalReachedTick,
+        lastGoalReached,
+        lastMilestone,
+      });
+    };
+    return { entry: created, publish };
   },
 
   // 수정은 새로 절약한 게 아니므로 축하 이펙트를 내지 않는다 (celebrateTick 그대로).

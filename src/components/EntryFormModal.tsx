@@ -12,6 +12,11 @@ type Props = {
   /** 저장 버튼. 부모가 실제 저장 + 닫기를 담당한다. */
   onSubmit: (input: EntryInput) => void;
   onClose: () => void;
+  /**
+   * (M4, iOS) 시트가 화면에서 완전히 내려간 뒤 한 번. 홈은 "저장으로 닫힘"일 때 여기서 축하 연출을 시작한다 (t0).
+   * Android 에는 이 이벤트가 없어 부르는 쪽이 안전 타이머로 폴백한다.
+   */
+  onDismissed?: () => void;
   /** 수정 모드로 쓸 때 초기값 */
   initial?: EntryInput | null;
   title?: string;
@@ -23,6 +28,7 @@ export function EntryFormModal({
   categories,
   onSubmit,
   onClose,
+  onDismissed,
   initial = null,
   title = '기록 추가',
 }: Props) {
@@ -31,8 +37,12 @@ export function EntryFormModal({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      testID="entry-form-modal"
       onRequestClose={onClose}
-      onDismiss={onClose}>
+      onDismiss={() => {
+        onDismissed?.();
+        onClose();
+      }}>
       <ModalBody
         categories={categories}
         onSubmit={onSubmit}

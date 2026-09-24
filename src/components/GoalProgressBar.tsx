@@ -1,6 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { type GoalProgress } from '@/src/features/goal';
 import { numeric, useTheme } from '@/src/theme';
@@ -9,13 +15,13 @@ import { formatWon } from '@/src/utils/money';
 type Props = {
   goal: number;
   progress: GoalProgress;
+  /** (M4) 비율이 바뀐 뒤 차오르기 시작할 때까지(ms). 저장 연출에서는 t0+280 */
+  delay?: number;
+  /** (M4) 목표를 처음 넘긴 저장 횟수. 이 값이 함께 커진 변화는 더 탄력 있는 스프링으로 끝까지 차오른다 */
+  reachedTick?: number;
+  /** (M4) 동작 줄이기: 스프링 대신 300ms 로 */
+  reduceMotion?: boolean;
 };
-
-/**
- * 스프링 설정. duration 은 "체감" 시간이라 실제로는 1.5배(≈0.75초)가 걸린다 — DESIGN 의 1초 이내.
- * 바가 트랙 끝을 넘어 튀지 않게 overshoot 는 막는다.
- */
-const FILL_SPRING = { duration: 500, dampingRatio: 0.8, overshootClamping: true } as const;
 
 /**
  * 홈 카드의 월 목표 진행 바 + 그 아래 한 줄.
@@ -24,15 +30,30 @@ const FILL_SPRING = { duration: 500, dampingRatio: 0.8, overshootClamping: true 
  * 채움 비율이 바뀔 때마다 스프링으로 따라간다 → 목표를 넘기는 저장에서는 끝까지 차오른다.
  * 목표를 넘어도 바는 가득에서 멈추고, 넘은 금액은 % 와 문구로만 보여준다.
  */
-export function GoalProgressBar({ goal, progress }: Props) {
-  const { colors, type, sp, radius, size } = useTheme();
+export function GoalProgressBar({
+  goal,
+  progress,
+  delay = 0,
+  reachedTick = 0,
+  reduceMotion = false,
+}: Props) {
+  const { colors, type, sp, radius, size, motion } = useTheme();
   const fill = useSharedValue(progress.ratio);
+  const seenReached = useRef(reachedTick);
 
   useEffect(() => {
-    fill.value = withSpring(progress.ratio, FILL_SPRING);
-  }, [progress.ratio, fill]);
+    const reached = reachedTick !== seenReached.current;
+    seenReached.current = reachedTick;
+    // 바가 트랙 끝을 넘어 튀어도 트랙(overflow hidden)과 아래 clamp 가 가득에서 멈춰 보이게 한다
+    const move = reduceMotion
+      ? withTiming(progress.ratio, { duration: motion.reducedBarMs })
+      : withSpring(progress.ratio, reached ? motion.springBarGoal : motion.springBar);
+    fill.value = delay > 0 ? withDelay(delay, move) : move;
+  }, [progress.ratio, reachedTick, delay, reduceMotion, fill, motion]);
 
-  const fillStyle = useAnimatedStyle(() => ({ width: `${fill.value * 100}%` }));
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${Math.min(1, Math.max(0, fill.value)) * 100}%`,
+  }));
 
   return (
     // 위 간격은 쓰는 쪽(SummaryCard 의 목표 구획)이 정한다

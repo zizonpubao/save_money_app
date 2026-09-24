@@ -7,7 +7,7 @@ import { useEntryEditor } from '@/src/features/useEntryEditor';
 import { useEntryForm } from '@/src/features/useEntryForm';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useTheme } from '@/src/theme';
-import { celebrateHaptic } from '@/src/utils/haptics';
+import { saveTapHaptic } from '@/src/utils/haptics';
 
 export default function EntryEditScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,7 +25,8 @@ export default function EntryEditScreen() {
       Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
       return;
     }
-    celebrateHaptic();
+    // 수정은 새로 아낀 게 아니라 축하 연출 없이 "눌렸다" 확인만 (DESIGN 저장 축하 연출 — 연출이 아닌 것)
+    saveTapHaptic();
     router.back();
   };
 

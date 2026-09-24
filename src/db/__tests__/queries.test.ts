@@ -504,6 +504,8 @@ describe('queries', () => {
         lastOpenDate: 'last_open_date',
         milestoneReached: 'milestone_reached',
         reviewDismissedMonth: 'review_dismissed_month',
+        soundEnabled: 'sound_enabled',
+        hapticsEnabled: 'haptics_enabled',
       });
     });
   });

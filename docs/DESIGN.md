@@ -153,6 +153,10 @@
 - 큰 기본 볼륨, 한 저장에 소리 둘 이상, Success 알림 햅틱과 impact 를 같은 박자에 겹치기.
 - 컨페티 50개 초과(View 파티클 성능), 카드 scale 1.08 초과(화면 밖으로 삐져나감).
 
+**구현 메모**
+- t0 구현: 저장 탭에서 DB 에는 바로 쓰고 화면 반영(`entryStore.addDeferred` → `publish`)을 t0 로 미룬다. 카운트업·이모지·🔥·목표 바·배너가 모두 t0 뒤 자기 시각(`motion.*At`)에 움직인다.
+- expo-audio 의 config plugin(마이크 권한용)은 `app.json` 에 넣지 않는다. 재생만 쓰고 Expo Go 는 plugin 을 읽지 않는다. 수정 저장은 selection 햅틱만.
+
 ## 하지 말 것
 - `theme.ts` 밖에서 색·폰트 크기·radius 숫자 하드코딩 (`fs`/`sp` 조합 즉석 계산 포함 — 필요하면 토큰을 추가한다).
 - 카드·행·칩에 그림자 넣기, 테두리와 그림자 동시에 쓰기.
