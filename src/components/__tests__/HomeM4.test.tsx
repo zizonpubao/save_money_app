@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
 
 import HomeScreen from '@/app/(tabs)/index';
@@ -173,6 +173,24 @@ describe('홈 화면 — 금액 구간 이펙트 (M4)', () => {
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(40);
     await waitHaptics();
     expect(jest.mocked(Haptics.impactAsync).mock.calls).toEqual([['heavy']]);
+  });
+
+  it('55,000원 저장: 컨페티 40개가 스크롤 목록 밖 화면 전체 오버레이에 그려진다 (목록 경계에 잘리지 않게)', async () => {
+    await render(<HomeScreen />);
+    expect(screen.queryByTestId('confetti')).toBeNull();
+    await saveViaSheet('55000', '운동화');
+    const overlay = screen.getByTestId('confetti');
+    expect(within(overlay).getAllByTestId('confetti-piece')).toHaveLength(40);
+    expect(overlay).toHaveStyle({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 });
+    // 목록 행은 스크롤 뷰 안에 있고, 컨페티 오버레이는 그 밖에 있다
+    const inScroll = (el: typeof overlay) => {
+      for (let node = el.parent; node; node = node.parent) {
+        if (node.type === 'RCTScrollView') return true;
+      }
+      return false;
+    };
+    expect(inScroll(screen.getByText('운동화'))).toBe(true);
+    expect(inScroll(overlay)).toBe(false);
   });
 
   it('목표 달성과 겹치면 햅틱은 목표 것(Heavy 2연타)만, 컨페티는 그대로', async () => {

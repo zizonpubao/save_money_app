@@ -24,7 +24,11 @@ type Props = {
   seed: number;
   /** 동작 줄이기 설정이 켜져 있으면 그리지 않는다 */
   reduceMotion?: boolean;
+  /** 터지는 점 (부모 기준 pt, 보통 카드 가운데). 아직 못 쟀으면 부모 위쪽 가운데 */
+  origin?: ConfettiOrigin | null;
 };
+
+export type ConfettiOrigin = { x: number; y: number };
 
 function Piece({ piece, color }: { piece: ConfettiPiece; color: string }) {
   const { size } = useTheme();
@@ -61,10 +65,11 @@ function Piece({ piece, color }: { piece: ConfettiPiece; color: string }) {
 }
 
 /**
- * (M4) 저장 컨페티. 카드 상단 가운데를 기준점으로 조각이 튀어 올랐다 떨어지며 0.8초 안에 사라진다.
- * 부모가 카드와 같은 크기의 상대 위치 상자 안에 둔다. 터치는 막지 않는다.
+ * (M4) 저장 컨페티. origin 점에서 사방으로 터졌다가 떨어지며 0.8초 안에 사라진다.
+ * 스크롤 목록 안에 두면 목록 위쪽 바깥으로 튄 조각이 잘리므로, 화면 전체를 덮는 오버레이로 그린다
+ * (부모의 마지막 형제로 두고 origin 은 부모 기준 좌표). 터치는 막지 않는다.
  */
-export function Confetti({ tick, count, seed, reduceMotion = false }: Props) {
+export function Confetti({ tick, count, seed, reduceMotion = false, origin = null }: Props) {
   const { colors } = useTheme();
   // 이미 끝난 저장 횟수. 마운트 시점 값으로 시작해 탭을 다시 그렸다고 지난 컨페티가 다시 터지지 않게 한다
   const [finished, setFinished] = useState(tick);
@@ -81,17 +86,22 @@ export function Confetti({ tick, count, seed, reduceMotion = false }: Props) {
   if (reduceMotion || count <= 0 || tick <= finished) return null;
 
   return (
-    <View pointerEvents="none" testID="confetti" style={styles.origin}>
-      {pieces.map((p, i) => (
-        // key 에 tick 을 넣어 연달아 저장해도 새 조각으로 처음부터 다시 재생한다
-        <Piece key={`${tick}-${i}`} piece={p} color={palette[p.color] ?? colors.primary} />
-      ))}
+    <View pointerEvents="none" testID="confetti" style={[StyleSheet.absoluteFill, styles.overlay]}>
+      <View style={[styles.origin, origin ? { left: origin.x, top: origin.y } : styles.fallback]}>
+        {pieces.map((p, i) => (
+          // key 에 tick 을 넣어 연달아 저장해도 새 조각으로 처음부터 다시 재생한다
+          <Piece key={`${tick}-${i}`} piece={p} color={palette[p.color] ?? colors.primary} />
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // 카드 상단 가운데 한 점. 조각은 이 점을 기준으로 transform 만 바꾼다
-  origin: { position: 'absolute', top: 0, left: '50%', width: 0, height: 0 },
+  // 조각이 목록·칩 위로 떨어져도 가려지지 않게 형제들보다 한 층 위
+  overlay: { zIndex: 1 },
+  // 터지는 한 점. 조각은 이 점을 기준으로 transform 만 바꾼다
+  origin: { position: 'absolute', width: 0, height: 0 },
+  fallback: { top: 0, left: '50%' },
   piece: { position: 'absolute', left: 0, top: 0 },
 });

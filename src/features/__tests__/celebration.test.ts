@@ -33,13 +33,29 @@ describe('makeConfettiPieces', () => {
     expect(makeConfettiPieces(20, 1)).not.toEqual(makeConfettiPieces(20, 2));
   });
 
-  it('시작점은 가운데 ±60 안, 색은 4색 순번 중 하나', () => {
+  it('카드 가운데(±8)에서 위쪽 반원(-160°~-20°)으로 사방에 터지고, 색은 4색 순번 중 하나', () => {
     const pieces = makeConfettiPieces(40, 42);
     for (const p of pieces) {
-      expect(Math.abs(p.x0)).toBeLessThanOrEqual(60);
+      expect(Math.abs(p.x0)).toBeLessThanOrEqual(8);
       expect([0, 1, 2, 3]).toContain(p.color);
-      expect(p.rise).toBeGreaterThan(0);
+      const angle = (Math.atan2(p.vy, p.vx) * 180) / Math.PI;
+      expect(angle).toBeGreaterThanOrEqual(-160);
+      expect(angle).toBeLessThanOrEqual(-20);
       expect(p.fall).toBeGreaterThan(0);
+      expect(p.fall).toBeLessThanOrEqual(140);
+    }
+    // 방사형: 왼쪽·오른쪽으로 가는 조각이 둘 다 있다
+    expect(pieces.some((p) => p.vx < 0)).toBe(true);
+    expect(pieces.some((p) => p.vx > 0)).toBe(true);
+  });
+
+  it('어느 조각도 위로 60pt 를 넘게 튀지 않고, 끝에는 140pt 안쪽 아래에 있다', () => {
+    for (const seed of [1, 42, 1727150400000]) {
+      for (const p of makeConfettiPieces(40, seed)) {
+        const ys = Array.from({ length: 201 }, (_, i) => confettiFrame(p, i / 200).y);
+        expect(Math.min(...ys)).toBeGreaterThanOrEqual(-60);
+        expect(confettiFrame(p, 1).y).toBeLessThanOrEqual(140);
+      }
     }
   });
 
@@ -49,22 +65,29 @@ describe('makeConfettiPieces', () => {
 });
 
 describe('confettiFrame', () => {
-  const piece = { x0: 10, drift: 20, rise: 60, fall: 120, rot0: 30, spin: 360, color: 0 as const };
+  // 오른쪽 위 45°로 초속 200 에 가까운 조각
+  const piece = { x0: 5, vx: 140, vy: -140, fall: 120, rot0: 30, spin: 360, color: 0 as const };
 
   it('시작은 기준점, 불투명', () => {
     const f = confettiFrame(piece, 0);
-    expect(f.x).toBe(10);
+    expect(f.x).toBe(5);
     expect(f.y).toBeCloseTo(0);
     expect(f.rotate).toBe(30);
     expect(f.opacity).toBe(1);
   });
 
-  it('위로 rise 만큼 튀어 올랐다가 끝에는 fall 만큼 아래에서 투명해진다', () => {
+  it('처음엔 (vx, vy) 방향으로 튀어 나간다 (방사형)', () => {
+    const f = confettiFrame(piece, 0.01);
+    const angle = (Math.atan2(f.y, f.x - piece.x0) * 180) / Math.PI;
+    expect(angle).toBeCloseTo(-45, 0);
+  });
+
+  it('위로 튀어 올랐다가 끝에는 fall 만큼 아래에서 투명해지고, 가로는 vx/2 까지만 간다', () => {
     const ys = Array.from({ length: 101 }, (_, i) => confettiFrame(piece, i / 100).y);
-    expect(Math.min(...ys)).toBeCloseTo(-60, 0);
+    expect(Math.min(...ys)).toBeLessThan(0);
     const end = confettiFrame(piece, 1);
     expect(end.y).toBeCloseTo(120);
-    expect(end.x).toBe(30);
+    expect(end.x).toBeCloseTo(5 + 70);
     expect(end.rotate).toBe(390);
     expect(end.opacity).toBe(0);
   });

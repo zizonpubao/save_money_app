@@ -23,16 +23,20 @@ export const CONFETTI_COUNT: Record<CelebrationTier, number> = { base: 0, mid: 2
 /** 컨페티 전체 재생 시간 (ms). 1초를 넘지 않는다 (DESIGN 모션 규칙) */
 export const CONFETTI_MS = 800;
 
-/** 시작점: 카드 상단 가운데에서 좌우 이 폭(pt) 안 */
-const SPREAD = 60;
-/** 날아가며 옆으로 더 흘러가는 폭(pt) */
-const DRIFT = 40;
-/** 위로 튀어 오르는 높이(pt) 범위 */
-const RISE_MIN = 40;
-const RISE_MAX = 90;
-/** 시작점보다 아래로 떨어지는 거리(pt) 범위. 카드 안에서 사라진다 */
-const FALL_MIN = 80;
-const FALL_MAX = 160;
+/** 시작점: 카드 가운데에서 좌우 이 폭(pt) 안. 조각이 한 점에 겹쳐 보이지 않을 만큼만 흩는다 */
+const JITTER = 8;
+/** 터지는 방향(도, 오른쪽 0 · 위가 음수). 위쪽 반원에서 양 끝 20도씩 빼 좌우로 조금만 눕는다 */
+const ANGLE_MIN = -160;
+const ANGLE_MAX = -20;
+/** 처음 속도(pt / 재생 시간 전체) 범위 */
+const SPEED_MIN = 160;
+const SPEED_MAX = 320;
+/**
+ * 끝날 때 시작점보다 아래 거리(pt) 범위. 카드 아래 목록 쪽까지 떨어진다.
+ * 최고 높이 = 속도² / (4 × (낙하 + 속도)) 라 SPEED_MAX 320 · FALL_MIN 110 이면 59.5pt — 위로 60pt 를 넘지 않는다
+ */
+const FALL_MIN = 110;
+const FALL_MAX = 140;
 /** 한 번 재생하는 동안 도는 각도(도) 범위, 방향은 조각마다 무작위 */
 const SPIN_MAX = 540;
 /** 이 진행률부터 투명해지기 시작한다 */
@@ -44,10 +48,10 @@ export type ConfettiColor = 0 | 1 | 2 | 3;
 export type ConfettiPiece = {
   /** 시작 x (카드 가운데 기준, pt) */
   x0: number;
-  /** 끝날 때까지 옆으로 더 가는 거리 (pt) */
-  drift: number;
-  /** 최고점까지 올라가는 높이 (pt, 양수) */
-  rise: number;
+  /** 처음 가로 속도 (pt / 재생 시간 전체, 오른쪽 +) */
+  vx: number;
+  /** 처음 세로 속도 (pt / 재생 시간 전체, 아래 + — 위로 터지므로 음수) */
+  vy: number;
   /** 끝날 때 시작점보다 아래 거리 (pt, 양수) */
   fall: number;
   /** 시작 각도 (도) */
@@ -73,34 +77,38 @@ function seededRandom(seed: number): () => number {
 export function makeConfettiPieces(count: number, seed: number): ConfettiPiece[] {
   const rand = seededRandom(seed);
   const between = (min: number, max: number) => min + (max - min) * rand();
-  return Array.from({ length: Math.max(0, Math.floor(count)) }, () => ({
-    x0: between(-SPREAD, SPREAD),
-    drift: between(-DRIFT, DRIFT),
-    rise: between(RISE_MIN, RISE_MAX),
-    fall: between(FALL_MIN, FALL_MAX),
-    rot0: between(0, 360),
-    spin: between(-SPIN_MAX, SPIN_MAX),
-    color: Math.min(3, Math.floor(rand() * 4)) as ConfettiColor,
-  }));
+  return Array.from({ length: Math.max(0, Math.floor(count)) }, () => {
+    const angle = (between(ANGLE_MIN, ANGLE_MAX) * Math.PI) / 180;
+    const speed = between(SPEED_MIN, SPEED_MAX);
+    return {
+      x0: between(-JITTER, JITTER),
+      vx: speed * Math.cos(angle),
+      vy: speed * Math.sin(angle),
+      fall: between(FALL_MIN, FALL_MAX),
+      rot0: between(0, 360),
+      spin: between(-SPIN_MAX, SPIN_MAX),
+      color: Math.min(3, Math.floor(rand() * 4)) as ConfettiColor,
+    };
+  });
 }
 
 export type ConfettiFrame = { x: number; y: number; rotate: number; opacity: number };
 
 /**
  * 진행률 t(0~1)에서 조각 위치. y 는 아래가 +.
- * 포물선 y = a(t - p)² - rise 가 t=0 에서 0, t=1 에서 fall 이 되도록 꼭짓점 p 와 a 를 정한다
- * (위로 튀었다가 중력으로 점점 빨리 떨어진다).
+ * 세로: 처음 속도 vy 로 튀고 중력 g 로 떨어진다. y = vy·t + g·t²/2 가 t=1 에서 fall 이 되도록 g 를 정한다.
+ * 가로: 공기 저항으로 점점 느려진다. x = vx·(t - t²/2) — 처음 방향은 (vx, vy) 그대로라 사방으로 터져 보이고,
+ * 끝까지 가도 vx/2 만 가서 화면 밖으로 멀리 날아가지 않는다.
  * reanimated UI 스레드에서도 부르므로 worklet 이다.
  */
 export function confettiFrame(piece: ConfettiPiece, t: number): ConfettiFrame {
   'worklet';
-  const r = Math.sqrt(piece.rise / (piece.rise + piece.fall));
-  const peak = r / (1 + r);
-  const a = piece.rise / (peak * peak);
-  const y = a * (t - peak) * (t - peak) - piece.rise;
+  const g = 2 * (piece.fall - piece.vy);
+  const y = piece.vy * t + (g / 2) * t * t;
+  const x = piece.x0 + piece.vx * (t - (t * t) / 2);
   const opacity = t <= FADE_FROM ? 1 : Math.max(0, (1 - t) / (1 - FADE_FROM));
   return {
-    x: piece.x0 + piece.drift * t,
+    x,
     y,
     rotate: piece.rot0 + piece.spin * t,
     opacity,

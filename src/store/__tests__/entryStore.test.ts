@@ -173,7 +173,9 @@ describe('entryStore', () => {
     it.each([
       [9999, 'base'],
       [10000, 'mid'],
+      [12000, 'mid'],
       [50000, 'big'],
+      [55000, 'big'],
     ] as const)('%i원 저장 → %s', (amount, tier) => {
       useEntryStore.getState().add(input({ amount }));
       expect(useEntryStore.getState().celebrateTier).toBe(tier);

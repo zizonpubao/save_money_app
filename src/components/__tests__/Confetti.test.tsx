@@ -20,6 +20,13 @@ describe('Confetti (M4)', () => {
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(40);
   });
 
+  it('origin 점(부모 기준 카드 가운데)에서 터진다', async () => {
+    const { rerender } = await render(<Confetti tick={0} count={20} seed={1} origin={{ x: 195, y: 140 }} />);
+    await rerender(<Confetti tick={1} count={20} seed={1} origin={{ x: 195, y: 140 }} />);
+    const point = screen.getAllByTestId('confetti-piece')[0].parent;
+    expect(point).toHaveStyle({ left: 195, top: 140 });
+  });
+
   it('1만원 미만(count 0)은 그리지 않는다', async () => {
     const { rerender } = await render(<Confetti tick={0} count={0} seed={1} />);
     await rerender(<Confetti tick={1} count={0} seed={1} />);
