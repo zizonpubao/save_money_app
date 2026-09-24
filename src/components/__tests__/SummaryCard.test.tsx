@@ -1,8 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
+import { AnimatedWon } from '@/src/components/AnimatedWon';
+import { GoalProgressBar } from '@/src/components/GoalProgressBar';
 import { MonthStatsCard } from '@/src/components/MonthStatsCard';
 import { SummaryCard } from '@/src/components/SummaryCard';
+import { motion } from '@/src/theme';
+
+// 지연 값만 엿보려고 실제 컴포넌트를 그대로 그리는 jest.fn 으로 감싼다
+jest.mock('@/src/components/AnimatedWon', () => {
+  const actual = jest.requireActual('@/src/components/AnimatedWon');
+  return { AnimatedWon: jest.fn(actual.AnimatedWon) };
+});
+jest.mock('@/src/components/GoalProgressBar', () => {
+  const actual = jest.requireActual('@/src/components/GoalProgressBar');
+  return { GoalProgressBar: jest.fn(actual.GoalProgressBar) };
+});
 
 describe('SummaryCard (홈 상단 카드)', () => {
   it('이번 달 절약액을 콤마·원 형식으로 크게 보여준다', async () => {
@@ -80,6 +93,42 @@ describe('SummaryCard — 월 목표 (M3.5)', () => {
     expect(screen.getByText('104%')).toBeOnTheScreen();
     expect(screen.getByText('+12,000원 초과')).toBeOnTheScreen();
     expect(screen.getByRole('progressbar').props.accessibilityValue).toMatchObject({ now: 100 });
+  });
+});
+
+describe('SummaryCard — 카운트업·목표 바 지연 (M4)', () => {
+  const hit = (runId: number) => ({ runId, cardHit: motion.cardHit, numberHit: motion.numberHit });
+  /** 가장 최근에 그린 큰 숫자·목표 바의 지연 */
+  const delays = () => ({
+    number: jest.mocked(AnimatedWon).mock.lastCall?.[0].delay,
+    bar: jest.mocked(GoalProgressBar).mock.lastCall?.[0].delay,
+  });
+
+  it('runId 변화 없이 값만 바뀌면(삭제·수정·재조회) 지연 없이 바로 움직인다', async () => {
+    const { rerender } = await render(
+      <SummaryCard todayTotal={0} monthTotal={100000} goal={300000} hit={hit(1)} />,
+    );
+    await rerender(<SummaryCard todayTotal={0} monthTotal={95500} goal={300000} hit={hit(1)} />);
+    expect(delays()).toEqual({ number: 0, bar: 0 });
+    // 목표만 바꿔도 즉시
+    await rerender(<SummaryCard todayTotal={0} monthTotal={95500} goal={200000} hit={hit(1)} />);
+    expect(delays()).toEqual({ number: 0, bar: 0 });
+  });
+
+  it('runId 가 바뀐 렌더(저장 연출)는 타격·목표 바 박자만큼 지연하고, 값이 다시 바뀔 때까지 유지한다', async () => {
+    const { rerender } = await render(
+      <SummaryCard todayTotal={0} monthTotal={100000} goal={300000} hit={hit(1)} />,
+    );
+    await rerender(<SummaryCard todayTotal={0} monthTotal={104500} goal={300000} hit={hit(2)} />);
+    expect(delays()).toEqual({ number: motion.hitAt, bar: motion.goalBarAt });
+    // 연출 도중 다른 이유로 다시 그려져도 지연을 거두지 않는다 (지연 중인 애니메이션을 새로 걸지 않게)
+    await rerender(
+      <SummaryCard todayTotal={4500} monthTotal={104500} goal={300000} hit={hit(2)} />,
+    );
+    expect(delays()).toEqual({ number: motion.hitAt, bar: motion.goalBarAt });
+    // 그 뒤 삭제로 값만 바뀌면 다시 즉시
+    await rerender(<SummaryCard todayTotal={0} monthTotal={100000} goal={300000} hit={hit(2)} />);
+    expect(delays()).toEqual({ number: 0, bar: 0 });
   });
 });
 

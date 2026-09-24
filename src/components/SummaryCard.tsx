@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -88,6 +88,12 @@ export function SummaryCard({
   const seenHit = useRef(hitRunId);
   const cardHit = hit?.cardHit ?? motion.cardHit;
   const numberHit = hit?.numberHit ?? motion.numberHit;
+  // 카운트업·목표 바 지연은 저장 연출(runId 가 바뀐 렌더)에서만 준다. 삭제·수정·포커스 재조회로 값만 바뀌면 바로 움직인다.
+  // 값이 다시 바뀔 때까지 결정을 유지해야, 연출 도중 다른 이유로 다시 그려져도 지연 중인 애니메이션을 새로 걸지 않는다
+  const [timing, setTiming] = useState({ runId: hitRunId, monthTotal, goal, onHit: false });
+  if (timing.runId !== hitRunId || timing.monthTotal !== monthTotal || timing.goal !== goal) {
+    setTiming({ runId: hitRunId, monthTotal, goal, onHit: timing.runId !== hitRunId });
+  }
 
   // 3박자: 기대(움츠림) → 타격(오버슈트, 햅틱·소리와 같은 t0+80) → 여운(settle).
   // 연달아 저장하면 이전 연출을 끊고 쉬는 값(1)에서 다시 시작한다.
@@ -169,7 +175,7 @@ export function SummaryCard({
             fromDuration={FIRST_OPEN_COUNT_UP_MS}
             // 저장 카운트업은 타격(t0+80)에 맞춰 시작한다
             duration={motion.countUpMs}
-            delay={motion.hitAt}
+            delay={timing.onHit ? motion.hitAt : 0}
             style={bigNumberStyle}
           />
         ) : (
@@ -191,7 +197,7 @@ export function SummaryCard({
           <GoalProgressBar
             goal={goal}
             progress={progress}
-            delay={motion.goalBarAt}
+            delay={timing.onHit ? motion.goalBarAt : 0}
             reachedTick={goalReachedTick}
             reduceMotion={reduceMotion}
           />

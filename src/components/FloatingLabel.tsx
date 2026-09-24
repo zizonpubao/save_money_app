@@ -44,7 +44,7 @@ export function FloatingLabel({ text, size, rect, reduceMotion = false }: Props)
     scale.value = withDelay(
       at,
       withSequence(
-        withSpring(motion.chipHit, { ...motion.springHit, overshootClamping: true }),
+        withSpring(motion.labelHit, { ...motion.springHit, overshootClamping: true }),
         withSpring(1, motion.springSettle),
       ),
     );

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
+import { Alert } from 'react-native';
 
 import HomeScreen from '@/app/(tabs)/index';
 import {
@@ -248,7 +249,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(soundsPlayed()).toEqual(['tada']);
   });
 
-  it('onDismiss 가 안 와도(Android) 400ms 안전 타이머로 t0 가 온다', async () => {
+  it('onDismiss 가 안 와도 안전 타이머(iOS 600ms · Android 400ms)로 t0 가 온다', async () => {
     await render(<HomeScreen />);
     await saveViaSheet('10000', '택시');
     expect(screen.queryByTestId('confetti')).toBeNull();
@@ -314,6 +315,85 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
     await waitCelebration();
     expect(hapticsFired()).toEqual([]);
+    expect(soundsPlayed()).toEqual([]);
+  });
+});
+
+describe('홈 화면 — 저장 연출 박자 경계 (M4)', () => {
+  const originalAddDeferred = useEntryStore.getState().addDeferred;
+
+  // 박자 사이 간격이 80~90ms 라 진짜 시간으로는 흔들린다. setTimeout 만 가짜로 돌리고 rAF 등은 그대로 둔다
+  beforeEach(() => {
+    resetAll();
+    jest.useFakeTimers({
+      doNotFake: [
+        'hrtime',
+        'nextTick',
+        'performance',
+        'queueMicrotask',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'requestIdleCallback',
+        'cancelIdleCallback',
+        'setImmediate',
+        'clearImmediate',
+        'setInterval',
+        'clearInterval',
+      ],
+    });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    useEntryStore.setState({ addDeferred: originalAddDeferred });
+    jest.restoreAllMocks();
+  });
+  afterAll(() => resetDatabaseConnection());
+
+  async function advance(ms: number) {
+    await act(async () => {
+      jest.advanceTimersByTime(ms);
+    });
+  }
+
+  it('onDismiss 뒤 안전 타이머 시각이 지나도 햅틱·소리·tick 은 한 번뿐이다', async () => {
+    await render(<HomeScreen />);
+    await saveViaSheet('9999', '간식');
+    await sheetDismissed();
+    await advance(motion.t0FallbackMs + motion.goalSuccessAt + 100);
+    expect(hapticsFired()).toEqual(['selection', 'medium']);
+    expect(soundsPlayed()).toEqual(['tap']);
+    expect(useEntryStore.getState().celebrateTick).toBe(1);
+  });
+
+  it('연속 저장: 새 t0 가 이전 연출의 남은 햅틱 박자(Heavy 둘째·셋째)를 끊는다', async () => {
+    await render(<HomeScreen />);
+    await saveViaSheet('50000', '운동화');
+    await sheetDismissed();
+    // 타격(첫 Heavy)까지만 흘려 보내고, 둘째 Heavy(+90) 전에 다음 저장
+    await advance(motion.hitAt);
+    expect(hapticsFired()).toEqual(['selection', 'heavy']);
+    await saveViaSheet('9999', '간식');
+    await sheetDismissed();
+    await advance(1000);
+    expect(hapticsFired()).toEqual(['selection', 'heavy', 'selection', 'medium']);
+    // soundsPlayed 는 플레이어별로 모으므로 순서 대신 구성만 본다
+    expect(soundsPlayed().sort()).toEqual(['tada', 'tap']);
+  });
+
+  it('저장(addDeferred)이 실패하면 시트는 열린 채로 두고 "저장 실패" 알림, 연출은 없다', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    useEntryStore.setState({
+      addDeferred: () => {
+        throw new Error('disk full');
+      },
+    });
+    await render(<HomeScreen />);
+    await saveViaSheet('4500', '커피');
+    expect(alert).toHaveBeenCalledWith('저장 실패', '잠시 후 다시 시도해 주세요.');
+    expect(screen.getByTestId('entry-form-modal').props.visible).toBe(true);
+    await advance(motion.t0FallbackMs + motion.goalSuccessAt + 100);
+    expect(screen.queryByTestId('celebration-layer')).toBeNull();
+    expect(useEntryStore.getState().celebrateTick).toBe(0);
     expect(soundsPlayed()).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { useColorScheme, type TextStyle, type ViewStyle } from 'react-native';
+import { Platform, useColorScheme, type TextStyle, type ViewStyle } from 'react-native';
 
 export type ColorTokens = {
   bg: string;
@@ -185,6 +185,9 @@ export const size = {
  * (M4) 저장 축하 연출 토큰 (DESIGN "저장 축하 연출" 절).
  * 시각(…At)은 모두 t0(입력 시트가 다 내려간 순간) 기준 ms. 타격은 hitAt, 이후 요소는 stagger(40) 단위로 뒤따른다.
  */
+const HIT_AT = 80;
+const STAGGER = 40;
+
 export const motion = {
   /** 움츠림 크기 · 카드 타격 최고값(시드로 cardHitMin~cardHit) · 큰 숫자 오버슈트 · 칩 오버슈트 */
   shrink: 0.97,
@@ -193,7 +196,9 @@ export const motion = {
   numberHit: 1.15,
   numberHitBig: 1.2,
   chipHit: 1.3,
-  stagger: 40,
+  /** 플로팅 라벨 오버슈트 최고값 */
+  labelHit: 1.3,
+  stagger: STAGGER,
   /** 플로팅 라벨이 떠오르는 거리(pt) · 시작 크기 */
   floatRise: 40,
   labelFrom: 0.6,
@@ -215,19 +220,21 @@ export const motion = {
   springBannerDrop: { damping: 11, stiffness: 260 },
   springBannerPop: { damping: 10, stiffness: 300 },
 
-  /** 시트 onDismiss 가 안 오면(Android·테스트) 이 시간 뒤 t0 로 친다 */
-  t0FallbackMs: 400,
+  /**
+   * 시트 onDismiss 가 안 오면(Android·테스트) 이 시간 뒤 t0 로 친다.
+   * iOS 는 onDismiss 가 오는 게 정상이라, 시트가 내려가는 중에 먼저 치지 않게 더 기다린다
+   */
+  t0FallbackMs: Platform.select({ ios: 600, default: 400 }),
   /** 움츠림 끝 = 타격(햅틱·소리·카드·숫자·글로우·컨페티·플래시) */
-  hitAt: 80,
+  hitAt: HIT_AT,
   cardHitMs: 100,
   countUpMs: 600,
-  labelAt: 120,
+  labelAt: HIT_AT + STAGGER,
   labelMs: 700,
-  labelPopMs: 150,
   labelFadeInMs: 80,
   labelFadeOutMs: 250,
   glowMs: 600,
-  glow2At: 160,
+  glow2At: HIT_AT + STAGGER * 2,
   flashInMs: 40,
   flashOutMs: 80,
   confettiMs: 800,
@@ -235,12 +242,12 @@ export const motion = {
   confetti2Ms: 700,
   /** 두 번째 컨페티가 좌우로 더 벌어지는 각도(도) */
   confetti2Spread: 20,
-  emojiAt: 200,
-  streakAt: 240,
+  emojiAt: HIT_AT + STAGGER * 3,
+  streakAt: HIT_AT + STAGGER * 4,
   /** 🔥 칩 흔들림 한 박(ms)과 각도 순서(도) */
   wiggleMs: 60,
   wiggle: [-6, 6, -3, 0],
-  goalBarAt: 280,
+  goalBarAt: HIT_AT + STAGGER * 5,
   bannerAt: 300,
   bannerFadeGoalMs: 120,
   bannerFadeMs: 100,
@@ -249,6 +256,9 @@ export const motion = {
   tintOutMs: 600,
   /** 목표 달성 Success 햅틱(피날레) */
   goalSuccessAt: 480,
+  /** 축하 햅틱 박자(타격 기준 ms): mid 의 두 번째 Heavy · big 의 Heavy 3연타("쿵쿵—쿵") */
+  hapticMidAt: 80,
+  hapticBigAt: [0, 90, 220],
   /** 동작 줄이기: 목표 바 · 배너 등장 */
   reducedBarMs: 300,
   reducedBannerMs: 150,

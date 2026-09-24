@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 
 import type { HapticPattern } from '@/src/features/celebration';
+import { motion } from '@/src/theme';
 
 /**
  * 앱 전체 햅틱 스위치. 설정 탭 "햅틱" 토글(settings `haptics_enabled`)을 settingsStore 가 읽어 넣는다.
@@ -39,20 +40,16 @@ export type HapticStep = { at: number; kind: HapticKind };
  * - base: Medium 한 번 · mid: Medium → Heavy(80) · big: Heavy 3연타 0/90/220 ("쿵쿵—쿵")
  * - goal: big 3연타 + t0+480 Success 피날레 (impact 와 같은 박자에 겹치지 않는다)
  */
-const BIG_STEPS: HapticStep[] = [
-  { at: 0, kind: 'heavy' },
-  { at: 90, kind: 'heavy' },
-  { at: 220, kind: 'heavy' },
-];
+const BIG_STEPS: HapticStep[] = motion.hapticBigAt.map((at) => ({ at, kind: 'heavy' }));
 
 export const HAPTIC_PATTERNS: Record<HapticPattern, readonly HapticStep[]> = {
   base: [{ at: 0, kind: 'medium' }],
   mid: [
     { at: 0, kind: 'medium' },
-    { at: 80, kind: 'heavy' },
+    { at: motion.hapticMidAt, kind: 'heavy' },
   ],
   big: BIG_STEPS,
-  goal: [...BIG_STEPS, { at: 480 - 80, kind: 'success' }],
+  goal: [...BIG_STEPS, { at: motion.goalSuccessAt - motion.hitAt, kind: 'success' }],
 };
 
 /**
