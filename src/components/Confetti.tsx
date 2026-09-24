@@ -10,7 +10,6 @@ import Animated, {
 
 import {
   CONFETTI_BURSTS,
-  CONFETTI_PER_BURST,
   confettiFrame,
   makeConfettiPieces,
   type ConfettiPalette,
@@ -19,8 +18,10 @@ import {
 import { useTheme } from '@/src/theme';
 
 type Props = {
-  /** 터짐 횟수 (0이면 그리지 않는다). 한 번에 CONFETTI_PER_BURST 개, 두 번째는 늦게·짧게·넓게 */
+  /** 터짐 횟수 (0이면 그리지 않는다). 두 번째는 늦게·짧게·넓게 */
   bursts: number;
+  /** 한 번 터질 때 조각 수 (플랜의 layers.confettiPerBurst) */
+  perBurst: number;
   /** 조각 배치 시드 (저장 시각) */
   seed: number;
   /** 동작 줄이기 설정이 켜져 있으면 그리지 않는다 */
@@ -75,6 +76,7 @@ function Piece({ piece, color, at, ms }: { piece: ConfettiPiece; color: string; 
  */
 export function Confetti({
   bursts,
+  perBurst,
   seed,
   reduceMotion = false,
   origin = null,
@@ -87,9 +89,9 @@ export function Confetti({
       CONFETTI_BURSTS.slice(0, Math.max(0, bursts)).map((burst, i) => ({
         burst,
         // 두 번째 터짐은 다른 시드로 모양을 바꾼다
-        pieces: makeConfettiPieces(CONFETTI_PER_BURST, seed + i * 7919, burst.spread, palette),
+        pieces: makeConfettiPieces(perBurst, seed + i * 7919, burst.spread, palette),
       })),
-    [bursts, seed, palette],
+    [bursts, perBurst, seed, palette],
   );
   const colorOf = [colors.primary, colors.primarySoft, colors.good, colors.warn];
 

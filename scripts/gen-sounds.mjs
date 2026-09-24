@@ -1,4 +1,4 @@
-// 저장 축하 효과음 4개를 합성한다 (DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영).
+// 저장 축하 효과음 5개를 합성한다 (DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영).
 // Node 기본 모듈만 쓴다. 실행: node scripts/gen-sounds.mjs → assets/sounds/*.wav
 // 형식: WAV PCM16 mono 22.05kHz, 각 40KB 이하. 음을 겹쳐 합성 → 전체 앞뒤 5ms 페이드(클릭 제거) → 마지막에 피크 -1 dBFS 로 정규화.
 // 노이즈는 시드 고정 난수라 다시 돌려도 같은 파일이 나온다.
@@ -166,7 +166,36 @@ function fanfare() {
   return finish(buf);
 }
 
-const SOUNDS = { tap, ding, tada, fanfare };
+/**
+ * 쾅 420ms (big): "쿵" 타격 → 밝은 화음 찍기 → 반짝임 종. 12,000원(mid) 짠보다 한 단계 센 소리.
+ * - 0~70ms: 사인 110 → 60 Hz 하강 + 8ms 노이즈. 폰 스피커는 100Hz 아래가 거의 안 나와 2·3배 배음을 얹어 "쿵"이 들리게 한다
+ * - 40ms~: C5·E5·G5·C6 사각파 20% 섞은 삼각파 화음, 120ms 안에 거의 사라진다(꼬리만 180ms 까지 남겨 종과 끊기지 않게)
+ * - 180ms~: 4~7kHz 반짝임 종 3개가 40ms 간격으로
+ * 노이즈를 크게 두면 정규화 피크가 노이즈 한 샘플에 맞춰져 화음이 작아지므로 작게 둔다
+ */
+function hit() {
+  const buf = buffer(420);
+  const drop = (t) => 60 + 50 * Math.exp(-t / 0.02);
+  const thump = { at: 0, dur: 0.07, attack: 0.001, release: 0.015 };
+  tone(buf, { ...thump, freq: drop, amp: 1, tau: 0.04 });
+  tone(buf, { ...thump, freq: (t) => 2 * drop(t), amp: 0.6, tau: 0.03 });
+  tone(buf, { ...thump, freq: (t) => 3 * drop(t), amp: 0.35, tau: 0.02 });
+  noise(buf, { at: 0, dur: 0.008, amp: 0.6, tau: 0.003, seed: 11 });
+
+  const chord = { kind: 'triangle', mix: 0.2, at: 0.04, dur: 0.14, attack: 0.002, tau: 0.045, release: 0.03 };
+  tone(buf, { ...chord, freq: C5, amp: 0.4 });
+  tone(buf, { ...chord, freq: E5, amp: 0.35 });
+  tone(buf, { ...chord, freq: G5, amp: 0.35 });
+  tone(buf, { ...chord, freq: C6, amp: 0.4 });
+
+  const bell = { dur: 0.16, attack: 0.001, release: 0.03 };
+  tone(buf, { ...bell, at: 0.18, freq: 4699, amp: 0.28, tau: 0.06 });
+  tone(buf, { ...bell, at: 0.22, freq: 5588, amp: 0.22, tau: 0.05 });
+  tone(buf, { ...bell, at: 0.26, freq: 6645, amp: 0.18, tau: 0.04 });
+  return finish(buf);
+}
+
+const SOUNDS = { tap, ding, tada, hit, fanfare };
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'sounds');
 mkdirSync(outDir, { recursive: true });

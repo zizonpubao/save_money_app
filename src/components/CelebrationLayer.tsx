@@ -62,6 +62,7 @@ export function CelebrationLayer({ run, rect, reduceMotion = false }: Props) {
       <Confetti
         key={`confetti-${runId}`}
         bursts={plan.layers.confettiBursts}
+        perBurst={plan.layers.confettiPerBurst}
         seed={run.seed}
         origin={origin}
         palette={plan.layers.goal ? 'goal' : 'default'}

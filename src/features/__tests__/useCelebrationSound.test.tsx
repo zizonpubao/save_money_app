@@ -11,6 +11,7 @@ jest.mock('../../../assets/sounds/tap.wav', () => 101);
 jest.mock('../../../assets/sounds/ding.wav', () => 102);
 jest.mock('../../../assets/sounds/tada.wav', () => 103);
 jest.mock('../../../assets/sounds/fanfare.wav', () => 104);
+jest.mock('../../../assets/sounds/hit.wav', () => 105);
 
 const { mockPlayers } = jest.requireMock<typeof AudioMock>('expo-audio');
 
@@ -28,16 +29,17 @@ describe('useCelebrationSound (M4 효과음)', () => {
   });
 
   it('파일마다 다른 에셋이다', () => {
-    expect(new Set(Object.values(SOUND_FILES)).size).toBe(4);
+    expect(new Set(Object.values(SOUND_FILES)).size).toBe(5);
   });
 
-  it('마운트 때 4개를 기기에 먼저 내려받아(downloadFirst) 로드하고, 무음 스위치를 따르며 다른 앱 음악과 섞는다', async () => {
+  it('마운트 때 5개를 기기에 먼저 내려받아(downloadFirst) 로드하고, 무음 스위치를 따르며 다른 앱 음악과 섞는다', async () => {
     await renderHook(() => useCelebrationSound());
     expect(mockPlayers.map((p) => p.source)).toEqual([
       SOUND_FILES.tap,
-      SOUND_FILES.ding,
       SOUND_FILES.tada,
+      SOUND_FILES.hit,
       SOUND_FILES.fanfare,
+      SOUND_FILES.ding,
     ]);
     for (const p of mockPlayers) expect(p.options).toEqual({ downloadFirst: true });
     expect(setAudioModeAsync).toHaveBeenCalledWith({
@@ -52,12 +54,12 @@ describe('useCelebrationSound (M4 효과음)', () => {
   it('볼륨은 전부 최대(1)', async () => {
     await renderHook(() => useCelebrationSound());
     expect(SOUND_VOLUME).toBe(1);
-    for (const sound of ['tap', 'ding', 'tada', 'fanfare'] as const) {
+    for (const sound of ['tap', 'tada', 'hit', 'fanfare', 'ding'] as const) {
       expect(playerOf(sound).volume).toBe(1);
     }
   });
 
-  it.each(['tap', 'ding', 'tada', 'fanfare'] as const)(
+  it.each(['tap', 'tada', 'hit', 'fanfare', 'ding'] as const)(
     '%s 를 부르면 처음 위치(0)라 그 파일만 바로 재생한다',
     async (sound) => {
       const { result } = await renderHook(() => useCelebrationSound());

@@ -10,7 +10,7 @@ import { join } from 'path';
 const DIR = join(__dirname, '..', '..', 'assets', 'sounds');
 
 const RATE = 22050;
-const LENGTH_MS = { tap: 90, ding: 320, tada: 380, fanfare: 450 } as const;
+const LENGTH_MS = { tap: 90, ding: 320, tada: 380, hit: 420, fanfare: 450 } as const;
 /** -1 dBFS = 0.891 × 32767 */
 const PEAK = Math.round(10 ** (-1 / 20) * 32767);
 

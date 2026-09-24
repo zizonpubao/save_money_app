@@ -120,12 +120,12 @@ describe('CelebrationLayer (한 runId 로 조립)', () => {
     expect(screen.getByTestId('floating-label')).toHaveStyle({ fontSize: 20 });
   });
 
-  it('연속 저장: 새 runId 가 오면 이전 조각을 버리고 새로 조립한다 (48 + 48 이 아니라 24)', async () => {
+  it('연속 저장: 새 runId 가 오면 이전 조각을 버리고 새로 조립한다 (48 + 48 이 아니라 mid 32)', async () => {
     const { rerender } = await render(<CelebrationLayer run={null} rect={RECT} />);
     await rerender(<CelebrationLayer run={run(1, 'big', 55000)} rect={RECT} />);
     const firstLabel = screen.getByTestId('floating-label');
     await rerender(<CelebrationLayer run={run(2, 'mid', 12000)} rect={RECT} />);
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(24);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(32);
     expect(screen.queryByTestId('screen-flash')).toBeNull();
     expect(screen.getAllByTestId('floating-label')).toHaveLength(1);
     // key 에 runId 가 들어 있어 라벨이 새로 마운트됐다

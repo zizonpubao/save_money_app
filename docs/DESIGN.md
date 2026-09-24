@@ -101,8 +101,8 @@
 | 시간 | 요소 | 값 |
 | --- | --- | --- |
 | 80 | 햅틱 | Medium(80) → Heavy(160) 2단 |
-| 80 | 소리 | `tap` 대신 `ding.wav` |
-| 80 | `Confetti` | 24개, 카드 가운데에서 방사, 800ms (기존 궤적 규칙) |
+| 80 | 소리 | `tap` 대신 `tada.wav` |
+| 80 | `Confetti` | **32개**, 카드 가운데에서 방사, 800ms (기존 궤적 규칙). 한 번만 터지니 big 한 번(24)보다 넉넉히 |
 | 80 / 160 | `GlowRing` 2겹 | 1겹째 그대로 + 2겹째 80ms 뒤, 테두리 2pt, inset → −16 (좌우 여백 16 안) |
 | 120 | `FloatingLabel` | `title`(28/700) — 1.5배 급 |
 
@@ -113,13 +113,13 @@
 | 80 | `ScreenFlash` | 화면 전체 `primary` opacity 0 → 0.10(다크 0.14) 40ms → 0 80ms, 합 120ms. `primarySoft` 는 라이트·다크 모두 배경과 대비가 없어 안 보여 `primary` 를 쓴다 — "primary 넓은 면적 금지"의 유일한 예외 |
 | 80 | 큰 숫자 | 1 → **1.2** → 1 |
 | 80 / 170 / 300 | 햅틱 | Heavy 3연타 (0/90/220 리듬 — 마지막 박을 늦춰 "쿵쿵—쿵") |
-| 80 | 소리 | `tada.wav` |
+| 80 | 소리 | `hit.wav` |
 | 120 | `FloatingLabel` | `display`(36/800), "+55,000원 🔥" |
 
 **사건별 (금액 구간 위에 얹는다)**
 - 사건은 연출 등급의 **바닥**을 올린다: 목표 달성 → big + 아래 목표 층 / 이정표 → 최소 big / 최고 기록 → 최소 mid / 🔥 증가 → 등급 그대로.
-- **목표 달성**: t0+280 바가 100% 까지 `withSpring {damping 11, stiffness 220}` · 카드 틴트 `primarySoft` 0 → 1 → 0, t0+80(타격과 함께) 시작 → 880 끝 · 컨페티 색 비율 `good` 50% / `primary` 25% / `warn` 25% · 소리 `fanfare.wav`(tada 대신) · 햅틱 big 3연타 + t0+480 Success 1회(피날레) · 배너 "이번 달 목표 달성 🎉" 가 t0+300 에 **위에서 튕겨 내려옴** translateY −20 → 0 `withSpring {damping 11, stiffness 260}` + opacity 0 → 1 120ms.
-- **최고 기록 · 이정표 배너**: t0+300 에 scale 0.8 → 1 `withSpring {damping 10, stiffness 300}`(1.04 쯤 넘쳤다 돌아옴) + opacity 0 → 1 100ms. 이정표는 소리 `tada`, 최고 기록은 등급 소리 그대로.
+- **목표 달성**: t0+280 바가 100% 까지 `withSpring {damping 11, stiffness 220}` · 카드 틴트 `primarySoft` 0 → 1 → 0, t0+80(타격과 함께) 시작 → 880 끝 · 컨페티 색 비율 `good` 50% / `primary` 25% / `warn` 25% · 소리 `fanfare.wav`(hit 대신) · 햅틱 big 3연타 + t0+480 Success 1회(피날레) · 배너 "이번 달 목표 달성 🎉" 가 t0+300 에 **위에서 튕겨 내려옴** translateY −20 → 0 `withSpring {damping 11, stiffness 260}` + opacity 0 → 1 120ms.
+- **최고 기록 · 이정표 배너**: t0+300 에 scale 0.8 → 1 `withSpring {damping 10, stiffness 300}`(1.04 쯤 넘쳤다 돌아옴) + opacity 0 → 1 100ms. 이정표는 소리 `ding`, 최고 기록은 등급 소리 그대로.
 - **🔥 칩**: t0+240 에 scale 1 → 1.3 → 1(`springHit` → `springSettle`) + rotate 0 → −6° → +6° → −3° → 0, 각 60ms(합 240ms) `Easing.inOut(quad)` — 불꽃이 흔들리듯.
 - 배너는 정보라 기존대로 1.5초 머물지만 **등장 모션은 400ms 안**. 배너·소리·축하 햅틱 **패턴**은 한 저장에 하나씩만(저장 탭 selection 은 확인이라 별개): 우선순위 목표 > 이정표 > 최고 기록 > 금액 구간.
 
@@ -132,10 +132,12 @@
 | `tap.wav` | "팝": 700 → 320 Hz 지수 하강 + 3ms 노이즈 버스트 | 90ms · 4.0KB |
 | `ding.wav` | 종소리: 1320 Hz + 배음 2.4×·3.9×(작게), 배음별 감쇠 | 320ms · 14.2KB |
 | `tada.wav` | 상행 C5·E5·G5 삼각파 각 90ms + 끝에 4~6kHz 반짝임 | 380ms · 16.8KB |
+| `hit.wav` | "쾅": 0~70ms 사인 110 → 60 Hz 하강(+2·3배 배음) + 8ms 노이즈 → 40ms 부터 C5·E5·G5·C6 화음(삼각파 + 사각파 20%, 120ms 안 감쇠) → 180ms 부터 4.7·5.6·6.6kHz 반짝임 종 3개 40ms 간격 | 420ms · 18.6KB |
 | `fanfare.wav` | 상행 C5·E5·G5·C6 + 끝 C·E·G 화음 200ms, 사각파 20% | 450ms · 19.9KB |
 
-- 재생: `useCelebrationSound` 훅이 홈 마운트 때 4개를 `useAudioPlayer` 로 미리 로드, 소스는 `downloadFirst: true` 로 기기에 먼저 내려받아 재생(Expo Go 에서는 에셋 주소가 개발 서버 URL 이라 스트리밍이 조용히 실패할 수 있음). 트리거 시 재생 중이면 `pause()` → `seekTo(0)` 완료 후 `play()`. 볼륨 1. `setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false, allowsRecording: false })` — 무음 스위치를 따르고 사용자 음악을 끊지 않는다(옵션 이름은 설치된 SDK 문서로 확인).
-- 설정 탭에 "효과" 구획: `효과음` · `햅틱` 스위치 2줄(`SettingsRow`), 기본 켬. 효과음 아래 미리 듣기 칩 4개(톡/띵/짠/팡파르, 스위치 꺼지면 비활성)와 "무음 스위치가 켜져 있으면 나지 않습니다" 안내, 햅틱 아래 "진동 느껴 보기". settings 키 `sound_enabled` / `haptics_enabled` = `'1'|'0'`(스키마 변경 없음). 햅틱 스위치는 `src/utils/haptics.ts` 한 곳에서 검사해 앱 전체 햅틱을 끈다.
+- 등급별 배정: base `tap` · mid `tada` · big `hit` · 목표 `fanfare` · 이정표 배너 `ding`.
+- 재생: `useCelebrationSound` 훅이 홈 마운트 때 5개를 `useAudioPlayer` 로 미리 로드, 소스는 `downloadFirst: true` 로 기기에 먼저 내려받아 재생(Expo Go 에서는 에셋 주소가 개발 서버 URL 이라 스트리밍이 조용히 실패할 수 있음). 트리거 시 재생 중이면 `pause()` → `seekTo(0)` 완료 후 `play()`. 볼륨 1. `setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false, allowsRecording: false })` — 무음 스위치를 따르고 사용자 음악을 끊지 않는다(옵션 이름은 설치된 SDK 문서로 확인).
+- 설정 탭에 "효과" 구획: `효과음` · `햅틱` 스위치 2줄(`SettingsRow`), 기본 켬. 효과음 아래 미리 듣기 칩 5개(등급 순 톡/짠/쾅/팡파르/띵, 스위치 꺼지면 비활성)와 "무음 스위치가 켜져 있으면 나지 않습니다" 안내, 햅틱 아래 "진동 느껴 보기". settings 키 `sound_enabled` / `haptics_enabled` = `'1'|'0'`(스키마 변경 없음). 햅틱 스위치는 `src/utils/haptics.ts` 한 곳에서 검사해 앱 전체 햅틱을 끈다.
 
 **동작 줄이기 (`useReduceMotion()` 이 참)**
 - 생략: 컨페티 · 플래시 · 플로팅 라벨 · 글로우 · 카드 움츠림/타격 · 숫자 오버슈트 · 칩 튐/흔들림 · 배너 이동(opacity 150ms 로만 등장).

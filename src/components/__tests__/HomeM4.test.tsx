@@ -43,6 +43,7 @@ jest.mock('../../../assets/sounds/tap.wav', () => 101);
 jest.mock('../../../assets/sounds/ding.wav', () => 102);
 jest.mock('../../../assets/sounds/tada.wav', () => 103);
 jest.mock('../../../assets/sounds/fanfare.wav', () => 104);
+jest.mock('../../../assets/sounds/hit.wav', () => 105);
 
 const { mockPlayers } = jest.requireMock<typeof AudioMock>('expo-audio');
 
@@ -227,17 +228,17 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(soundsPlayed()).toEqual(['tap']);
   });
 
-  it('10,000원(mid): Medium → Heavy + ding + 컨페티 24개', async () => {
+  it('10,000원(mid): Medium → Heavy + tada + 컨페티 32개', async () => {
     await render(<HomeScreen />);
     await saveViaSheet('10000', '택시');
     await sheetDismissed();
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(24);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(32);
     await waitCelebration();
     expect(hapticsFired()).toEqual(['selection', 'medium', 'heavy']);
-    expect(soundsPlayed()).toEqual(['ding']);
+    expect(soundsPlayed()).toEqual(['tada']);
   });
 
-  it('50,000원(big): Heavy 3연타 + tada + 컨페티 48개 + 화면 플래시 + "🔥" 라벨', async () => {
+  it('50,000원(big): Heavy 3연타 + hit + 컨페티 48개 + 화면 플래시 + "🔥" 라벨', async () => {
     await render(<HomeScreen />);
     await saveViaSheet('50000', '운동화');
     await sheetDismissed();
@@ -246,7 +247,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(screen.getByTestId('floating-label')).toHaveTextContent('+50,000원 🔥');
     await waitCelebration();
     expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy']);
-    expect(soundsPlayed()).toEqual(['tada']);
+    expect(soundsPlayed()).toEqual(['hit']);
   });
 
   it('onDismiss 가 안 와도 안전 타이머(iOS 600ms · Android 400ms)로 t0 가 온다', async () => {
@@ -254,7 +255,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     await saveViaSheet('10000', '택시');
     expect(screen.queryByTestId('confetti')).toBeNull();
     await wait(motion.t0FallbackMs + 50);
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(24);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(32);
   });
 
   it('55,000원: 오버레이는 스크롤 목록 밖, FAB 다음 형제(FAB 위)이고 터치를 막지 않는다', async () => {
@@ -294,7 +295,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(soundsPlayed()).toEqual(['fanfare']);
   });
 
-  it('누적 10만원을 넘는 저장은 "누적 10만원 돌파 🎉" 배너 + tada (이정표는 최소 big)', async () => {
+  it('누적 10만원을 넘는 저장은 "누적 10만원 돌파 🎉" 배너 + ding (이정표는 최소 big)', async () => {
     addEntry(entry({ date: monthRange(addMonths(thisMonth(), -1)).start, amount: 95000 }));
     await render(<HomeScreen />);
     await saveViaSheet('5000', '커피');
@@ -303,7 +304,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(getSetting(SETTING_KEYS.milestoneReached)).toBe('100000');
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
     await waitCelebration();
-    expect(soundsPlayed()).toEqual(['tada']);
+    expect(soundsPlayed()).toEqual(['ding']);
   });
 
   it('설정에서 효과음·햅틱을 끄면 저장해도 소리·진동이 없다 (연출은 그대로)', async () => {
@@ -377,7 +378,7 @@ describe('홈 화면 — 저장 연출 박자 경계 (M4)', () => {
     await advance(1000);
     expect(hapticsFired()).toEqual(['selection', 'heavy', 'selection', 'medium']);
     // soundsPlayed 는 플레이어별로 모으므로 순서 대신 구성만 본다
-    expect(soundsPlayed().sort()).toEqual(['tada', 'tap']);
+    expect(soundsPlayed().sort()).toEqual(['hit', 'tap']);
   });
 
   it('저장(addDeferred)이 실패하면 시트는 열린 채로 두고 "저장 실패" 알림, 연출은 없다', async () => {

@@ -23,8 +23,8 @@ describe('celebrationTier (M4 금액 구간)', () => {
     expect(celebrationTier(amount)).toBe(tier);
   });
 
-  it('구간별 컨페티 수: 1만원 미만 0 · 1만원 이상 24 · 5만원 이상 24 + 24 (50개 이하)', () => {
-    expect(CONFETTI_COUNT).toEqual({ base: 0, mid: 24, big: 48 });
+  it('구간별 컨페티 수: 1만원 미만 0 · 1만원 이상 32 · 5만원 이상 24 + 24 (50개 이하)', () => {
+    expect(CONFETTI_COUNT).toEqual({ base: 0, mid: 32, big: 48 });
     expect(CONFETTI_COUNT.big).toBeLessThanOrEqual(50);
   });
 
@@ -140,7 +140,7 @@ describe('buildCelebrationPlan (등급 + 사건 → 연출 플랜)', () => {
   it('base: 글로우 1겹 · 컨페티·플래시 없음 · Medium · tap · heading · 배너 없음', () => {
     expect(buildCelebrationPlan('base', NO_EVENTS)).toEqual({
       tier: 'base',
-      layers: { confettiBursts: 0, glowRings: 1, flash: false, numberHit: 1.15, goal: false, streak: false },
+      layers: { confettiBursts: 0, confettiPerBurst: 0, glowRings: 1, flash: false, numberHit: 1.15, goal: false, streak: false },
       haptics: 'base',
       sound: 'tap',
       label: 'heading',
@@ -148,16 +148,16 @@ describe('buildCelebrationPlan (등급 + 사건 → 연출 플랜)', () => {
     });
   });
 
-  it('mid: base 에 컨페티 1번 · 글로우 2겹을 더하고 ding · title', () => {
+  it('mid: base 에 컨페티 32개 1번 · 글로우 2겹을 더하고 tada · title', () => {
     const plan = buildCelebrationPlan('mid', NO_EVENTS);
-    expect(plan.layers).toMatchObject({ confettiBursts: 1, glowRings: 2, flash: false, numberHit: 1.15 });
-    expect([plan.haptics, plan.sound, plan.label, plan.banner]).toEqual(['mid', 'ding', 'title', null]);
+    expect(plan.layers).toMatchObject({ confettiBursts: 1, confettiPerBurst: 32, glowRings: 2, flash: false, numberHit: 1.15 });
+    expect([plan.haptics, plan.sound, plan.label, plan.banner]).toEqual(['mid', 'tada', 'title', null]);
   });
 
-  it('big: 컨페티 2번 · 플래시 · 숫자 1.2 · Heavy 3연타 · tada · display', () => {
+  it('big: 컨페티 24개씩 2번 · 플래시 · 숫자 1.2 · Heavy 3연타 · hit · display', () => {
     const plan = buildCelebrationPlan('big', NO_EVENTS);
-    expect(plan.layers).toMatchObject({ confettiBursts: 2, glowRings: 2, flash: true, numberHit: 1.2 });
-    expect([plan.haptics, plan.sound, plan.label]).toEqual(['big', 'tada', 'display']);
+    expect(plan.layers).toMatchObject({ confettiBursts: 2, confettiPerBurst: 24, glowRings: 2, flash: true, numberHit: 1.2 });
+    expect([plan.haptics, plan.sound, plan.label]).toEqual(['big', 'hit', 'display']);
   });
 
   it('목표 달성은 base 금액이어도 big + 목표 층, 햅틱·소리·배너 모두 목표 것 하나', () => {
@@ -167,20 +167,20 @@ describe('buildCelebrationPlan (등급 + 사건 → 연출 플랜)', () => {
     expect([plan.haptics, plan.sound, plan.banner]).toEqual(['goal', 'fanfare', 'goal']);
   });
 
-  it('이정표는 최소 big, 소리 tada, 배너 이정표', () => {
+  it('이정표는 최소 big, 소리 ding, 배너 이정표', () => {
     const plan = buildCelebrationPlan('base', ev({ milestone: true }));
-    expect([plan.tier, plan.haptics, plan.sound, plan.banner]).toEqual(['big', 'big', 'tada', 'milestone']);
+    expect([plan.tier, plan.haptics, plan.sound, plan.banner]).toEqual(['big', 'big', 'ding', 'milestone']);
     expect(plan.layers.goal).toBe(false);
   });
 
-  it('최고 기록은 최소 mid, 소리는 올린 등급 것 (base → ding)', () => {
+  it('최고 기록은 최소 mid, 소리는 올린 등급 것 (base → mid 의 tada)', () => {
     const plan = buildCelebrationPlan('base', ev({ best: true }));
-    expect([plan.tier, plan.haptics, plan.sound, plan.banner]).toEqual(['mid', 'mid', 'ding', 'best']);
+    expect([plan.tier, plan.haptics, plan.sound, plan.banner]).toEqual(['mid', 'mid', 'tada', 'best']);
   });
 
   it('최고 기록 + big 금액은 big 그대로 (바닥은 내리지 않는다)', () => {
     const plan = buildCelebrationPlan('big', ev({ best: true }));
-    expect([plan.tier, plan.sound, plan.banner]).toEqual(['big', 'tada', 'best']);
+    expect([plan.tier, plan.sound, plan.banner]).toEqual(['big', 'hit', 'best']);
   });
 
   it('🔥 증가는 등급을 바꾸지 않고 칩 층만 켠다', () => {
@@ -198,7 +198,7 @@ describe('buildCelebrationPlan (등급 + 사건 → 연출 플랜)', () => {
 
   it('이정표 + 최고: 이정표가 이긴다', () => {
     const plan = buildCelebrationPlan('mid', ev({ milestone: true, best: true }));
-    expect([plan.tier, plan.banner, plan.sound, plan.haptics]).toEqual(['big', 'milestone', 'tada', 'big']);
+    expect([plan.tier, plan.banner, plan.sound, plan.haptics]).toEqual(['big', 'milestone', 'ding', 'big']);
   });
 
   it('아래 등급의 층은 위 등급의 부분집합이다 (컨페티·글로우·숫자 오버슈트가 줄지 않는다)', () => {

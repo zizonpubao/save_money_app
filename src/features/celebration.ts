@@ -33,14 +33,16 @@ export type CelebrationEvents = {
 export const NO_EVENTS: CelebrationEvents = { goal: false, milestone: false, best: false, streak: false };
 
 export type HapticPattern = 'base' | 'mid' | 'big' | 'goal';
-export type CelebrationSound = 'tap' | 'ding' | 'tada' | 'fanfare';
+export type CelebrationSound = 'tap' | 'tada' | 'hit' | 'fanfare' | 'ding';
 export type CelebrationBanner = 'goal' | 'milestone' | 'best' | null;
 /** 플로팅 라벨 글자 크기 (typeScale 이름) */
 export type LabelSize = 'heading' | 'title' | 'display';
 
 export type CelebrationLayers = {
-  /** 컨페티 터짐 횟수 (한 번에 CONFETTI_PER_BURST 개) */
+  /** 컨페티 터짐 횟수 */
   confettiBursts: 0 | 1 | 2;
+  /** 한 번 터질 때 조각 수 (mid 는 한 번이라 많이, big 은 두 번이라 나눠서) */
+  confettiPerBurst: number;
   /** 카드 글로우 겹 수 */
   glowRings: 1 | 2;
   /** 화면 플래시 (big 전용) */
@@ -67,23 +69,27 @@ export type CelebrationPlan = {
 
 const TIER_RANK: Record<CelebrationTier, number> = { base: 0, mid: 1, big: 2 };
 
+/** 컨페티 조각 수: mid 는 한 번만 터지니 넉넉히(32), big 은 두 번이라 24 씩 (합 48, 50 이하) */
+const CONFETTI_MID = 32;
+const CONFETTI_BIG_PER_BURST = 24;
+
 function atLeast(tier: CelebrationTier, floor: CelebrationTier): CelebrationTier {
   return TIER_RANK[tier] >= TIER_RANK[floor] ? tier : floor;
 }
 
 const TIER_LAYERS: Record<CelebrationTier, Omit<CelebrationLayers, 'goal' | 'streak'>> = {
-  base: { confettiBursts: 0, glowRings: 1, flash: false, numberHit: motion.numberHit },
-  mid: { confettiBursts: 1, glowRings: 2, flash: false, numberHit: motion.numberHit },
-  big: { confettiBursts: 2, glowRings: 2, flash: true, numberHit: motion.numberHitBig },
+  base: { confettiBursts: 0, confettiPerBurst: 0, glowRings: 1, flash: false, numberHit: motion.numberHit },
+  mid: { confettiBursts: 1, confettiPerBurst: CONFETTI_MID, glowRings: 2, flash: false, numberHit: motion.numberHit },
+  big: { confettiBursts: 2, confettiPerBurst: CONFETTI_BIG_PER_BURST, glowRings: 2, flash: true, numberHit: motion.numberHitBig },
 };
 
-const TIER_SOUND: Record<CelebrationTier, CelebrationSound> = { base: 'tap', mid: 'ding', big: 'tada' };
+const TIER_SOUND: Record<CelebrationTier, CelebrationSound> = { base: 'tap', mid: 'tada', big: 'hit' };
 const TIER_LABEL: Record<CelebrationTier, LabelSize> = { base: 'heading', mid: 'title', big: 'display' };
 
 /**
  * 등급 + 사건 → 연출 플랜.
  * - 바닥: 목표 → big (+ 목표 층) / 이정표 → 최소 big / 최고 → 최소 mid / 🔥 → 등급 그대로 (칩만 튄다)
- * - 소리: 목표 fanfare > 이정표 tada > 등급 소리 (최고 기록은 올린 등급의 소리)
+ * - 소리: 목표 fanfare > 이정표 ding > 등급 소리 base tap · mid tada · big hit (최고 기록은 올린 등급의 소리)
  * - 햅틱: 목표 패턴 > 등급 패턴 · 배너: 목표 > 이정표 > 최고
  */
 export function buildCelebrationPlan(amountTier: CelebrationTier, events: CelebrationEvents): CelebrationPlan {
@@ -98,7 +104,7 @@ export function buildCelebrationPlan(amountTier: CelebrationTier, events: Celebr
       : events.best
         ? 'best'
         : null;
-  const sound: CelebrationSound = events.goal ? 'fanfare' : events.milestone ? 'tada' : TIER_SOUND[tier];
+  const sound: CelebrationSound = events.goal ? 'fanfare' : events.milestone ? 'ding' : TIER_SOUND[tier];
 
   return {
     tier,
@@ -142,14 +148,11 @@ export function floatingLabelText(amount: number, tier: CelebrationTier, seed: n
 /** 카드 사각형 (홈 영역 기준 pt). 컨페티·라벨 원점은 가운데, 글로우는 이 사각형 그대로 */
 export type CardRect = { x: number; y: number; w: number; h: number };
 
-/** 한 번 터질 때 컨페티 조각 수 */
-export const CONFETTI_PER_BURST = 24;
-
-/** 구간별 컨페티 조각 수 (합). big 은 24 + 24 두 번. 50개를 넘지 않는다 (View 파티클 성능) */
+/** 구간별 컨페티 조각 수 (합). mid 32 한 번 · big 24 + 24 두 번. 50개를 넘지 않는다 (View 파티클 성능) */
 export const CONFETTI_COUNT: Record<CelebrationTier, number> = {
   base: 0,
-  mid: CONFETTI_PER_BURST * TIER_LAYERS.mid.confettiBursts,
-  big: CONFETTI_PER_BURST * TIER_LAYERS.big.confettiBursts,
+  mid: TIER_LAYERS.mid.confettiPerBurst * TIER_LAYERS.mid.confettiBursts,
+  big: TIER_LAYERS.big.confettiPerBurst * TIER_LAYERS.big.confettiBursts,
 };
 
 /** 한 번의 터짐: 시작 시각(t0 기준 ms) · 재생 시간 · 좌우로 더 벌리는 각도 */

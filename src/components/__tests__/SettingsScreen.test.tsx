@@ -27,6 +27,7 @@ jest.mock('../../../assets/sounds/tap.wav', () => 101);
 jest.mock('../../../assets/sounds/ding.wav', () => 102);
 jest.mock('../../../assets/sounds/tada.wav', () => 103);
 jest.mock('../../../assets/sounds/fanfare.wav', () => 104);
+jest.mock('../../../assets/sounds/hit.wav', () => 105);
 
 const { mockPlayers } = jest.requireMock<typeof AudioMock>('expo-audio');
 
@@ -150,10 +151,10 @@ describe('설정 화면 — 효과 (M4)', () => {
     expect(screen.getByLabelText('햅틱').props.value).toBe(true);
   });
 
-  it('효과음 스위치 아래 "톡·띵·짠·팡파르" 미리 듣기 칩과 무음 스위치 안내가 있고, 탭하면 그 소리만 난다', async () => {
+  it('효과음 스위치 아래 "톡·짠·쾅·팡파르·띵"(등급 순) 미리 듣기 칩과 무음 스위치 안내가 있고, 탭하면 그 소리만 난다', async () => {
     mockPlayers.length = 0;
     await render(<SettingsScreen />);
-    for (const label of ['톡', '띵', '짠', '팡파르']) {
+    for (const label of ['톡', '짠', '쾅', '팡파르', '띵']) {
       expect(screen.getByLabelText(`${label} 미리 듣기`)).toBeOnTheScreen();
     }
     expect(screen.getByText('무음 스위치가 켜져 있으면 나지 않습니다')).toBeOnTheScreen();
