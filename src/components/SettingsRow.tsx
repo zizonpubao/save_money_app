@@ -10,10 +10,14 @@ type Props = {
   onPress: () => void;
   /** 섹션 마지막 행은 아래 구분선이 없다 */
   isLast?: boolean;
+  /** (M5) 되돌릴 수 없는 동작(데이터 전체 삭제). 이름을 danger 색으로 — 색만이 아니라 문구로도 알린다 */
+  danger?: boolean;
+  /** (M5) 이름 색을 primary 로 (예: "카테고리 추가") */
+  accent?: boolean;
 };
 
 /** 설정 행: 왼쪽 이름 · 오른쪽 값 · 꺾쇠. 누르면 편집 화면(모달)을 연다. */
-export function SettingsRow({ label, value, onPress, isLast = false }: Props) {
+export function SettingsRow({ label, value, onPress, isLast = false, danger = false, accent = false }: Props) {
   const { colors, type, sp, fs } = useTheme();
   return (
     <Pressable
@@ -32,7 +36,14 @@ export function SettingsRow({ label, value, onPress, isLast = false }: Props) {
           opacity: pressed ? 0.7 : 1,
         },
       ]}>
-      <Text style={[type.body, styles.label, { color: colors.text }]}>{label}</Text>
+      <Text
+        style={[
+          type.body,
+          styles.label,
+          { color: danger ? colors.danger : accent ? colors.primary : colors.text },
+        ]}>
+        {label}
+      </Text>
       {value ? (
         <Text style={[type.note, numeric, { color: colors.textMuted, marginRight: sp.xs }]}>
           {value}
@@ -40,6 +51,36 @@ export function SettingsRow({ label, value, onPress, isLast = false }: Props) {
       ) : null}
       <Ionicons name="chevron-forward" size={fs.md} color={colors.textMuted} />
     </Pressable>
+  );
+}
+
+type InfoProps = {
+  label: string;
+  value: string;
+  isLast?: boolean;
+};
+
+/** (M5) 보기 전용 행: 왼쪽 이름 · 오른쪽 회색 값 (예: 버전). 누를 수 없어 꺾쇠가 없다 */
+export function SettingsInfoRow({ label, value, isLast = false }: InfoProps) {
+  const { colors, type, sp } = useTheme();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${label} ${value}`}
+      style={[
+        styles.row,
+        {
+          backgroundColor: colors.card,
+          paddingHorizontal: sp.md,
+          paddingVertical: sp.smd,
+          minHeight: size.touch,
+          borderBottomColor: colors.divider,
+          borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+        },
+      ]}>
+      <Text style={[type.body, styles.label, { color: colors.text }]}>{label}</Text>
+      <Text style={[type.note, numeric, { color: colors.textMuted }]}>{value}</Text>
+    </View>
   );
 }
 

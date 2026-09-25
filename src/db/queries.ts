@@ -1,6 +1,7 @@
 import { addDays, monthRange, nowIso, today, yearRange } from '@/src/utils/date';
 
 import { getDb } from './database';
+import { CURRENT_DEFAULT_CATEGORIES } from './migrations';
 import {
   toCategory,
   toEntry,
@@ -12,6 +13,8 @@ import {
   type EntryEmoji,
   type EntryInput,
   type EntryRow,
+  type ImportMode,
+  type ImportPlan,
   type MonthStats,
   type MonthlyTotal,
   type RecentTitle,
@@ -306,4 +309,211 @@ export function updateEntry(id: number, input: EntryInput): Entry | null {
 /** 삭제된 행 수를 돌려준다 (0이면 없는 id). */
 export function deleteEntry(id: number): number {
   return getDb().runSync('DELETE FROM entries WHERE id = ?', [id]).changes;
+}
+
+// ---------- 카테고리 관리 (M5) ----------
+
+/** 같은 이름의 카테고리가 이미 있다 (name UNIQUE). 화면은 이 오류로 "이미 있는 이름" 안내를 띄운다 */
+export class CategoryNameTakenError extends Error {
+  constructor(name: string) {
+    super(`이미 있는 카테고리 이름입니다: ${name}`);
+    this.name = 'CategoryNameTakenError';
+  }
+}
+
+/** 기본 카테고리는 지울 수 없다 */
+export class DefaultCategoryDeleteError extends Error {
+  constructor() {
+    super('기본 카테고리는 삭제할 수 없습니다');
+    this.name = 'DefaultCategoryDeleteError';
+  }
+}
+
+export type CategoryInput = { name: string; emoji: string };
+
+/** 이름·이모지 앞뒤 공백을 걷고 비었으면 던진다. 화면이 저장 버튼으로 먼저 막는다 */
+function normalizeCategoryInput(input: CategoryInput): CategoryInput {
+  const name = input.name.trim();
+  const emoji = input.emoji.trim();
+  if (!name) throw new Error('카테고리 이름이 비어 있습니다');
+  if (!emoji) throw new Error('카테고리 이모지가 비어 있습니다');
+  return { name, emoji };
+}
+
+/**
+ * UNIQUE 위반 메시지는 플랫폼마다 달라서, 넣기 전에 같은 이름을 먼저 찾아 전용 오류로 바꾼다.
+ * exceptId 는 수정할 때 자기 자신을 빼기 위한 것
+ */
+function assertNameFree(name: string, exceptId: number | null): void {
+  const row = getDb().getFirstSync<{ id: number }>(
+    'SELECT id FROM categories WHERE name = ? AND id <> ?',
+    [name, exceptId ?? -1],
+  );
+  if (row) throw new CategoryNameTakenError(name);
+}
+
+export function getCategoryById(id: number): Category | null {
+  const row = getDb().getFirstSync<CategoryRow>(
+    'SELECT id, name, emoji, sort_order, is_default FROM categories WHERE id = ?',
+    [id],
+  );
+  return row ? toCategory(row) : null;
+}
+
+/** 새 카테고리를 맨 뒤에 추가한다. 사용자가 만든 것이라 is_default = 0 */
+export function addCategory(input: CategoryInput): Category {
+  const { name, emoji } = normalizeCategoryInput(input);
+  assertNameFree(name, null);
+  const result = getDb().runSync(
+    `INSERT INTO categories (name, emoji, sort_order, is_default)
+     VALUES (?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories), 0)`,
+    [name, emoji],
+  );
+  const created = getCategoryById(result.lastInsertRowId);
+  if (!created) throw new Error('카테고리 저장 후 다시 읽어오지 못했습니다');
+  return created;
+}
+
+/** 이름·이모지 수정. 기본 카테고리도 바꿀 수 있다 (삭제만 막는다). 없는 id 면 null */
+export function updateCategory(id: number, input: CategoryInput): Category | null {
+  const { name, emoji } = normalizeCategoryInput(input);
+  assertNameFree(name, id);
+  getDb().runSync('UPDATE categories SET name = ?, emoji = ? WHERE id = ?', [name, emoji, id]);
+  return getCategoryById(id);
+}
+
+/** 이 카테고리를 쓰는 기록 수. 삭제 전 "기록 N건이 미분류가 됩니다" 경고용 */
+export function countEntriesInCategory(id: number): number {
+  const row = getDb().getFirstSync<{ count: number }>(
+    'SELECT COUNT(*) AS count FROM entries WHERE category_id = ?',
+    [id],
+  );
+  return row?.count ?? 0;
+}
+
+/**
+ * 카테고리를 지우고 그 카테고리의 기록은 미분류(NULL)로 돌린다. 기본 카테고리면 던진다.
+ * 외래 키 ON DELETE SET NULL 이 있지만, PRAGMA 가 꺼진 연결에서도 같게 동작하도록 직접 비운다.
+ * 지운 행 수(0 = 없는 id)를 돌려준다
+ */
+export function deleteCategory(id: number): number {
+  const found = getCategoryById(id);
+  if (!found) return 0;
+  if (found.isDefault) throw new DefaultCategoryDeleteError();
+  let changes = 0;
+  const db = getDb();
+  db.withTransactionSync(() => {
+    db.runSync('UPDATE entries SET category_id = NULL WHERE category_id = ?', [id]);
+    changes = db.runSync('DELETE FROM categories WHERE id = ?', [id]).changes;
+  });
+  return changes;
+}
+
+/** ids 순서대로 sort_order 를 0, 1, 2… 로 다시 매긴다. 목록에 없는 카테고리는 그 뒤로 기존 순서대로 */
+export function reorderCategories(ids: readonly number[]): void {
+  const db = getDb();
+  const rest = getAllCategories()
+    .map((c) => c.id)
+    .filter((id) => !ids.includes(id));
+  db.withTransactionSync(() => {
+    [...ids, ...rest].forEach((id, index) => {
+      db.runSync('UPDATE categories SET sort_order = ? WHERE id = ?', [index, id]);
+    });
+  });
+}
+
+// ---------- 백업 · 복원 · 전체 삭제 (M5) ----------
+
+/** 모든 기록, 날짜 → 등록 순 (CSV 가 시간 순으로 읽히게) */
+export function getAllEntries(): Entry[] {
+  const rows = getDb().getAllSync<EntryRow>(
+    `SELECT ${ENTRY_COLUMNS} FROM entries ORDER BY date ASC, id ASC`,
+  );
+  return rows.map(toEntry);
+}
+
+/** settings 테이블 전체 (키 → 문자열 값) */
+export function getAllSettings(): Record<string, string> {
+  const rows = getDb().getAllSync<{ key: string; value: string }>('SELECT key, value FROM settings');
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+}
+
+export type ImportResult = { categoriesAdded: number; entriesAdded: number };
+
+/**
+ * 복원 계획을 트랜잭션 하나로 실행한다. 중간에 하나라도 실패하면 전부 롤백돼 복원 전 상태가 그대로 남는다.
+ * - merge: 새 카테고리를 기존 맨 뒤에 붙이고(is_default 는 계획대로) 기록을 추가한다. 목표는 건드리지 않는다
+ * - overwrite: 기록·카테고리를 모두 지우고 계획대로 채운 뒤 월 목표를 복원한다 (효과음·햅틱 등 다른 설정은 둔다)
+ * 기록의 created_at/updated_at 은 백업 값을 그대로 쓴다 — 같은 파일을 다시 병합할 때 중복으로 걸러지게
+ */
+export function importBackup(plan: ImportPlan, mode: ImportMode): ImportResult {
+  for (const e of plan.entries) {
+    assertValidEntryInput({ ...e, categoryId: null });
+  }
+  const db = getDb();
+  let entriesAdded = 0;
+  db.withTransactionSync(() => {
+    if (mode === 'overwrite') {
+      db.runSync('DELETE FROM entries');
+      db.runSync('DELETE FROM categories');
+    }
+    const base =
+      mode === 'overwrite'
+        ? 0
+        : (db.getFirstSync<{ next: number }>(
+            'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM categories',
+          )?.next ?? 0);
+    plan.categories.forEach((c, i) => {
+      db.runSync(
+        'INSERT INTO categories (name, emoji, sort_order, is_default) VALUES (?, ?, ?, ?)',
+        [c.name, c.emoji, mode === 'overwrite' ? c.sortOrder : base + i, c.isDefault ? 1 : 0],
+      );
+    });
+    // 새 id 는 넣은 뒤에야 알 수 있어 이름 → id 표를 트랜잭션 안에서 다시 읽는다
+    const idByName = new Map(
+      db
+        .getAllSync<{ id: number; name: string }>('SELECT id, name FROM categories')
+        .map((r) => [r.name, r.id]),
+    );
+    for (const e of plan.entries) {
+      const categoryId = e.categoryName !== null ? (idByName.get(e.categoryName) ?? null) : null;
+      db.runSync(
+        'INSERT INTO entries (date, title, amount, category_id, memo, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [e.date, e.title, e.amount, categoryId, e.memo, e.createdAt, e.updatedAt],
+      );
+      entriesAdded += 1;
+    }
+    if (mode === 'overwrite' && plan.monthlyGoal !== undefined) {
+      if (plan.monthlyGoal === null) {
+        db.runSync('DELETE FROM settings WHERE key = ?', [SETTING_KEYS.monthlyGoal]);
+      } else {
+        db.runSync(
+          'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+          [SETTING_KEYS.monthlyGoal, String(plan.monthlyGoal)],
+        );
+      }
+      // 목표가 바뀌었으니 이번 달 달성 축하를 다시 받을 수 있게 (settingsStore.setGoal 과 같은 규칙)
+      db.runSync('DELETE FROM settings WHERE key = ?', [SETTING_KEYS.goalReachedMonth]);
+    }
+  });
+  return { categoriesAdded: plan.categories.length, entriesAdded };
+}
+
+/**
+ * 데이터 전체 삭제: 기록·설정을 모두 지우고 카테고리는 기본 10개로 되돌린다
+ * (사용자가 만든 것 삭제 · 이름·이모지·순서 초기화). 트랜잭션 하나라 실패하면 아무것도 지워지지 않는다
+ */
+export function deleteAllData(): void {
+  const db = getDb();
+  db.withTransactionSync(() => {
+    db.runSync('DELETE FROM entries');
+    db.runSync('DELETE FROM settings');
+    db.runSync('DELETE FROM categories');
+    CURRENT_DEFAULT_CATEGORIES.forEach((c, i) => {
+      db.runSync(
+        'INSERT INTO categories (name, emoji, sort_order, is_default) VALUES (?, ?, ?, 1)',
+        [c.name, c.emoji, i],
+      );
+    });
+  });
 }

@@ -24,3 +24,11 @@ jest.mock('react-native-reanimated', () => jest.requireActual('react-native-rean
 
 /** expo-audio 는 네이티브 모듈이라 jest 에서는 __mocks__/expo-audio.ts 대역으로 바꾼다 (홈 화면이 효과음 훅을 쓴다) */
 jest.mock('expo-audio');
+
+/**
+ * (M5) 백업 파일 입출력 모듈도 네이티브라 __mocks__ 대역으로 바꾼다 (설정 화면이 import 한다).
+ * 파일 내용은 __mocks__/expo-file-system.ts 의 mockFiles 에 남아, 내보내기 → 복원 왕복 테스트에 쓴다.
+ */
+jest.mock('expo-file-system');
+jest.mock('expo-sharing');
+jest.mock('expo-document-picker');

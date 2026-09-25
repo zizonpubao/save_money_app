@@ -1,17 +1,35 @@
+import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 
+import { CategoryModal } from '@/src/components/CategoryModal';
+import { CategoryRow } from '@/src/components/CategoryRow';
 import { GoalModal } from '@/src/components/GoalModal';
 import { Screen } from '@/src/components/Screen';
-import { SettingsChipsRow, SettingsRow, SettingsSwitchRow } from '@/src/components/SettingsRow';
+import {
+  SettingsChipsRow,
+  SettingsInfoRow,
+  SettingsRow,
+  SettingsSwitchRow,
+} from '@/src/components/SettingsRow';
 import { SettingsSection } from '@/src/components/SettingsSection';
+import type { Category } from '@/src/db';
+import { confirmDeleteAll, exportCsv, exportJson, startRestore } from '@/src/features/backupActions';
+import { moveCategory } from '@/src/features/categoryActions';
 import { SOUND_LABELS, useCelebrationSound } from '@/src/features/useCelebrationSound';
+import { useCategoryStore } from '@/src/store/categoryStore';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { useTheme } from '@/src/theme';
 import { previewHaptic } from '@/src/utils/haptics';
 import { formatWon } from '@/src/utils/money';
 
-/** 설정 탭. "목표" · (M4) "효과" 섹션, M5 에서 백업·복원·카테고리 섹션이 아래로 붙는다. */
+/** 앱 버전 (app.json expo.version). 읽지 못하면 대시 */
+const APP_VERSION = Constants.expoConfig?.version ?? '-';
+
+/** 카테고리 모달 상태: 닫힘 / 새로 추가 / 이 카테고리 편집 */
+type CategoryEditing = { mode: 'closed' } | { mode: 'add' } | { mode: 'edit'; category: Category };
+
+/** 설정 탭. 목표 · (M4) 효과 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
 export default function SettingsScreen() {
   const { sp } = useTheme();
   const monthlyGoal = useSettingsStore((s) => s.monthlyGoal);
@@ -24,6 +42,10 @@ export default function SettingsScreen() {
   const setSoundEnabled = useSettingsStore((s) => s.setSoundEnabled);
   const setHapticsEnabled = useSettingsStore((s) => s.setHapticsEnabled);
   const [goalModalVisible, setGoalModalVisible] = useState(false);
+  const categories = useCategoryStore((s) => s.categories);
+  const categoriesLoaded = useCategoryStore((s) => s.loaded);
+  const reloadCategories = useCategoryStore((s) => s.reload);
+  const [editing, setEditing] = useState<CategoryEditing>({ mode: 'closed' });
   // 미리 듣기: 홈과 같은 파일·같은 재생 경로라, 여기서 안 들리면 무음 스위치·기기 볼륨 문제다
   const playSound = useCelebrationSound();
   const soundChips = (Object.keys(SOUND_LABELS) as (keyof typeof SOUND_LABELS)[]).map((sound) => ({
@@ -35,6 +57,10 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (!loaded) load();
   }, [loaded, load]);
+
+  useEffect(() => {
+    if (!categoriesLoaded) reloadCategories();
+  }, [categoriesLoaded, reloadCategories]);
 
   const saveGoal = (goal: number) => {
     try {
@@ -104,6 +130,31 @@ export default function SettingsScreen() {
             isLast
           />
         </SettingsSection>
+        {/* (M5) 전체 데이터를 파일로 내보내고 되돌리기 */}
+        <SettingsSection title="백업">
+          <SettingsRow label="JSON 으로 내보내기" onPress={() => void exportJson()} />
+          <SettingsRow label="JSON 에서 복원" onPress={() => void startRestore()} />
+          <SettingsRow label="CSV 로 내보내기" onPress={() => void exportCsv()} isLast />
+        </SettingsSection>
+        {/* (M5) 행을 누르면 편집, 화살표로 순서 변경. 맨 아래 "카테고리 추가" */}
+        <SettingsSection title="카테고리">
+          {categories.map((category, index) => (
+            <CategoryRow
+              key={category.id}
+              category={category}
+              onPress={(c) => setEditing({ mode: 'edit', category: c })}
+              onMoveUp={() => moveCategory(categories, index, -1)}
+              onMoveDown={() => moveCategory(categories, index, 1)}
+              canMoveUp={index > 0}
+              canMoveDown={index < categories.length - 1}
+            />
+          ))}
+          <SettingsRow label="카테고리 추가" onPress={() => setEditing({ mode: 'add' })} accent isLast />
+        </SettingsSection>
+        <SettingsSection title="앱 정보">
+          <SettingsInfoRow label="버전" value={APP_VERSION} />
+          <SettingsRow label="데이터 전체 삭제" onPress={confirmDeleteAll} danger isLast />
+        </SettingsSection>
       </ScrollView>
 
       <GoalModal
@@ -112,6 +163,12 @@ export default function SettingsScreen() {
         onSave={saveGoal}
         onClear={removeGoal}
         onClose={() => setGoalModalVisible(false)}
+      />
+
+      <CategoryModal
+        visible={editing.mode !== 'closed'}
+        category={editing.mode === 'edit' ? editing.category : null}
+        onClose={() => setEditing({ mode: 'closed' })}
       />
     </Screen>
   );

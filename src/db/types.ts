@@ -66,6 +66,39 @@ export type MonthStats = {
   count: number;
 };
 
+/** (M5) 복원으로 넣을 카테고리. id 는 새로 매기고 이름으로 기록과 잇는다 */
+export type ImportCategory = {
+  name: string;
+  emoji: string;
+  /** 덮어쓰기에서만 쓴다. 병합은 기존 맨 뒤에 이어 붙인다 */
+  sortOrder: number;
+  isDefault: boolean;
+};
+
+/** (M5) 복원으로 넣을 기록. 카테고리는 id 대신 이름(없으면 null)으로 들고 있다가 넣을 때 새 id 로 잇는다 */
+export type ImportEntry = {
+  date: string;
+  title: string;
+  amount: number;
+  categoryName: string | null;
+  memo: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** (M5) importBackup 이 한 트랜잭션으로 실행할 계획. 병합이면 새로 넣을 것만, 덮어쓰기면 백업 전체 */
+export type ImportPlan = {
+  categories: ImportCategory[];
+  entries: ImportEntry[];
+  /**
+   * 덮어쓰기에서 복원할 월 목표. number = 그 값으로, null = 목표 없음으로, undefined = 건드리지 않음
+   * (version 1 백업처럼 settings 가 없는 경우). 병합은 항상 건드리지 않는다.
+   */
+  monthlyGoal?: number | null;
+};
+
+export type ImportMode = 'merge' | 'overwrite';
+
 /** SQLite 에서 읽어온 원본 행 (snake_case) */
 export type CategoryRow = {
   id: number;

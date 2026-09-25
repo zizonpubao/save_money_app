@@ -17,6 +17,24 @@ export const DEFAULT_CATEGORIES: readonly { name: string; emoji: string }[] = [
   { name: '기타', emoji: '📦' },
 ];
 
+/**
+ * (M5) 최신 스키마 기준 기본 카테고리 10개와 순서 (v1 8개 + v2 밥값 + v4 옷).
+ * 데이터 전체 삭제 후 다시 채우는 목록이자, 복원 때 is_default 를 정하는 기준 이름표다.
+ * 마이그레이션이 기본 카테고리를 더 넣으면 여기에도 같은 자리에 넣는다.
+ */
+export const CURRENT_DEFAULT_CATEGORIES: readonly { name: string; emoji: string }[] = [
+  { name: '커피', emoji: '☕' },
+  { name: '밥값', emoji: '🍚' },
+  { name: '배달', emoji: '🛵' },
+  { name: '택시', emoji: '🚕' },
+  { name: '쇼핑', emoji: '🛍️' },
+  { name: '옷', emoji: '👕' },
+  { name: '술', emoji: '🍺' },
+  { name: '간식', emoji: '🍪' },
+  { name: '구독', emoji: '📱' },
+  { name: '기타', emoji: '📦' },
+];
+
 /** 버전 오름차순. 중간에 끼워 넣지 말고 항상 뒤에 추가한다. */
 export const migrations: readonly Migration[] = [
   {

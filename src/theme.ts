@@ -183,6 +183,8 @@ export const size = {
   glowBorder2: 2,
   /** (M4.5) + 길게 누르기 원탭 저장 메뉴 폭 */
   quickMenuWidth: 240,
+  /** (M5) 카테고리 편집 모달의 이모지 입력 칸 폭 (이모지 2자 + 좌우 여백) */
+  emojiInput: 72,
 } as const;
 
 /**

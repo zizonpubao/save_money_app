@@ -1,7 +1,10 @@
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import 'dayjs/locale/ko';
 
 dayjs.locale('ko');
+// (M5) dayjs(value, format, true) 엄격 파싱에 필요하다. 이 플러그인이 없으면 형식 인자를 무시해 '2026-02-30' 도 통과한다
+dayjs.extend(customParseFormat);
 
 export const DATE_FORMAT = 'YYYY-MM-DD';
 export const MONTH_FORMAT = 'YYYY-MM';
@@ -119,4 +122,14 @@ export function firstWeekday(month: string): number {
 /** 1970-01-01 부터 며칠째인지 (로컬 날짜 기준). 하루에 하나씩 차례로 돌리는 문구의 순번에 쓴다. */
 export function dayNumber(date: string): number {
   return dayjs(date, DATE_FORMAT).diff(dayjs('1970-01-01', DATE_FORMAT), 'day');
+}
+
+/** (M5) 'YYYY-MM-DD' 이면서 실제로 있는 날짜인지 (엄격 파싱: '2026-02-30' · '2026-9-1' 은 false). 백업 복원 검증용 */
+export function isValidDateString(value: string): boolean {
+  return dayjs(value, DATE_FORMAT, true).isValid();
+}
+
+/** (M5) 파일 이름에 넣는 현재 시각 '2026-09-25-135800' (자동 백업이 같은 날 여러 번이어도 겹치지 않게) */
+export function fileTimestamp(): string {
+  return dayjs().format('YYYY-MM-DD-HHmmss');
 }

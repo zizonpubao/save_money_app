@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -108,6 +108,9 @@ export default function HomeScreen() {
     [stopTimers],
   );
 
+  // (M4.5) 원탭 저장 메뉴가 열린 채 다른 탭으로 가면 닫는다 (돌아왔을 때 이전 메뉴가 떠 있지 않게)
+  useFocusEffect(useCallback(() => () => setQuickItems(null), []));
+
   /**
    * t0 = 입력 시트가 다 내려간 순간. 저장을 화면에 반영하고(목록·합계·tick) 연출 플랜을 짠 뒤,
    * 타격(t0+80)에 햅틱·소리를 낸다. 연속 저장이면 이전 연출의 박자를 모두 끊고 새 runId 로 다시 시작한다.
@@ -171,6 +174,13 @@ export default function HomeScreen() {
    */
   const stageSave = (input: EntryInput, afterMs: number): boolean => {
     saveTapHaptic();
+    // (M4.5) 앞 저장의 t0 가 아직이면(원탭 저장 연타) 덮어쓰기 전에 연출 없이 화면에 먼저 반영한다.
+    // 그냥 덮으면 앞 저장의 tick·최고 기록·목표 달성 판정이 사라진다
+    if (pending.current) {
+      const previous = pending.current;
+      pending.current = null;
+      previous.publish();
+    }
     try {
       const staged = addDeferred(input);
       pending.current = { publish: staged.publish, amount: input.amount };
