@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 
 import type { Category, EntryInput } from '@/src/db';
+import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
 import { useEntryForm } from '@/src/features/useEntryForm';
 import { today } from '@/src/utils/date';
 
@@ -150,6 +151,28 @@ describe('useEntryForm', () => {
         date: today(),
         memo: '',
       });
+    });
+  });
+
+  describe('(M4.5) 금액 프리셋', () => {
+    const [삼천, , 만원, , 더하기천] = AMOUNT_PRESETS;
+
+    it('값 칩은 지금 금액과 상관없이 그 값으로 바꾸고 콤마를 붙인다', async () => {
+      const { result } = await setup();
+      await act(() => result.current.setAmountText('4500'));
+      await act(() => result.current.applyPreset(만원!));
+      expect(result.current.values.amountText).toBe('10,000');
+      await act(() => result.current.applyPreset(삼천!));
+      expect(result.current.amount).toBe(3000);
+    });
+
+    it('"+1천" 은 빈 칸이면 1,000, 4,500 이면 5,500 으로 더한다', async () => {
+      const { result } = await setup();
+      await act(() => result.current.applyPreset(더하기천!));
+      expect(result.current.values.amountText).toBe('1,000');
+      await act(() => result.current.setAmountText('4500'));
+      await act(() => result.current.applyPreset(더하기천!));
+      expect(result.current.values.amountText).toBe('5,500');
     });
   });
 });

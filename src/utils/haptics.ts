@@ -79,6 +79,16 @@ export function scrubTick(): void {
   fire('selection');
 }
 
+/** (M4.5) 금액 프리셋 칩을 누를 때 가벼운 틱 */
+export function chipTapHaptic(): void {
+  fire('selection');
+}
+
+/** (M4.5) + 버튼 길게 누르기가 인식된 순간 */
+export function longPressHaptic(): void {
+  fire('medium');
+}
+
 /** 설정 탭 "진동 느껴 보기". 저장 기본 연출과 같은 Medium 한 번 */
 export function previewHaptic(): void {
   fire('medium');

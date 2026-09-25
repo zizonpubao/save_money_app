@@ -1,5 +1,5 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useState, type PropsWithChildren } from 'react';
+import { useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,12 +11,14 @@ import {
   View,
 } from 'react-native';
 
+import { AmountPresetChips } from '@/src/components/AmountPresetChips';
 import { CategoryChips } from '@/src/components/CategoryChips';
 import { QuickEntryChips } from '@/src/components/QuickEntryChips';
 import type { Category, RecentTitle } from '@/src/db';
 import type { useEntryForm } from '@/src/features/useEntryForm';
 import { numeric, size, useTheme } from '@/src/theme';
 import { formatKoDate, fromDate, toDate } from '@/src/utils/date';
+import { chipTapHaptic } from '@/src/utils/haptics';
 
 type Props = PropsWithChildren<{
   form: ReturnType<typeof useEntryForm>;
@@ -38,9 +40,18 @@ export function EntryForm({
   recent = [],
   children,
 }: Props) {
-  const { colors, type, fs, sp, radius, isDark } = useTheme();
+  const { colors, type, fs, sp, radius, isDark, motion } = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { values } = form;
+  const amountRef = useRef<TextInput>(null);
+
+  // (M4.5) iOS pageSheet 모달에서는 autoFocus 가 키패드를 못 띄울 때가 있어, 잠깐 뒤 한 번 더 포커스한다.
+  // 이미 포커스돼 있으면 아무 일도 없다. 수정 화면(autoFocusAmount 없음)은 기존 값 확인이 먼저라 건너뛴다
+  useEffect(() => {
+    if (!autoFocusAmount) return;
+    const timer = setTimeout(() => amountRef.current?.focus?.(), motion.focusDelayMs);
+    return () => clearTimeout(timer);
+  }, [autoFocusAmount, motion.focusDelayMs]);
 
   const onDateChange = (event: DateTimePickerEvent, selected?: Date) => {
     // Android 는 다이얼로그라 선택/취소 후 닫아야 하고, iOS 휠은 계속 열어둔다
@@ -88,6 +99,8 @@ export function EntryForm({
               },
             ]}>
             <TextInput
+              ref={amountRef}
+              testID="amount-input"
               value={values.amountText}
               onChangeText={form.setAmountText}
               keyboardType="number-pad"
@@ -104,6 +117,14 @@ export function EntryForm({
               ]}
             />
             <Text style={{ color: colors.textMuted, fontSize: fs.lg }}>원</Text>
+          </View>
+          <View style={{ marginTop: sp.sm }}>
+            <AmountPresetChips
+              onPress={(preset) => {
+                chipTapHaptic();
+                form.applyPreset(preset);
+              }}
+            />
           </View>
         </View>
 

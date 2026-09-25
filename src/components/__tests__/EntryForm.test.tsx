@@ -1,9 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import * as Haptics from 'expo-haptics';
 
 import { EntryForm } from '@/src/components/EntryForm';
 import { EntryFormModal } from '@/src/components/EntryFormModal';
 import type { Category } from '@/src/db';
 import { useEntryForm } from '@/src/features/useEntryForm';
+
+jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn(() => Promise.resolve()) }));
 
 const 커피: Category = { id: 1, name: '커피', emoji: '☕', sortOrder: 0, isDefault: true };
 const 택시: Category = { id: 2, name: '택시', emoji: '🚕', sortOrder: 1, isDefault: true };
@@ -100,5 +103,58 @@ describe('EntryForm (입력 시트)', () => {
     expect(
       screen.getByText(/^\d{4}년 \d{1,2}월 \d{1,2}일 \([일월화수목금토]\)$/),
     ).toBeOnTheScreen();
+  });
+
+  describe('(M4.5) 금액 프리셋 칩', () => {
+    beforeEach(() => jest.mocked(Haptics.selectionAsync).mockClear());
+
+    it('금액 칸 아래에 3천 · 4.5천 · 1만 · 2만 · +1천 칩이 있다', async () => {
+      await render(<Harness />);
+      for (const label of ['3천', '4.5천', '1만', '2만', '+1천']) {
+        expect(screen.getByText(label)).toBeOnTheScreen();
+      }
+    });
+
+    it('값 칩은 금액을 그 값으로 바꾸고(콤마) selection 햅틱을 낸다', async () => {
+      await render(<Harness />);
+      await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '12000');
+      await fireEvent.press(screen.getByLabelText('금액 4,500원으로'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('4,500');
+      await fireEvent.press(screen.getByText('2만'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('20,000');
+      expect(Haptics.selectionAsync).toHaveBeenCalledTimes(2);
+    });
+
+    it('"+1천" 은 지금 금액에 1,000원을 더한다 (빈 칸 → 1,000 → 2,000, 9,500 → 10,500)', async () => {
+      await render(<Harness />);
+      await fireEvent.press(screen.getByLabelText('금액에 1,000원 더하기'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,000');
+      await fireEvent.press(screen.getByText('+1천'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('2,000');
+      await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '9500');
+      await fireEvent.press(screen.getByText('+1천'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('10,500');
+    });
+
+    it('프리셋으로 채운 금액이 저장 값으로 넘어간다', async () => {
+      const onSubmit = await renderModal();
+      await fireEvent.press(screen.getByText('3천'));
+      await fireEvent.press(screen.getByText('+1천'));
+      await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '간식');
+      await fireEvent.press(screen.getByText('저장'));
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ title: '간식', amount: 4000 }));
+    });
+  });
+
+  describe('(M4.5) 금액 칸 자동 포커스', () => {
+    it('새 기록 모달은 열리자마자 금액 칸에 포커스한다 (autoFocus)', async () => {
+      await renderModal();
+      expect(screen.getByTestId('amount-input').props.autoFocus).toBe(true);
+    });
+
+    it('수정 화면처럼 autoFocusAmount 를 안 넘기면 포커스하지 않는다', async () => {
+      await render(<Harness />);
+      expect(screen.getByTestId('amount-input').props.autoFocus).toBe(false);
+    });
   });
 });

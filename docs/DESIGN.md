@@ -36,6 +36,10 @@
 - **섹션 헤더**: `bg` 위에 `paddingTop: sp.md` / `paddingBottom: sp.sm` / 좌우 `sp.md`(아래 행 안쪽 여백과 세로 줄 맞춤), 왼쪽 날짜(`type.label`)·오른쪽 합계(`type.note`) 둘 다 `textMuted`. 카드 밖 요소라 배경색은 `bg`.
 - **칩(선택)**: `radius.pill`, `paddingHorizontal: sp.md` / `paddingVertical: sp.sm`, 테두리 1px. 선택 시 `primary` 배경 + `onPrimary` 글자(색만이 아니라 채움으로 구분). 보기 전용 정보 칩은 홈 배치 4번(`StatChip`). (M4) 입력 시트 맨 위 빠른 입력 칩도 이 모양(선택 상태 없이 누르면 채움, 눌림 `opacity 0.7`).
 - **버튼/FAB**: 텍스트 버튼은 테두리 1px + `radius.md` + `minHeight: size.touch`, 눌림은 `opacity 0.7`. FAB 은 `size.fab` 원형, `primary`, `shadow.fab`, 우하단 `sp.lg` 여백, 눌림 `opacity 0.85`.
+- **(M4.5) 원탭 저장 메뉴**: FAB 을 `motion.longPressMs`(500ms) 길게 누르면 Medium 햅틱과 함께 FAB 바로 위(`bottom: sp.lg + size.fab + sp.sm`, 오른쪽 `sp.lg`)에 뜬다. `card` 배경 + `radius.lg` + `shadow.fab`(떠 있는 것), 폭 `size.quickMenuWidth`(240), 위에 `caption` 회색 "누르면 바로 저장" 한 줄.
+- 행은 최근 항목 최대 4개, 한 행 `minHeight: size.touch` · 이모지 · 항목명(`body`) · 금액(`bodyStrong` + `numeric`), 행 사이 hairline `divider`, 눌림 `opacity 0.7`. 스크린리더 라벨은 "커피 4,500원 바로 저장".
+- FAB 쪽 모서리 기준 scale `motion.quickMenuFrom`(0.9) → 1 spring + opacity, 150ms(`motion.quickMenuMs`)로 펼치고 같은 시간에 접는다(동작 줄이기면 opacity 만). 뒤는 투명한 막으로 덮어 메뉴 밖 탭·쓸기·FAB 짧은 탭이 모두 "닫기" 가 된다.
+- **(M4.5) 금액 프리셋 칩**: 금액 칸 바로 아래(`sp.sm`) 한 줄 `3천` `4.5천` `1만` `2만` `+1천`. 빠른 입력 칩과 같은 모양(선택 상태 없음, 눌림 `opacity 0.7`), 누르면 selection 햅틱.
 - **헤더·탭바**: 배경 `card`, 그림자 숨김(`headerShadowVisible: false`), 활성 탭 `primary` / 비활성 `textMuted`, 본문 영역은 `bg`.
 - **입력 필드**: `card` 배경 + `border` 테두리 + `radius.md`, 라벨은 위에 `type.caption` `textMuted`, 필드 간 간격 `sp.md`. 금액 필드만 `type.title` 로 크게, 오른쪽에 "원".
 - **빈 상태**: 가운데 정렬, `type.bodyStrong` 한 줄 + `type.note` 한 줄. 일러스트·느낌표 없음, 문구는 다음 행동을 알려준다("오늘 참은 소비를 + 버튼으로 남겨보세요").

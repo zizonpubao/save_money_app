@@ -18,13 +18,14 @@ import { EntryRow } from '@/src/components/EntryRow';
 import { EntrySectionHeader } from '@/src/components/EntrySectionHeader';
 import { Fab } from '@/src/components/Fab';
 import { MonthGrass } from '@/src/components/MonthGrass';
+import { QuickSaveMenu } from '@/src/components/QuickSaveMenu';
 import { RecordBanner } from '@/src/components/RecordBanner';
 import { ReviewCard } from '@/src/components/ReviewCard';
 import { Screen } from '@/src/components/Screen';
 import { StatChip } from '@/src/components/StatChip';
 import { StreakChip } from '@/src/components/StreakChip';
 import { SummaryCard, type CardHit } from '@/src/components/SummaryCard';
-import type { Entry, EntryInput } from '@/src/db';
+import type { Entry, EntryInput, RecentTitle } from '@/src/db';
 import {
   buildCelebrationPlan,
   cardHitPeak,
@@ -35,11 +36,13 @@ import { useCelebrationSound } from '@/src/features/useCelebrationSound';
 import { useEntryList } from '@/src/features/useEntryList';
 import { useHomeCard } from '@/src/features/useHomeCard';
 import { useMonthReview } from '@/src/features/useMonthReview';
+import { QUICK_SAVE_LIMIT, readRecentTitles } from '@/src/features/useRecentTitles';
 import { useReduceMotion } from '@/src/features/useReduceMotion';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
 import { motion, useTheme } from '@/src/theme';
-import { playCelebrationHaptic, saveTapHaptic } from '@/src/utils/haptics';
+import { today } from '@/src/utils/date';
+import { longPressHaptic, playCelebrationHaptic, saveTapHaptic } from '@/src/utils/haptics';
 import { formatWon } from '@/src/utils/money';
 
 const FALLBACK_EMOJI = '💰';
@@ -57,6 +60,8 @@ export default function HomeScreen() {
   const reduceMotion = useReduceMotion();
   const playSound = useCelebrationSound();
   const [formVisible, setFormVisible] = useState(false);
+  // (M4.5) + 길게 누르기 원탭 저장 메뉴. null 이면 닫힘
+  const [quickItems, setQuickItems] = useState<RecentTitle[] | null>(null);
   // 축하 오버레이 기준 = 홈 영역(rootRef) 기준 카드 사각형
   const rootRef = useRef<View>(null);
   const cardRef = useRef<View>(null);
@@ -160,20 +165,50 @@ export default function HomeScreen() {
     router.push({ pathname: '/entry/[id]', params: { id: String(entry.id) } });
   };
 
-  const submitNew = (input: EntryInput) => {
-    // 시트가 아직 위에 있는 순간: "눌렸다" 확인만 (소리 없음)
+  /**
+   * DB 에 저장하고 화면 반영은 t0 까지 미룬다. 저장 탭 순간엔 "눌렸다" 확인(selection)만, 소리 없음.
+   * t0 는 afterMs 뒤 fireT0 가 친다 (입력 시트는 onDismiss 가 먼저 오면 그쪽이 친다).
+   */
+  const stageSave = (input: EntryInput, afterMs: number): boolean => {
     saveTapHaptic();
     try {
       const staged = addDeferred(input);
       pending.current = { publish: staged.publish, amount: input.amount };
     } catch {
       Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
+      return false;
+    }
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = setTimeout(fireT0, afterMs);
+    return true;
+  };
+
+  const submitNew = (input: EntryInput) => {
+    // iOS 는 시트 onDismiss 로 t0 를 알린다. 안 오면(Android·느린 기기) 안전 타이머로 친다
+    if (stageSave(input, motion.t0FallbackMs)) setFormVisible(false);
+  };
+
+  /** (M4.5) + 길게 누르기: 최근 항목 메뉴. 최근 항목이 없으면 평소처럼 입력 시트 */
+  const openQuickMenu = () => {
+    longPressHaptic();
+    const items = readRecentTitles(QUICK_SAVE_LIMIT);
+    if (items.length === 0) {
+      setFormVisible(true);
       return;
     }
-    setFormVisible(false);
-    // iOS 는 시트 onDismiss 로 t0 를 알린다. 안 오면(Android·느린 기기) 안전 타이머로 친다
-    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
-    fallbackTimer.current = setTimeout(fireT0, motion.t0FallbackMs);
+    setQuickItems(items);
+  };
+
+  /**
+   * (M4.5) 원탭 저장: 오늘 날짜 · 같은 항목명·금액·카테고리 · 메모 없음. 시트가 없으니
+   * t0 = 메뉴가 닫히는 애니메이션(motion.quickMenuMs) 직후
+   */
+  const quickSave = (item: RecentTitle) => {
+    setQuickItems(null);
+    stageSave(
+      { date: today(), title: item.title, amount: item.amount, categoryId: item.categoryId, memo: null },
+      motion.quickMenuMs,
+    );
   };
 
   const removeEntry = (entry: Entry) => {
@@ -317,7 +352,18 @@ export default function HomeScreen() {
         </View>
       </Animated.View>
 
-      <Fab onPress={() => setFormVisible(true)} />
+      <Fab onPress={() => setFormVisible(true)} onLongPress={openQuickMenu} />
+
+      {/* 원탭 저장 메뉴: 뒤를 덮는 투명 막 + FAB 위 카드. 막이 FAB 까지 덮어 짧은 탭도 "닫기" 가 된다 */}
+      {quickItems ? (
+        <QuickSaveMenu
+          items={quickItems}
+          categories={categories}
+          reduceMotion={reduceMotion}
+          onPick={quickSave}
+          onClose={() => setQuickItems(null)}
+        />
+      ) : null}
 
       {/* 컨페티·라벨·글로우·플래시. 스크롤 목록 안에 두면 목록 경계에서 잘리므로 화면 전체 오버레이로, FAB 보다 위에 그린다.
           Screen 의 패딩이 0 이라 좌표 기준은 rootRef 와 같다 */}

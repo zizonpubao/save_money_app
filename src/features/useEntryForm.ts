@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import type { Category, EntryInput, RecentTitle } from '@/src/db';
+import { applyAmountPreset, type AmountPreset } from '@/src/features/amountPresets';
 import { today } from '@/src/utils/date';
 import { formatAmountInput, formatNumber, parseWon } from '@/src/utils/money';
 
@@ -70,6 +71,14 @@ export function useEntryForm(initial?: EntryInput | null) {
     }));
   }, []);
 
+  /** (M4.5) 금액 프리셋 칩. 값 칩은 금액을 바꾸고 "+1천" 은 지금 금액에 더한다 */
+  const applyPreset = useCallback((preset: AmountPreset) => {
+    setValues((v) => ({
+      ...v,
+      amountText: formatAmountInput(String(applyAmountPreset(parseWon(v.amountText), preset))),
+    }));
+  }, []);
+
   const reset = useCallback((next?: EntryInput | null) => {
     setValues(fromInitial(next));
   }, []);
@@ -98,6 +107,7 @@ export function useEntryForm(initial?: EntryInput | null) {
     setMemo,
     selectCategory,
     applyRecent,
+    applyPreset,
     reset,
     toInput,
   };

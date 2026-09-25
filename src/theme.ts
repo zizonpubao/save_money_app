@@ -181,6 +181,8 @@ export const size = {
   /** (M4 축하 연출) 카드 글로우 테두리 두께: 1겹째 / 2겹째 */
   glowBorder: 4,
   glowBorder2: 2,
+  /** (M4.5) + 길게 누르기 원탭 저장 메뉴 폭 */
+  quickMenuWidth: 240,
 } as const;
 
 /**
@@ -288,6 +290,17 @@ export const motion = {
   reducedBannerMs: 150,
   /** 오버레이를 걷는 시각. big 컨페티·라벨이 끝나는 t0+1000 */
   layerMs: 1000,
+
+  /** (M4.5) + 버튼 길게 누르기 인식 시간 */
+  longPressMs: 500,
+  /** (M4.5) 원탭 저장 메뉴가 펼쳐지고 닫히는 시간. 원탭 저장의 t0 = 메뉴가 다 닫힌 순간 */
+  quickMenuMs: 150,
+  /** (M4.5) 원탭 저장 메뉴 시작 크기 (→ 1) */
+  quickMenuFrom: 0.9,
+  /** (M4.5) 원탭 저장 메뉴 펼침 spring. quickMenuMs 안에 살짝 넘쳤다 선다 */
+  springQuickMenu: { dampingRatio: 0.7 },
+  /** (M4.5) iOS pageSheet 에서 autoFocus 가 안 먹을 때 금액 칸에 다시 포커스를 주는 지연 */
+  focusDelayMs: 100,
 } as const;
 
 export type Theme = {
