@@ -11,7 +11,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-637%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-742%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
@@ -69,7 +69,8 @@ flowchart LR
 | 이번 달 절약액 보기 | 앱 열기 | 카드 큰 숫자, 목표 진행 바, 오늘의 한 줄, 이번 달 잔디, 이모지 적립 줄 |
 | 월 · 년 통계 | 기록 탭 | 합계 · 건수 · 평균, 막대, 카테고리 비율, 전체 목록 |
 | 월 목표 정하기 | 설정 탭 | 프리셋 또는 직접 입력, 홈 카드에 즉시 반영. 달성 시 축하(목표당 월 1회) |
-| 백업 · 복원 | 설정 탭 | JSON 내보내기 → 공유 시트 / JSON 선택 → 병합 또는 덮어쓰기 |
+| 백업 · 복원 | 설정 탭 | JSON 내보내기 → 공유 시트 / JSON 선택 → 병합 또는 덮어쓰기, 덮어쓰기 전 자동 백업 |
+| 카테고리 관리하기 | 설정 탭 | 추가 · 이름 · 이모지 · 순서 변경 · 삭제(기본 카테고리는 삭제 불가) |
 
 ### 🔁 저장 한 번의 시퀀스
 
@@ -99,13 +100,13 @@ sequenceDiagram
 
 | # | 기능 | 요약 |
 |---|---|---|
-| 1 | 기록 입력 | 금액(자동 콤마) · 항목 · 카테고리 칩(10개) · 빠른 입력 칩 · 날짜 · 메모. `+` 길게 누르기로 최근 항목 원탭 저장, 금액 프리셋 칩. 저장 시 햅틱 + 효과음 + 금액 카운트업 + 카드 타격, 4천원 이상 컨페티 · 2만원 이상 세 번 터짐 + 플래시 + 화면 흔들림 |
+| 1 | 기록 입력 | 금액(자동 콤마) · 항목 · 카테고리 칩(10개) · 빠른 입력 칩 · 날짜 · 메모. `+` 길게 누르기로 최근 항목 원탭 저장, 금액 프리셋 칩(500원·1천·3천·5천·1만, 누적). 저장 시 햅틱 + 효과음 + 금액 카운트업 + 카드 타격, 4천원 이상 컨페티 · 2만원 이상 세 번 터짐 + 플래시 + 화면 흔들림 |
 | 2 | 홈 | 이번 달 절약액 카드, 날짜별 목록, 스와이프 삭제, 수정 화면, 🔥 연속 기록일, 누적 금액, 매달 초 지난달 회고 카드 |
 | 3 | 기록 탭 | 월 / 년 단위 전환, 기간 이동, 막대 그래프(월: 일별 31칸 · 년: 월별 12칸, 막대는 누른 채 좌우로 쓸기), 카테고리별 비율 바, 년 모드 목록은 월별 섹션 |
 | 4 | 개인 최고 | 하루 · 한 달 역대 최고를 처음 넘길 때 "최고 기록! 🏆" |
 | 5 | 월 목표 | 목표 금액 설정(프리셋 · 직접 입력), 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 |
 | 6 | 홈 활기 | 오늘의 한 줄(명언 39개 · 속담·유명인 · 환산 · 어제 대비), 하루 첫 오픈 카운트업, 이번 달 잔디, 이모지 적립 |
-| 7 | 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 (M5) |
+| 7 | 백업 | JSON 내보내기 · 복원(병합/덮어쓰기, 자동 백업), CSV(엑셀 호환), 카테고리 관리(추가·이름·이모지·순서·삭제), 데이터 전체 삭제 |
 
 ### 🎯 저장 순간의 이펙트
 
@@ -136,6 +137,7 @@ sequenceDiagram
 | 효과음 | expo-audio · 생성 WAV | 무음 스위치 준수 |
 | 날짜 | dayjs (locale ko) | `2026년 9월 23일 (수)` |
 | 테스트 | jest-expo · @testing-library/react-native · sql.js | sql.js로 expo-sqlite를 대역해 DB 계층까지 PC에서 검증 |
+| 백업 | expo-file-system · expo-sharing · expo-document-picker | JSON · CSV, 공유 시트 |
 | 개발 도구 | Claude Code 서브 에이전트 7개 | 아래 "개발 방식" 참고 |
 
 ## 🏗 아키텍처
@@ -183,6 +185,7 @@ erDiagram
 
 카테고리를 지우면 기록의 `category_id`만 NULL이 됩니다. 기록은 연쇄 삭제하지 않습니다.
 적용된 마이그레이션은 고치지 않고 새 버전을 덧붙입니다 (v1 초기 스키마 → v2 밥값 카테고리 → v3 settings → v4 옷 카테고리).
+백업 JSON은 v2 형식이며 entries · categories에 settings(월 목표 등)를 더해 담습니다.
 
 ## 📁 프로젝트 구조
 
@@ -263,7 +266,8 @@ npx expo-doctor    # 의존성 호환 점검
 | M3.6 홈 활기 | 오늘의 한 줄, 첫 오픈 카운트업, 잔디, 이모지 적립 | ✅ |
 | M4 편의 | 빠른 입력 칩, 연속 기록일, 누적 이정표, 회고 카드 | ✅ |
 | M4.5 입력 마찰 줄이기 | 원탭 저장, 프리셋 칩, 자동 포커스 | ✅ |
-| M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | 🔨 |
+| M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | ✅ |
+| 폴리싱 · 안드로이드 · APK | 디자이너 전체 폴리싱, 안드로이드 점검, EAS Build APK, 스크린샷 | 예정 |
 
 ## 👤 Author
 
