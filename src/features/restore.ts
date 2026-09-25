@@ -5,7 +5,7 @@ import type { BackupEntry, ValidBackup } from './backup';
 
 const DEFAULT_NAMES = new Set(CURRENT_DEFAULT_CATEGORIES.map((c) => c.name));
 
-/** 이름이 기본 카테고리 10개 중 하나인지. 덮어쓰기 때 is_default 를 이 기준으로 정한다 */
+/** 이름이 기본 카테고리 9개 중 하나인지. 덮어쓰기 때 is_default 를 이 기준으로 정한다 */
 export function isDefaultCategoryName(name: string): boolean {
   return DEFAULT_NAMES.has(name);
 }
@@ -76,10 +76,11 @@ const DEFAULT_COUNT = CURRENT_DEFAULT_CATEGORIES.length;
 
 /**
  * 덮어쓰기 계획: 백업 내용 전부. 카테고리 순서는 백업 순서를 0부터 다시 매긴다.
- * 기본 여부: 이름이 기본 10개 중 하나면 기본, 파일에서 isDefault 인 것(이름을 바꾼 기본)도 기본.
- * 기본이 10개를 넘으면 이름이 기본 목록에 없는 것을 뒤에서부터 사용자 카테고리로 내린다.
- * 10개 미만일 때만 빠진 기본 이름을 기본 목록 순서대로 맨 뒤에 채운다 (0개·전부 걸러진 백업도 기본 10개).
- * 채우려고 기존 기본을 빼지는 않는다 — 커피→카페 로 바꾼 백업은 기본이 이미 10개라 커피를 채우지 않고 기타도 남는다
+ * 기본 여부: 이름이 기본 9개 중 하나면 기본, 파일에서 isDefault 인 것(이름을 바꾼 기본)도 기본.
+ * 기본이 9개를 넘으면 이름이 기본 목록에 없는 것을 뒤에서부터 사용자 카테고리로 내린다.
+ * 9개 미만일 때만 빠진 기본 이름을 기본 목록 순서대로 맨 뒤에 채운다 (0개·전부 걸러진 백업도 기본 9개).
+ * 채우려고 기존 기본을 빼지는 않는다 — 커피→카페 로 바꾼 백업은 기본이 이미 9개라 커피를 채우지 않고 기타도 남는다
+ * (v5 전 백업의 isDefault '옷' 도 같은 규칙이라, 기본 9개 이름이 다 있으면 사용자 카테고리로 들어온다)
  * 월 목표는 백업에 settings 가 있을 때만(version 2) 그 값으로, 없으면(version 1) 지금 값을 둔다
  */
 export function planOverwrite(incoming: ValidBackup): ImportPlan {

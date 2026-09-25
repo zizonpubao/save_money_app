@@ -500,7 +500,7 @@ export function importBackup(plan: ImportPlan, mode: ImportMode): ImportResult {
 }
 
 /**
- * 데이터 전체 삭제: 기록·설정을 모두 지우고 카테고리는 기본 10개로 되돌린다
+ * 데이터 전체 삭제: 기록·설정을 모두 지우고 카테고리는 기본 9개로 되돌린다
  * (사용자가 만든 것 삭제 · 이름·이모지·순서 초기화). 트랜잭션 하나라 실패하면 아무것도 지워지지 않는다
  */
 export function deleteAllData(): void {

@@ -18,9 +18,9 @@ export const DEFAULT_CATEGORIES: readonly { name: string; emoji: string }[] = [
 ];
 
 /**
- * (M5) 최신 스키마 기준 기본 카테고리 10개와 순서 (v1 8개 + v2 밥값 + v4 옷).
+ * 최신 스키마 기준 기본 카테고리 9개와 순서 (v1 8개 + v2 밥값. v4 에서 넣은 옷은 v5 에서 기본에서 뺐다).
  * 데이터 전체 삭제 후 다시 채우는 목록이자, 복원 때 is_default 를 정하는 기준 이름표다.
- * 마이그레이션이 기본 카테고리를 더 넣으면 여기에도 같은 자리에 넣는다.
+ * 마이그레이션이 기본 카테고리를 넣거나 빼면 여기도 같이 맞춘다.
  */
 export const CURRENT_DEFAULT_CATEGORIES: readonly { name: string; emoji: string }[] = [
   { name: '커피', emoji: '☕' },
@@ -28,7 +28,6 @@ export const CURRENT_DEFAULT_CATEGORIES: readonly { name: string; emoji: string 
   { name: '배달', emoji: '🛵' },
   { name: '택시', emoji: '🚕' },
   { name: '쇼핑', emoji: '🛍️' },
-  { name: '옷', emoji: '👕' },
   { name: '술', emoji: '🍺' },
   { name: '간식', emoji: '🍪' },
   { name: '구독', emoji: '📱' },
@@ -107,6 +106,28 @@ export const migrations: readonly Migration[] = [
         'INSERT OR IGNORE INTO categories (name, emoji, sort_order, is_default) VALUES (?, ?, ?, ?)',
         ['옷', '👕', 5, 1],
       );
+    },
+  },
+  {
+    // (M5 뒤 사용자 결정) 기본 카테고리에서 '옷' 을 뺀다. 사용자 데이터는 지우지 않는다:
+    // 기록이 하나도 없는 기본 '옷' 만 삭제하고, 기록이 있으면 사용자 카테고리(is_default 0)로 내려
+    // 맨 뒤로 보낸다(사용자가 원하면 카테고리 관리에서 지울 수 있다). 사용자가 직접 만든 '옷'(is_default 0)은
+    // 건드리지 않는다. 기본 '옷' 뒤 카테고리는 v4 의 반대로 한 칸씩 당겨, 새로 설치한 DB 와 전체 삭제 후 DB 가
+    // 같은 순번(0~8)이 되게 한다 (빈 번호가 있으면 덮어쓰기 복원 때 순번이 다시 매겨져 값이 달라진다).
+    version: 5,
+    up: (db) => {
+      db.execSync(`
+        UPDATE categories
+        SET sort_order = sort_order - 1
+        WHERE sort_order > (SELECT sort_order FROM categories WHERE name = '옷' AND is_default = 1);
+        DELETE FROM categories
+        WHERE name = '옷' AND is_default = 1
+          AND NOT EXISTS (SELECT 1 FROM entries WHERE entries.category_id = categories.id);
+        UPDATE categories
+        SET is_default = 0,
+            sort_order = (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories WHERE name <> '옷')
+        WHERE name = '옷' AND is_default = 1;
+      `);
     },
   },
 ];

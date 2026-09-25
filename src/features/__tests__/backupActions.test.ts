@@ -126,7 +126,7 @@ describe('백업 동작 (M5)', () => {
       const json = JSON.parse(mockFiles.get(uri) ?? '') as Record<string, unknown>;
       expect(json).toMatchObject({ app: 'savelog', version: 2, settings: { monthlyGoal: 300000 } });
       expect(json.entries).toHaveLength(2);
-      expect(json.categories).toHaveLength(11);
+      expect(json.categories).toHaveLength(10);
       expect(alertSpy).not.toHaveBeenCalled();
     });
 
@@ -181,7 +181,7 @@ describe('백업 동작 (M5)', () => {
       mockPickFile('file:///picked/b.json');
       await startRestore();
       expect(lastAlert()).toMatchObject({ title: '복원할 수 없습니다', message: 'SaveLog 백업 파일이 아닙니다' });
-      expect(getAllCategories()).toHaveLength(10);
+      expect(getAllCategories()).toHaveLength(9);
     });
 
     it('요약 알림: 건수 + 건너뜀, 버튼은 취소 · 병합 · 덮어쓰기 (확장자가 .json 이 아니어도 내용으로 판정)', async () => {
@@ -274,7 +274,7 @@ describe('백업 동작 (M5)', () => {
       await press('덮어쓰기');
       expect(lastAlert().title).toBe('자동 백업 실패');
       expect(getAllEntries()).toHaveLength(2);
-      expect(getAllCategories()).toHaveLength(11);
+      expect(getAllCategories()).toHaveLength(10);
     });
 
     it('병합: 없는 기록만 더하고 결과 알림, 목표는 그대로', async () => {
@@ -338,7 +338,7 @@ describe('백업 동작 (M5)', () => {
       expect(getAllEntries()).toHaveLength(2);
     });
 
-    it('삭제하면 기록·설정이 없고 카테고리는 기본 10개, 스토어도 비워진다', async () => {
+    it('삭제하면 기록·설정이 없고 카테고리는 기본 9개, 스토어도 비워진다', async () => {
       seed();
       useEntryStore.setState({ oldestMonth: '2020-01', lastRecord: 'day' });
       useSettingsStore.setState({ monthlyGoal: 300000, loaded: true });
@@ -356,7 +356,7 @@ describe('백업 동작 (M5)', () => {
         lastRecord: null,
       });
       expect(useSettingsStore.getState().monthlyGoal).toBeNull();
-      expect(useCategoryStore.getState().categories).toHaveLength(10);
+      expect(useCategoryStore.getState().categories).toHaveLength(9);
       expect(lastAlert().title).toBe('삭제 완료');
     });
   });

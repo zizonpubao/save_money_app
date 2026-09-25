@@ -135,9 +135,9 @@ describe('백업 쿼리 (M5)', () => {
 
       expect(result).toEqual({ categoriesAdded: 1, entriesAdded: 4 });
       expect(comparableEntries(getAllEntries(), getAllCategories())).toEqual(beforeEntries);
-      // 새로 붙은 편의점은 기본 10개 뒤, 사용자 카테고리
+      // 새로 붙은 편의점은 기본 9개 뒤, 사용자 카테고리
       const store = getAllCategories().at(-1);
-      expect(store).toMatchObject({ name: '편의점', sortOrder: 10, isDefault: false });
+      expect(store).toMatchObject({ name: '편의점', sortOrder: 9, isDefault: false });
       // 병합은 목표를 건드리지 않는다
       expect(getSetting(SETTING_KEYS.monthlyGoal)).toBeNull();
     });
@@ -185,7 +185,7 @@ describe('백업 쿼리 (M5)', () => {
       expect(getSetting(SETTING_KEYS.monthlyGoal)).toBeNull();
     });
 
-    it('덮어쓰기는 기존 기록·카테고리를 지우고, 기본 이름·파일의 isDefault 는 is_default=1, 기본은 늘 10개', () => {
+    it('덮어쓰기는 기존 기록·카테고리를 지우고, 기본 이름·파일의 isDefault 는 is_default=1, 기본은 늘 9개', () => {
       addEntry(input({ title: '지워질 기록' }));
       addCategory({ name: '지워질 카테고리', emoji: '🗑️' });
       setSetting(SETTING_KEYS.soundEnabled, '0');
@@ -205,11 +205,11 @@ describe('백업 쿼리 (M5)', () => {
 
       importBackup(planOverwrite(backup), 'overwrite');
       expect(getAllEntries().map((e) => e.title)).toEqual(['라떼']);
-      // 편의점은 파일에서 isDefault(이름 바꾼 기본)라 기본. 기본이 2개뿐이라 빠진 기본을 목록 순서로 10개까지만 채운다
+      // 편의점은 파일에서 isDefault(이름 바꾼 기본)라 기본. 기본이 2개뿐이라 빠진 기본을 목록 순서로 9개까지만 채운다
       expect(getAllCategories().map((c) => [c.name, c.isDefault, c.sortOrder])).toEqual([
         ['편의점', true, 0],
         ['커피', true, 1],
-        ...['밥값', '배달', '택시', '쇼핑', '옷', '술', '간식', '구독'].map((n, i) => [n, true, 2 + i]),
+        ...['밥값', '배달', '택시', '쇼핑', '술', '간식', '구독'].map((n, i) => [n, true, 2 + i]),
       ]);
       expect(getAllEntries()[0]?.categoryId).toBe(idOf('커피'));
       // 목표 없음으로 복원, 달성 축하 기록도 지움. 효과음 등 다른 설정은 그대로
@@ -237,8 +237,8 @@ describe('백업 쿼리 (M5)', () => {
       if (!v1) throw new Error('검증 실패');
       importBackup(planOverwrite(v1), 'overwrite');
       expect(getSetting(SETTING_KEYS.monthlyGoal)).toBe('500000');
-      // 카테고리 0개 백업이어도 기본 10개는 남는다
-      expect(getAllCategories().filter((c) => c.isDefault)).toHaveLength(10);
+      // 카테고리 0개 백업이어도 기본 9개는 남는다
+      expect(getAllCategories().filter((c) => c.isDefault)).toHaveLength(9);
     });
 
     it('중간에 실패하면 전부 롤백된다 (덮어쓰기에서 지운 것도 되살아남)', () => {
@@ -289,7 +289,7 @@ describe('백업 쿼리 (M5)', () => {
   describe('카테고리 관리', () => {
     it('addCategory 는 맨 뒤(sort_order = 최대 + 1)에 사용자 카테고리로, 앞뒤 공백은 걷는다', () => {
       const added = addCategory({ name: ' 편의점 ', emoji: ' 🏪 ' });
-      expect(added).toMatchObject({ name: '편의점', emoji: '🏪', sortOrder: 10, isDefault: false });
+      expect(added).toMatchObject({ name: '편의점', emoji: '🏪', sortOrder: 9, isDefault: false });
       expect(getAllCategories().at(-1)?.name).toBe('편의점');
     });
 
@@ -317,7 +317,7 @@ describe('백업 쿼리 (M5)', () => {
 
     it('기본 카테고리는 삭제할 수 없다', () => {
       expect(() => deleteCategory(idOf('커피'))).toThrow(DefaultCategoryDeleteError);
-      expect(getAllCategories()).toHaveLength(10);
+      expect(getAllCategories()).toHaveLength(9);
     });
 
     it('사용 중인 카테고리: 건수를 세고, 지우면 그 기록은 미분류(NULL)로 남는다', () => {
@@ -356,7 +356,7 @@ describe('백업 쿼리 (M5)', () => {
   });
 
   describe('deleteAllData', () => {
-    it('기록·설정을 모두 지우고 카테고리는 기본 10개(이름·이모지·순서 초기화)로', () => {
+    it('기록·설정을 모두 지우고 카테고리는 기본 9개(이름·이모지·순서 초기화)로', () => {
       seedRichData();
       setSetting(SETTING_KEYS.soundEnabled, '0');
       updateCategory(idOf('커피'), { name: '카페', emoji: '🧋' });
@@ -368,7 +368,7 @@ describe('백업 쿼리 (M5)', () => {
       expect(getAllCategories().map((c) => ({ name: c.name, emoji: c.emoji }))).toEqual(
         CURRENT_DEFAULT_CATEGORIES,
       );
-      expect(getAllCategories().map((c) => c.sortOrder)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      expect(getAllCategories().map((c) => c.sortOrder)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
       expect(getAllCategories().every((c) => c.isDefault)).toBe(true);
     });
   });

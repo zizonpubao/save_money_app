@@ -78,10 +78,10 @@ describe('설정 화면 — M5 백업 · 카테고리 · 앱 정보', () => {
   });
 
   describe('카테고리', () => {
-    it('기본 10개가 이모지·이름·"기본" 표시와 함께 순서대로, 맨 위 ↑·맨 아래 ↓ 는 비활성', async () => {
+    it('기본 9개가 이모지·이름·"기본" 표시와 함께 순서대로, 맨 위 ↑·맨 아래 ↓ 는 비활성', async () => {
       await render(<SettingsScreen />);
-      expect(rowNames()).toEqual(['커피', '밥값', '배달', '택시', '쇼핑', '옷', '술', '간식', '구독', '기타']);
-      expect(screen.getAllByText('기본')).toHaveLength(10);
+      expect(rowNames()).toEqual(['커피', '밥값', '배달', '택시', '쇼핑', '술', '간식', '구독', '기타']);
+      expect(screen.getAllByText('기본')).toHaveLength(9);
       expect(screen.getByLabelText('커피 위로')).toBeDisabled();
       expect(screen.getByLabelText('기타 아래로')).toBeDisabled();
       expect(screen.getByLabelText('커피 아래로')).toBeEnabled();
@@ -111,7 +111,7 @@ describe('설정 화면 — M5 백업 · 카테고리 · 앱 정보', () => {
 
       expect(screen.queryByTestId('category-modal')).toBeNull();
       expect(rowNames().at(-1)).toBe('편의점');
-      expect(screen.getAllByText('기본')).toHaveLength(10);
+      expect(screen.getAllByText('기본')).toHaveLength(9);
       expect(getAllCategories().at(-1)).toMatchObject({ name: '편의점', emoji: '🏪', isDefault: false });
     });
 
@@ -132,7 +132,7 @@ describe('설정 화면 — M5 백업 · 카테고리 · 앱 정보', () => {
       await fireEvent.press(screen.getByLabelText('카테고리 저장'));
       expect(lastAlert().title).toBe('이미 있는 이름입니다');
       expect(screen.getByTestId('category-modal')).toBeOnTheScreen();
-      expect(getAllCategories()).toHaveLength(10);
+      expect(getAllCategories()).toHaveLength(9);
     });
 
     it('기본 카테고리 편집: 이름·이모지는 바뀌고 삭제 버튼은 비활성 + 안내', async () => {

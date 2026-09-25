@@ -95,24 +95,24 @@ describe('planOverwrite', () => {
       { name: '편의점', emoji: '🏪', sortOrder: 2, isDefault: false },
     ]);
     expect(plan.categories.slice(3)).toEqual(
-      ['밥값', '배달', '쇼핑', '옷', '술', '간식', '구독', '기타'].map((name, i) =>
+      ['밥값', '배달', '쇼핑', '술', '간식', '구독', '기타'].map((name, i) =>
         expect.objectContaining({ name, sortOrder: 3 + i, isDefault: true }),
       ),
     );
   });
 
-  it('카테고리 0개 백업(전부 걸러진 것 포함)도 기본 10개가 남는다', () => {
+  it('카테고리 0개 백업(전부 걸러진 것 포함)도 기본 9개가 남는다', () => {
     const empty = valid({ categories: [], entries: [] });
     expect(planOverwrite(empty).categories).toEqual(
       CURRENT_DEFAULT_CATEGORIES.map((d, i) => ({ name: d.name, emoji: d.emoji, sortOrder: i, isDefault: true })),
     );
     const allBad = valid({ categories: [{ name: '', emoji: '☕' }, { name: '커피' }], entries: [] });
     expect(allBad.skippedCategories).toBe(2);
-    expect(planOverwrite(allBad).categories.filter((c) => c.isDefault)).toHaveLength(10);
+    expect(planOverwrite(allBad).categories.filter((c) => c.isDefault)).toHaveLength(9);
   });
 
   it('이름 바꾼 기본은 채우지 않고 기타 유지', () => {
-    // 커피 → 카페 로 이름만 바꾼 백업: 기본이 이미 10개라 커피를 채우지 않고, 기타도 빼지 않는다
+    // 커피 → 카페 로 이름만 바꾼 백업: 기본이 이미 9개라 커피를 채우지 않고, 기타도 빼지 않는다
     const rest = CURRENT_DEFAULT_CATEGORIES.slice(1).map((d, i) => ({ ...d, sortOrder: 1 + i, isDefault: true }));
     const renamed = valid({
       categories: [
@@ -131,7 +131,7 @@ describe('planOverwrite', () => {
     expect(cats.map((c) => c.name)).not.toContain('커피');
   });
 
-  it('기본이 10개 미만이면 빠진 기본 이름을 기본 목록 순서로 10개가 될 만큼만 채운다', () => {
+  it('기본이 9개 미만이면 빠진 기본 이름을 기본 목록 순서로 9개가 될 만큼만 채운다', () => {
     const partial = valid({
       categories: [
         { name: '카페', emoji: '☕', sortOrder: 0, isDefault: true },
@@ -141,17 +141,30 @@ describe('planOverwrite', () => {
       entries: [],
     });
     const cats = planOverwrite(partial).categories;
-    expect(cats.filter((c) => c.isDefault)).toHaveLength(10);
-    expect(cats.slice(3).map((c) => c.name)).toEqual(['커피', '배달', '택시', '쇼핑', '옷', '술', '간식', '구독']);
+    expect(cats.filter((c) => c.isDefault)).toHaveLength(9);
+    expect(cats.slice(3).map((c) => c.name)).toEqual(['커피', '배달', '택시', '쇼핑', '술', '간식', '구독']);
   });
 
-  it('파일에 isDefault 가 11개 이상이면 기본 목록에 없는 이름부터 사용자 카테고리로 내린다', () => {
+  it('파일에 isDefault 가 10개 이상이면 기본 목록에 없는 이름부터 사용자 카테고리로 내린다', () => {
     const extra = ['가', '나'].map((name, i) => ({ name, emoji: '⭐', sortOrder: i, isDefault: true }));
     const all = CURRENT_DEFAULT_CATEGORIES.map((d, i) => ({ ...d, sortOrder: 2 + i, isDefault: true }));
     const cats = planOverwrite(valid({ categories: [...extra, ...all], entries: [] })).categories;
-    expect(cats).toHaveLength(12);
+    expect(cats).toHaveLength(11);
     expect(cats.filter((c) => c.isDefault).map((c) => c.name)).toEqual(CURRENT_DEFAULT_CATEGORIES.map((d) => d.name));
     expect(cats.filter((c) => !c.isDefault).map((c) => c.name)).toEqual(['가', '나']);
+  });
+
+  it('v5 전 백업(기본 옷 포함 10개)을 덮어쓰면 옷은 사용자 카테고리로 들어오고 기본은 9개', () => {
+    const old = ['커피', '밥값', '배달', '택시', '쇼핑', '옷', '술', '간식', '구독', '기타'].map((name, i) => ({
+      name,
+      emoji: '⭐',
+      sortOrder: i,
+      isDefault: true,
+    }));
+    const cats = planOverwrite(valid({ categories: old, entries: [] })).categories;
+    expect(cats).toHaveLength(10);
+    expect(cats.find((c) => c.name === '옷')).toEqual({ name: '옷', emoji: '⭐', sortOrder: 5, isDefault: false });
+    expect(cats.filter((c) => c.isDefault).map((c) => c.name)).toEqual(CURRENT_DEFAULT_CATEGORIES.map((d) => d.name));
   });
 
   it('기록은 중복 걸러내기 없이 전부, 월 목표는 백업 값', () => {
@@ -168,8 +181,9 @@ describe('planOverwrite', () => {
 });
 
 describe('isDefaultCategoryName', () => {
-  it('기본 10개 이름만 true', () => {
-    expect(['커피', '밥값', '옷', '기타'].every(isDefaultCategoryName)).toBe(true);
+  it('기본 9개 이름만 true (옷은 v5 부터 기본이 아님)', () => {
+    expect(['커피', '밥값', '기타'].every(isDefaultCategoryName)).toBe(true);
     expect(isDefaultCategoryName('편의점')).toBe(false);
+    expect(isDefaultCategoryName('옷')).toBe(false);
   });
 });

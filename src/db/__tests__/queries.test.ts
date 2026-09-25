@@ -63,14 +63,13 @@ describe('queries', () => {
   });
 
   describe('카테고리', () => {
-    it('getAllCategories 는 sort_order 순으로 기본 10개를 돌려준다', () => {
+    it('getAllCategories 는 sort_order 순으로 기본 9개를 돌려준다', () => {
       expect(getAllCategories().map((c) => c.name)).toEqual([
         '커피',
         '밥값',
         '배달',
         '택시',
         '쇼핑',
-        '옷',
         '술',
         '간식',
         '구독',
