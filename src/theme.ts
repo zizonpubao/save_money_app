@@ -176,6 +176,8 @@ export const size = {
   /** (M4) 저장 컨페티 한 조각 (가로 × 세로 사각형) */
   confettiWidth: 6,
   confettiHeight: 10,
+  /** (M4) big 등급 컨페티 조각 배율 — 가로·세로에 곱한다 (6×10 → 8.4×14) */
+  confettiScaleBig: 1.4,
   /** (M4 축하 연출) 카드 글로우 테두리 두께: 1겹째 / 2겹째 */
   glowBorder: 4,
   glowBorder2: 2,
@@ -193,26 +195,38 @@ export const motion = {
   shrink: 0.97,
   cardHit: 1.08,
   cardHitMin: 1.06,
+  /** big 카드 타격(시드 없이 고정). 358pt 카드 × 1.09 = 390pt — 390 폭 화면 끝에 닿는 한계 (1.10 은 394 로 넘친다) */
+  cardHitBig: 1.09,
   numberHit: 1.15,
-  numberHitBig: 1.2,
+  numberHitBig: 1.25,
   chipHit: 1.3,
-  /** 플로팅 라벨 오버슈트 최고값 */
+  /** 플로팅 라벨 오버슈트 최고값: 기본 / big */
   labelHit: 1.3,
+  labelHitBig: 1.4,
   stagger: STAGGER,
-  /** 플로팅 라벨이 떠오르는 거리(pt) · 시작 크기 */
+  /** 플로팅 라벨이 떠오르는 거리(pt) · 시작 크기: 기본 / big */
   floatRise: 40,
+  floatRiseBig: 60,
   labelFrom: 0.6,
+  labelFromBig: 0.5,
   /** 글로우가 카드 밖으로 퍼지는 거리(pt): 1겹째 / 2겹째 (2겹째는 화면 좌우 여백 16 안) */
   glowSpread: 12,
   glowSpread2: 16,
   /** 글로우 시작 투명도: 라이트 / 다크 */
   glowOpacity: 0.35,
   glowOpacityDark: 0.45,
-  /** 화면 플래시 최고 투명도: 라이트 / 다크 */
-  flashOpacity: 0.1,
-  flashOpacityDark: 0.14,
+  /** 화면 플래시(big) 1번째 최고 투명도: 라이트 / 다크 */
+  flashOpacity: 0.14,
+  flashOpacityDark: 0.18,
+  /** 화면 플래시 2번째(여진) 최고 투명도: 라이트 / 다크 (다크는 1번째처럼 한 단계 높여야 보인다) */
+  flash2Opacity: 0.08,
+  flash2OpacityDark: 0.1,
+  /** big 화면 흔들림: 홈 영역을 좌우 ±amplitude(pt) 로 4번, 합 ms (한 번 = ms / 4) */
+  shake: { amplitude: 3, ms: 120 },
   springHit: { damping: 12, stiffness: 320, mass: 0.8 },
   springSettle: { damping: 18, stiffness: 200 },
+  /** big 카드·숫자 settle — damping 을 낮춰 한 번 더 출렁인다 */
+  springSettleBig: { damping: 13, stiffness: 200 },
   /** 목표 바: 평소 / 목표 달성 */
   springBar: { damping: 16, stiffness: 180 },
   springBarGoal: { damping: 11, stiffness: 220 },
@@ -231,17 +245,27 @@ export const motion = {
   countUpMs: 600,
   labelAt: HIT_AT + STAGGER,
   labelMs: 700,
+  /** big 라벨: labelAt(120) 부터 880ms → t0+1000 에 끝난다 (1초 상한) */
+  labelMsBig: 880,
   labelFadeInMs: 80,
   labelFadeOutMs: 250,
   glowMs: 600,
   glow2At: HIT_AT + STAGGER * 2,
   flashInMs: 40,
   flashOutMs: 80,
+  /** 2번째 플래시: 타격 + 220 (Heavy 3번째 · 컨페티 3번째와 같은 박자), 합 100ms */
+  flash2At: HIT_AT + 220,
+  flash2InMs: 30,
+  flash2OutMs: 70,
+  /** mid 컨페티 한 번 */
   confettiMs: 800,
-  confetti2At: 180,
-  confetti2Ms: 700,
-  /** 두 번째 컨페티가 좌우로 더 벌어지는 각도(도) */
-  confetti2Spread: 20,
+  /** big 컨페티 3번 터짐 시각 (타격 +0 / +100 / +220) — 모두 confettiEndAt 에 함께 끝난다 */
+  confettiBigAt: [HIT_AT, HIT_AT + 100, HIT_AT + 220],
+  confettiEndAt: 1000,
+  /** big 3번째 터짐이 좌우로 더 벌어지는 각도(도) */
+  confettiBig3Spread: 30,
+  /** big 컨페티 초속 배율 */
+  confettiSpeedBig: 1.3,
   emojiAt: HIT_AT + STAGGER * 3,
   streakAt: HIT_AT + STAGGER * 4,
   /** 🔥 칩 흔들림 한 박(ms)과 각도 순서(도) */
@@ -254,16 +278,16 @@ export const motion = {
   /** 목표 달성 카드 틴트: 번짐 / 빠짐 (hitAt 부터 합 800ms) */
   tintInMs: 200,
   tintOutMs: 600,
-  /** 목표 달성 Success 햅틱(피날레) */
-  goalSuccessAt: 480,
+  /** big·목표 Success 햅틱(피날레): 타격 + 420 — 마지막 Heavy(타격 + 220)와 200ms 떨어뜨린다 */
+  finaleAt: HIT_AT + 420,
   /** 축하 햅틱 박자(타격 기준 ms): mid 의 두 번째 Heavy · big 의 Heavy 3연타("쿵쿵—쿵") */
   hapticMidAt: 80,
   hapticBigAt: [0, 90, 220],
   /** 동작 줄이기: 목표 바 · 배너 등장 */
   reducedBarMs: 300,
   reducedBannerMs: 150,
-  /** 오버레이를 걷는 시각. 가장 늦은 컨페티(180 + 700)가 끝난 뒤 */
-  layerMs: 900,
+  /** 오버레이를 걷는 시각. big 컨페티·라벨이 끝나는 t0+1000 */
+  layerMs: 1000,
 } as const;
 
 export type Theme = {

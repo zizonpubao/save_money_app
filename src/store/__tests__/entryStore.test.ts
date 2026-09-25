@@ -186,10 +186,10 @@ describe('entryStore', () => {
 
   describe('금액 구간 이펙트 (M4 celebrateTier)', () => {
     it.each([
-      [9999, 'base'],
-      [10000, 'mid'],
-      [12000, 'mid'],
-      [50000, 'big'],
+      [3999, 'base'],
+      [4000, 'mid'],
+      [19999, 'mid'],
+      [20000, 'big'],
       [55000, 'big'],
     ] as const)('%i원 저장 → %s', (amount, tier) => {
       useEntryStore.getState().add(input({ amount }));
@@ -198,7 +198,7 @@ describe('entryStore', () => {
     });
 
     it('수정 저장은 구간을 바꾸지 않는다 (이펙트 없음)', () => {
-      const created = useEntryStore.getState().add(input({ amount: 4500 }));
+      const created = useEntryStore.getState().add(input({ amount: 3500 }));
       useEntryStore.getState().update(created.id, input({ amount: 60000 }));
       expect(useEntryStore.getState().celebrateTier).toBe('base');
     });

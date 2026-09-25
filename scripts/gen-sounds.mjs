@@ -1,6 +1,7 @@
 // 저장 축하 효과음 5개를 합성한다 (DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영).
 // Node 기본 모듈만 쓴다. 실행: node scripts/gen-sounds.mjs → assets/sounds/*.wav
-// 형식: WAV PCM16 mono 22.05kHz, 각 40KB 이하. 음을 겹쳐 합성 → 전체 앞뒤 5ms 페이드(클릭 제거) → 마지막에 피크 -1 dBFS 로 정규화.
+// 형식: WAV PCM16 mono 22.05kHz, 각 40KB 이하. 음을 겹쳐 합성 → 전체 앞뒤 5ms 페이드(클릭 제거) → 마지막에 피크 -1 dBFS
+// (hit 만 -0.5 dBFS) 로 정규화.
 // 노이즈는 시드 고정 난수라 다시 돌려도 같은 파일이 나온다.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -9,12 +10,17 @@ import { fileURLToPath } from 'node:url';
 const RATE = 22050;
 const NYQUIST = RATE / 2;
 const PEAK = 10 ** (-1 / 20); // -1 dBFS ≈ 0.891
+const PEAK_HIT = 10 ** (-0.5 / 20); // -0.5 dBFS ≈ 0.944 — big 은 한 단계 크게
 const FADE_S = 0.005;
 
 const C5 = 523.25;
 const E5 = 659.25;
 const G5 = 783.99;
 const C6 = 1046.5;
+// 5도 위 화음 (G 장조: 솔·시·레·높은 솔)
+const B5 = 987.77;
+const D6 = 1174.66;
+const G6 = 1567.98;
 
 /** 길이(ms)만큼 빈 버퍼. 샘플 수 = round(RATE × 길이) — 테스트도 같은 식으로 확인한다 */
 function buffer(ms) {
@@ -76,8 +82,14 @@ function noise(buf, { at, dur, amp, tau, seed }) {
   }
 }
 
-/** 앞뒤 5ms 페이드(첫·끝 샘플 0) 후 피크를 -1 dBFS 로. 페이드를 먼저 해야 정규화 뒤 피크가 정확하다 */
-function finish(buf) {
+/** buf 에 따로 만든 파트를 최고 진폭 gain 으로 맞춰 더한다 (파트끼리 크기 비율을 정확히 잡으려고) */
+function mixPart(buf, part, gain) {
+  const max = part.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
+  for (let i = 0; i < buf.length; i += 1) buf[i] += (part[i] / max) * gain;
+}
+
+/** 앞뒤 5ms 페이드(첫·끝 샘플 0) 후 피크를 peak(기본 -1 dBFS)로. 페이드를 먼저 해야 정규화 뒤 피크가 정확하다 */
+function finish(buf, peak = PEAK) {
   const fade = Math.round(FADE_S * RATE);
   const last = buf.length - 1;
   for (let i = 0; i <= fade; i += 1) {
@@ -86,7 +98,7 @@ function finish(buf) {
     buf[last - i] *= g;
   }
   const max = buf.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
-  for (let i = 0; i < buf.length; i += 1) buf[i] = (buf[i] / max) * PEAK;
+  for (let i = 0; i < buf.length; i += 1) buf[i] = (buf[i] / max) * peak;
   return buf;
 }
 
@@ -167,32 +179,53 @@ function fanfare() {
 }
 
 /**
- * 쾅 420ms (big): "쿵" 타격 → 밝은 화음 찍기 → 반짝임 종. 12,000원(mid) 짠보다 한 단계 센 소리.
- * - 0~70ms: 사인 110 → 60 Hz 하강 + 8ms 노이즈. 폰 스피커는 100Hz 아래가 거의 안 나와 2·3배 배음을 얹어 "쿵"이 들리게 한다
- * - 40ms~: C5·E5·G5·C6 사각파 20% 섞은 삼각파 화음, 120ms 안에 거의 사라진다(꼬리만 180ms 까지 남겨 종과 끊기지 않게)
- * - 180ms~: 4~7kHz 반짝임 종 3개가 40ms 간격으로
- * 노이즈를 크게 두면 정규화 피크가 노이즈 한 샘플에 맞춰져 화음이 작아지므로 작게 둔다
+ * 쾅 520ms (big): 묵직한 "쿵" → 밝은 화음 두 번 찍기(두 번째는 5도 위) → 반짝임 종. mid 짠보다 확실히 센 소리.
+ * - 0~110ms 쿵(진폭 1.0): 사인 60 → 40 Hz 하강 + 2·3·4배 배음 + 8ms 노이즈. 폰 스피커는 100Hz 아래가 거의 안 나와
+ *   배음(80~240Hz)이 "쿵"을 들리게 한다
+ * - 40ms 도·미·솔·높은 도 / 200ms 솔·시·레·높은 솔 (진폭 0.8): 사각파 20% 섞은 삼각파, 짧게 찍고 빠진다
+ *   — 햅틱 Heavy 3번째(타격 +220)와 두 번째 화음이 거의 같은 박자
+ * - 300ms~ 반짝임 종 3개 40ms 간격 (진폭 0.8 이하), 520ms 에 끝
+ * 파트마다 따로 합성해 최고 진폭을 맞춘 뒤 더한다(쿵 1.0 · 나머지 0.8) → 전체 피크 -0.5 dBFS
  */
 function hit() {
-  const buf = buffer(420);
-  const drop = (t) => 60 + 50 * Math.exp(-t / 0.02);
-  const thump = { at: 0, dur: 0.07, attack: 0.001, release: 0.015 };
-  tone(buf, { ...thump, freq: drop, amp: 1, tau: 0.04 });
-  tone(buf, { ...thump, freq: (t) => 2 * drop(t), amp: 0.6, tau: 0.03 });
-  tone(buf, { ...thump, freq: (t) => 3 * drop(t), amp: 0.35, tau: 0.02 });
-  noise(buf, { at: 0, dur: 0.008, amp: 0.6, tau: 0.003, seed: 11 });
+  const ms = 520;
+  const drop = (t) => 40 + 20 * Math.exp(-t / 0.035);
+  const thump = buffer(ms);
+  const low = { at: 0, dur: 0.11, attack: 0.001, release: 0.02 };
+  tone(thump, { ...low, freq: drop, amp: 1, tau: 0.07 });
+  tone(thump, { ...low, freq: (t) => 2 * drop(t), amp: 0.7, tau: 0.05 });
+  tone(thump, { ...low, freq: (t) => 3 * drop(t), amp: 0.45, tau: 0.04 });
+  tone(thump, { ...low, freq: (t) => 4 * drop(t), amp: 0.3, tau: 0.03 });
+  noise(thump, { at: 0, dur: 0.008, amp: 0.5, tau: 0.003, seed: 11 });
 
-  const chord = { kind: 'triangle', mix: 0.2, at: 0.04, dur: 0.14, attack: 0.002, tau: 0.045, release: 0.03 };
-  tone(buf, { ...chord, freq: C5, amp: 0.4 });
-  tone(buf, { ...chord, freq: E5, amp: 0.35 });
-  tone(buf, { ...chord, freq: G5, amp: 0.35 });
-  tone(buf, { ...chord, freq: C6, amp: 0.4 });
+  const brass = { kind: 'triangle', mix: 0.2, attack: 0.002, release: 0.03 };
+  const chord1 = buffer(ms);
+  const first = { ...brass, at: 0.04, dur: 0.14, tau: 0.045 };
+  tone(chord1, { ...first, freq: C5, amp: 0.4 });
+  tone(chord1, { ...first, freq: E5, amp: 0.35 });
+  tone(chord1, { ...first, freq: G5, amp: 0.35 });
+  tone(chord1, { ...first, freq: C6, amp: 0.4 });
 
-  const bell = { dur: 0.16, attack: 0.001, release: 0.03 };
-  tone(buf, { ...bell, at: 0.18, freq: 4699, amp: 0.28, tau: 0.06 });
-  tone(buf, { ...bell, at: 0.22, freq: 5588, amp: 0.22, tau: 0.05 });
-  tone(buf, { ...bell, at: 0.26, freq: 6645, amp: 0.18, tau: 0.04 });
-  return finish(buf);
+  const chord2 = buffer(ms);
+  const second = { ...brass, at: 0.2, dur: 0.16, tau: 0.055 };
+  tone(chord2, { ...second, freq: G5, amp: 0.4 });
+  tone(chord2, { ...second, freq: B5, amp: 0.35 });
+  tone(chord2, { ...second, freq: D6, amp: 0.35 });
+  tone(chord2, { ...second, freq: G6, amp: 0.4 });
+
+  const sparkle = buffer(ms);
+  const bell = { dur: 0.14, attack: 0.001, release: 0.03 };
+  tone(sparkle, { ...bell, at: 0.3, freq: 4699, amp: 0.28, tau: 0.06 });
+  tone(sparkle, { ...bell, at: 0.34, freq: 5588, amp: 0.22, tau: 0.05 });
+  tone(sparkle, { ...bell, at: 0.38, freq: 6645, amp: 0.18, tau: 0.04 });
+
+  const buf = buffer(ms);
+  mixPart(buf, thump, 1);
+  mixPart(buf, chord1, 0.8);
+  mixPart(buf, chord2, 0.8);
+  // 반짝임은 4~7kHz 라 폰 스피커에서 귀를 찌르지 않게 0.8 상한 안에서 절반으로
+  mixPart(buf, sparkle, 0.4);
+  return finish(buf, PEAK_HIT);
 }
 
 const SOUNDS = { tap, ding, tada, hit, fanfare };

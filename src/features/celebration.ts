@@ -1,6 +1,6 @@
 /**
  * (M4) 저장 축하 연출 (DESIGN "저장 축하 연출" 절).
- * 금액 구간(base < 1만 ≤ mid < 5만 ≤ big)이 기본 등급이고, 사건(목표·이정표·최고·🔥)이 등급 바닥을 올리거나 층을 더한다.
+ * 금액 구간(base < 4천 ≤ mid < 2만 ≤ big)이 기본 등급이고, 사건(목표·이정표·최고·🔥)이 등급 바닥을 올리거나 층을 더한다.
  * 아래 등급은 위 등급의 부분집합이다. 배너·소리·축하 햅틱은 한 저장에 하나씩만 (목표 > 이정표 > 최고 > 구간).
  */
 import { motion } from '@/src/theme';
@@ -8,10 +8,11 @@ import { formatWon } from '@/src/utils/money';
 
 export type CelebrationTier = 'base' | 'mid' | 'big';
 
-export const MID_TIER_MIN = 10000;
-export const BIG_TIER_MIN = 50000;
+/** 금액 구간 경계 (사용자 결정: 4천원↑ mid · 2만원↑ big) */
+export const MID_TIER_MIN = 4000;
+export const BIG_TIER_MIN = 20000;
 
-/** 저장 금액으로 이펙트 구간을 정한다. 경계값은 위 구간에 넣는다 (10,000원 = mid) */
+/** 저장 금액으로 이펙트 구간을 정한다. 경계값은 위 구간에 넣는다 (4,000원 = mid) */
 export function celebrationTier(amount: number): CelebrationTier {
   if (amount >= BIG_TIER_MIN) return 'big';
   if (amount >= MID_TIER_MIN) return 'mid';
@@ -39,14 +40,16 @@ export type CelebrationBanner = 'goal' | 'milestone' | 'best' | null;
 export type LabelSize = 'heading' | 'title' | 'display';
 
 export type CelebrationLayers = {
-  /** 컨페티 터짐 횟수 */
-  confettiBursts: 0 | 1 | 2;
-  /** 한 번 터질 때 조각 수 (mid 는 한 번이라 많이, big 은 두 번이라 나눠서) */
+  /** 컨페티 터짐 횟수 (mid 1 · big 3) */
+  confettiBursts: 0 | 1 | 3;
+  /** 한 번 터질 때 조각 수 (mid 는 한 번이라 많이, big 은 세 번이라 나눠서) */
   confettiPerBurst: number;
   /** 카드 글로우 겹 수 */
   glowRings: 1 | 2;
-  /** 화면 플래시 (big 전용) */
+  /** 화면 플래시 2번 (big 전용) */
   flash: boolean;
+  /** 홈 영역 좌우 흔들림 (big 전용) */
+  shake: boolean;
   /** 큰 숫자 오버슈트 최고값 */
   numberHit: number;
   /** 목표 층: 바 끝까지 · 카드 틴트 · 컨페티 good 50% */
@@ -69,7 +72,7 @@ export type CelebrationPlan = {
 
 const TIER_RANK: Record<CelebrationTier, number> = { base: 0, mid: 1, big: 2 };
 
-/** 컨페티 조각 수: mid 는 한 번만 터지니 넉넉히(32), big 은 두 번이라 24 씩 (합 48, 50 이하) */
+/** 컨페티 조각 수: mid 는 한 번만 터지니 넉넉히(32), big 은 세 번 24 씩 (합 72) */
 const CONFETTI_MID = 32;
 const CONFETTI_BIG_PER_BURST = 24;
 
@@ -78,9 +81,16 @@ function atLeast(tier: CelebrationTier, floor: CelebrationTier): CelebrationTier
 }
 
 const TIER_LAYERS: Record<CelebrationTier, Omit<CelebrationLayers, 'goal' | 'streak'>> = {
-  base: { confettiBursts: 0, confettiPerBurst: 0, glowRings: 1, flash: false, numberHit: motion.numberHit },
-  mid: { confettiBursts: 1, confettiPerBurst: CONFETTI_MID, glowRings: 2, flash: false, numberHit: motion.numberHit },
-  big: { confettiBursts: 2, confettiPerBurst: CONFETTI_BIG_PER_BURST, glowRings: 2, flash: true, numberHit: motion.numberHitBig },
+  base: { confettiBursts: 0, confettiPerBurst: 0, glowRings: 1, flash: false, shake: false, numberHit: motion.numberHit },
+  mid: { confettiBursts: 1, confettiPerBurst: CONFETTI_MID, glowRings: 2, flash: false, shake: false, numberHit: motion.numberHit },
+  big: {
+    confettiBursts: 3,
+    confettiPerBurst: CONFETTI_BIG_PER_BURST,
+    glowRings: 2,
+    flash: true,
+    shake: true,
+    numberHit: motion.numberHitBig,
+  },
 };
 
 const TIER_SOUND: Record<CelebrationTier, CelebrationSound> = { base: 'tap', mid: 'tada', big: 'hit' };
@@ -128,8 +138,12 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-/** 카드 타격 최고값. 시드(저장 시각)로 1.06~1.08 사이를 고른다 — 매번 똑같이 튀면 질린다 */
-export function cardHitPeak(seed: number): number {
+/**
+ * 카드 타격 최고값. 시드(저장 시각)로 1.06~1.08 사이를 고른다 — 매번 똑같이 튀면 질린다.
+ * big 은 화면 폭 한계인 1.09 고정 (더 크게 튀는 역할은 숫자·라벨·흔들림이 맡는다)
+ */
+export function cardHitPeak(seed: number, tier: CelebrationTier = 'base'): number {
+  if (tier === 'big') return motion.cardHitBig;
   const r = seededRandom(seed)();
   return motion.cardHitMin + (motion.cardHit - motion.cardHitMin) * r;
 }
@@ -148,27 +162,49 @@ export function floatingLabelText(amount: number, tier: CelebrationTier, seed: n
 /** 카드 사각형 (홈 영역 기준 pt). 컨페티·라벨 원점은 가운데, 글로우는 이 사각형 그대로 */
 export type CardRect = { x: number; y: number; w: number; h: number };
 
-/** 구간별 컨페티 조각 수 (합). mid 32 한 번 · big 24 + 24 두 번. 50개를 넘지 않는다 (View 파티클 성능) */
+/** 구간별 컨페티 조각 수 (합). mid 32 한 번 · big 24 × 3번 = 72 (View 파티클 상한) */
 export const CONFETTI_COUNT: Record<CelebrationTier, number> = {
   base: 0,
   mid: TIER_LAYERS.mid.confettiPerBurst * TIER_LAYERS.mid.confettiBursts,
   big: TIER_LAYERS.big.confettiPerBurst * TIER_LAYERS.big.confettiBursts,
 };
 
-/** 한 번의 터짐: 시작 시각(t0 기준 ms) · 재생 시간 · 좌우로 더 벌리는 각도 */
-export type ConfettiBurst = { at: number; ms: number; spread: number };
+/**
+ * 한 번의 터짐: 시작 시각(t0 기준 ms) · 재생 시간 · 좌우로 더 벌리는 각도 ·
+ * big(조각 1.4배 · 초속 1.3배 · 각도 -170°~-10°)
+ */
+export type ConfettiBurst = { at: number; ms: number; spread: number; big: boolean };
 
-/** 터짐 순서. 두 번째는 짧게(700ms) + 좌우 20° 더 벌려 880ms 에 끝난다 */
-export const CONFETTI_BURSTS: readonly ConfettiBurst[] = [
-  { at: motion.hitAt, ms: motion.confettiMs, spread: 0 },
-  { at: motion.confetti2At, ms: motion.confetti2Ms, spread: motion.confetti2Spread },
+/** mid: 타격에 한 번, 800ms (t0+880 끝) */
+export const CONFETTI_BURSTS_MID: readonly ConfettiBurst[] = [
+  { at: motion.hitAt, ms: motion.confettiMs, spread: 0, big: false },
 ];
+
+/**
+ * big: 타격 +0 / +100 / +220 에 세 번. 셋 다 t0+1000(연출 1초 상한)에 함께 끝나도록 늦게 터질수록 짧다
+ * (920 / 820 / 700ms). 세 번째는 좌우로 30° 더 벌려 넓게 퍼진다.
+ */
+export const CONFETTI_BURSTS_BIG: readonly ConfettiBurst[] = motion.confettiBigAt.map((at, i) => ({
+  at,
+  ms: motion.confettiEndAt - at,
+  spread: i === 2 ? motion.confettiBig3Spread : 0,
+  big: true,
+}));
+
+/** 터짐 횟수 → 터짐 순서. 3번이면 big, 그보다 적으면 mid 에서 그만큼 */
+export function confettiSchedule(bursts: number): readonly ConfettiBurst[] {
+  if (bursts >= CONFETTI_BURSTS_BIG.length) return CONFETTI_BURSTS_BIG;
+  return CONFETTI_BURSTS_MID.slice(0, Math.max(0, bursts));
+}
 
 /** 시작점: 카드 가운데에서 좌우 이 폭(pt) 안. 조각이 한 점에 겹쳐 보이지 않을 만큼만 흩는다 */
 const JITTER = 8;
 /** 터지는 방향(도, 오른쪽 0 · 위가 음수). 위쪽 반원에서 양 끝 20도씩 빼 좌우로 조금만 눕는다 */
 const ANGLE_MIN = -160;
 const ANGLE_MAX = -20;
+/** big: 양 끝 10도만 빼 더 옆으로 눕게 터진다 */
+const ANGLE_MIN_BIG = -170;
+const ANGLE_MAX_BIG = -10;
 /** 처음 속도(pt / 재생 시간 전체) 범위 */
 const SPEED_MIN = 160;
 const SPEED_MAX = 320;
@@ -212,19 +248,24 @@ function pickColor(r: number, palette: ConfettiPalette): ConfettiColor {
 
 /**
  * count 개 조각의 궤적. 시드는 저장 시각이라 저장할 때마다 모양이 달라진다.
- * spread(도)만큼 각도 범위를 좌우로 더 벌린다 (big 의 두 번째 터짐).
+ * spread(도)만큼 각도 범위를 좌우로 더 벌린다 (big 의 세 번째 터짐).
+ * big 이면 각도 -170°~-10° · 초속 1.3배 — 최고 높이가 약 82pt 로 mid(60pt)보다 높이 튄다.
  */
 export function makeConfettiPieces(
   count: number,
   seed: number,
   spread = 0,
   palette: ConfettiPalette = 'default',
+  big = false,
 ): ConfettiPiece[] {
   const rand = seededRandom(seed);
   const between = (min: number, max: number) => min + (max - min) * rand();
+  const angleMin = (big ? ANGLE_MIN_BIG : ANGLE_MIN) - spread;
+  const angleMax = (big ? ANGLE_MAX_BIG : ANGLE_MAX) + spread;
+  const speedScale = big ? motion.confettiSpeedBig : 1;
   return Array.from({ length: Math.max(0, Math.floor(count)) }, () => {
-    const angle = (between(ANGLE_MIN - spread, ANGLE_MAX + spread) * Math.PI) / 180;
-    const speed = between(SPEED_MIN, SPEED_MAX);
+    const angle = (between(angleMin, angleMax) * Math.PI) / 180;
+    const speed = between(SPEED_MIN, SPEED_MAX) * speedScale;
     return {
       x0: between(-JITTER, JITTER),
       vx: speed * Math.cos(angle),
@@ -258,4 +299,38 @@ export function confettiFrame(piece: ConfettiPiece, t: number): ConfettiFrame {
     rotate: piece.rot0 + piece.spin * t,
     opacity,
   };
+}
+
+/** 화면 플래시 한 번: 시작 시각(t0 기준 ms) · 최고 투명도 · 올라가는/내려가는 시간 */
+export type FlashPulse = { at: number; peak: number; inMs: number; outMs: number };
+
+/**
+ * big 화면 플래시 2번: 타격에 14%(다크 18%) 120ms → 타격 +220 에 8%(다크 10%) 100ms 여진.
+ * 두 번째는 Heavy 3번째 · 컨페티 3번째와 같은 박자라 "쿵—쿵" 이 눈에도 보인다.
+ */
+export function flashPulses(isDark: boolean): FlashPulse[] {
+  return [
+    {
+      at: motion.hitAt,
+      peak: isDark ? motion.flashOpacityDark : motion.flashOpacity,
+      inMs: motion.flashInMs,
+      outMs: motion.flashOutMs,
+    },
+    {
+      at: motion.flash2At,
+      peak: isDark ? motion.flash2OpacityDark : motion.flash2Opacity,
+      inMs: motion.flash2InMs,
+      outMs: motion.flash2OutMs,
+    },
+  ];
+}
+
+/** 흔들림 한 박: 이 translateX(pt)까지 ms 동안 */
+export type ShakeStep = { to: number; ms: number };
+
+/** big 화면 흔들림: +3 → −3 → +3 → 0, 각 30ms (합 120ms). 마지막은 반드시 제자리(0) */
+export function shakeSteps(): ShakeStep[] {
+  const { amplitude, ms } = motion.shake;
+  const beat = ms / 4;
+  return [amplitude, -amplitude, amplitude, 0].map((to) => ({ to, ms: beat }));
 }

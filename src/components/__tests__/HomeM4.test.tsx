@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
+import { withSequence } from 'react-native-reanimated';
 
 import HomeScreen from '@/app/(tabs)/index';
 import {
@@ -20,6 +21,18 @@ import { useSettingsStore } from '@/src/store/settingsStore';
 import { motion } from '@/src/theme';
 import { addDays, addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
 import { setHapticsEnabled } from '@/src/utils/haptics';
+
+// 대역의 withSequence 는 0 만 돌려줘 걸린 값을 볼 수 없으므로, 받은 인자(= withTiming 목표값)를 기록하게 감싼다 (흔들림 확인)
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual('react-native-reanimated/mock'),
+  withSequence: jest.fn(() => 0),
+}));
+
+/** 홈 영역 흔들림(+3 → −3 → +3 → 0)이 걸린 횟수 */
+function shakes(): number {
+  return (jest.mocked(withSequence).mock.calls as unknown[][]).filter((args) => args.join(',') === '3,-3,3,0')
+    .length;
+}
 
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
@@ -118,6 +131,7 @@ function resetAll() {
   jest.mocked(Haptics.notificationAsync).mockClear();
   jest.mocked(Haptics.selectionAsync).mockClear();
   for (const p of mockPlayers) p.play.mockClear();
+  jest.mocked(withSequence).mockClear();
 }
 
 let sheetOnDismiss: (() => void) | null = null;
@@ -146,9 +160,9 @@ async function sheetDismissed() {
   });
 }
 
-/** t0 이후 목표 피날레(t0+480)까지 */
+/** t0 이후 big·목표 피날레(Success, t0+500)까지 */
 async function waitCelebration() {
-  await wait(motion.goalSuccessAt + 100);
+  await wait(motion.finaleAt + 100);
 }
 
 /** 지금까지 울린 햅틱을 순서대로 (impact 는 세기, Success 는 'success', selection 은 'selection') */
@@ -216,43 +230,47 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(soundsPlayed()).toEqual([]);
   });
 
-  it('9,999원(base): t0 에 글로우·라벨, 타격에 Medium 한 번 + tap, 컨페티 없음', async () => {
+  it('3,999원(base): t0 에 글로우·라벨, 타격에 Medium 한 번 + tap, 컨페티 없음', async () => {
     await render(<HomeScreen />);
-    await saveViaSheet('9999', '간식');
+    await saveViaSheet('3999', '간식');
     await sheetDismissed();
     expect(screen.getByText('간식')).toBeOnTheScreen();
-    expect(screen.getByTestId('floating-label')).toHaveTextContent(/^\+9,999원/);
+    expect(screen.getByTestId('floating-label')).toHaveTextContent(/^\+3,999원/);
     expect(screen.queryByTestId('confetti')).toBeNull();
     await waitCelebration();
     expect(hapticsFired()).toEqual(['selection', 'medium']);
     expect(soundsPlayed()).toEqual(['tap']);
   });
 
-  it('10,000원(mid): Medium → Heavy + tada + 컨페티 32개', async () => {
+  it('4,000원(mid): Medium → Heavy + tada + 컨페티 32개, 흔들림·플래시 없음', async () => {
     await render(<HomeScreen />);
-    await saveViaSheet('10000', '택시');
+    await saveViaSheet('4000', '택시');
     await sheetDismissed();
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(32);
+    expect(screen.queryByTestId('screen-flash')).toBeNull();
+    expect(shakes()).toBe(0);
     await waitCelebration();
     expect(hapticsFired()).toEqual(['selection', 'medium', 'heavy']);
     expect(soundsPlayed()).toEqual(['tada']);
   });
 
-  it('50,000원(big): Heavy 3연타 + hit + 컨페티 48개 + 화면 플래시 + "🔥" 라벨', async () => {
+  it('20,000원(big): Heavy 3연타 + Success + hit + 컨페티 72개 + 화면 플래시 + 흔들림 + display "🔥" 라벨', async () => {
     await render(<HomeScreen />);
-    await saveViaSheet('50000', '운동화');
+    await saveViaSheet('20000', '운동화');
     await sheetDismissed();
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(72);
     expect(screen.getByTestId('screen-flash')).toBeOnTheScreen();
-    expect(screen.getByTestId('floating-label')).toHaveTextContent('+50,000원 🔥');
+    expect(screen.getByTestId('floating-label')).toHaveTextContent('+20,000원 🔥');
+    expect(screen.getByTestId('floating-label')).toHaveStyle({ fontSize: 36 });
+    expect(shakes()).toBe(1);
     await waitCelebration();
-    expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy']);
+    expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy', 'success']);
     expect(soundsPlayed()).toEqual(['hit']);
   });
 
   it('onDismiss 가 안 와도 안전 타이머(iOS 600ms · Android 400ms)로 t0 가 온다', async () => {
     await render(<HomeScreen />);
-    await saveViaSheet('10000', '택시');
+    await saveViaSheet('4000', '택시');
     expect(screen.queryByTestId('confetti')).toBeNull();
     await wait(motion.t0FallbackMs + 50);
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(32);
@@ -264,7 +282,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     await sheetDismissed();
     const layer = screen.getByTestId('celebration-layer');
     expect(layer.props.pointerEvents).toBe('none');
-    expect(within(layer).getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(within(layer).getAllByTestId('confetti-piece')).toHaveLength(72);
     expect(layer).toHaveStyle({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 });
     const inScroll = (el: typeof layer) => {
       for (let node = el.parent; node; node = node.parent) {
@@ -285,11 +303,11 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
   it('목표 달성: 금액이 작아도 big 연출 + 목표 햅틱(Heavy 3연타 → Success) + fanfare 하나 + 배너 하나', async () => {
     setSetting(SETTING_KEYS.monthlyGoal, '3000');
     await render(<HomeScreen />);
-    await saveViaSheet('4500', '커피');
+    await saveViaSheet('3500', '커피');
     await sheetDismissed();
     expect(screen.getByText('이번 달 목표 달성 🎉')).toBeOnTheScreen();
     expect(screen.getAllByTestId('record-banner')).toHaveLength(1);
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(72);
     await waitCelebration();
     expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy', 'success']);
     expect(soundsPlayed()).toEqual(['fanfare']);
@@ -302,7 +320,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     await sheetDismissed();
     expect(screen.getByText('누적 10만원 돌파 🎉')).toBeOnTheScreen();
     expect(getSetting(SETTING_KEYS.milestoneReached)).toBe('100000');
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(72);
     await waitCelebration();
     expect(soundsPlayed()).toEqual(['ding']);
   });
@@ -313,7 +331,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     await render(<HomeScreen />);
     await saveViaSheet('50000', '운동화');
     await sheetDismissed();
-    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(48);
+    expect(screen.getAllByTestId('confetti-piece')).toHaveLength(72);
     await waitCelebration();
     expect(hapticsFired()).toEqual([]);
     expect(soundsPlayed()).toEqual([]);
@@ -358,9 +376,9 @@ describe('홈 화면 — 저장 연출 박자 경계 (M4)', () => {
 
   it('onDismiss 뒤 안전 타이머 시각이 지나도 햅틱·소리·tick 은 한 번뿐이다', async () => {
     await render(<HomeScreen />);
-    await saveViaSheet('9999', '간식');
+    await saveViaSheet('3999', '간식');
     await sheetDismissed();
-    await advance(motion.t0FallbackMs + motion.goalSuccessAt + 100);
+    await advance(motion.t0FallbackMs + motion.finaleAt + 100);
     expect(hapticsFired()).toEqual(['selection', 'medium']);
     expect(soundsPlayed()).toEqual(['tap']);
     expect(useEntryStore.getState().celebrateTick).toBe(1);
@@ -373,7 +391,7 @@ describe('홈 화면 — 저장 연출 박자 경계 (M4)', () => {
     // 타격(첫 Heavy)까지만 흘려 보내고, 둘째 Heavy(+90) 전에 다음 저장
     await advance(motion.hitAt);
     expect(hapticsFired()).toEqual(['selection', 'heavy']);
-    await saveViaSheet('9999', '간식');
+    await saveViaSheet('3999', '간식');
     await sheetDismissed();
     await advance(1000);
     expect(hapticsFired()).toEqual(['selection', 'heavy', 'selection', 'medium']);
@@ -392,7 +410,7 @@ describe('홈 화면 — 저장 연출 박자 경계 (M4)', () => {
     await saveViaSheet('4500', '커피');
     expect(alert).toHaveBeenCalledWith('저장 실패', '잠시 후 다시 시도해 주세요.');
     expect(screen.getByTestId('entry-form-modal').props.visible).toBe(true);
-    await advance(motion.t0FallbackMs + motion.goalSuccessAt + 100);
+    await advance(motion.t0FallbackMs + motion.finaleAt + 100);
     expect(screen.queryByTestId('celebration-layer')).toBeNull();
     expect(useEntryStore.getState().celebrateTick).toBe(0);
     expect(soundsPlayed()).toEqual([]);

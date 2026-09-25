@@ -38,7 +38,7 @@ describe('축하 햅틱 패턴 (M4)', () => {
   });
   afterEach(() => jest.useRealTimers());
 
-  it('박자표: base Medium · mid Medium→Heavy 80 · big Heavy 0/90/220 · goal big + Success 400(t0+480)', () => {
+  it('박자표: base Medium · mid Medium→Heavy 80 · big Heavy 0/90/220 + Success 420(t0+500) · goal 은 big 과 같다', () => {
     const beats = (p: keyof typeof HAPTIC_PATTERNS) => HAPTIC_PATTERNS[p].map((s) => [s.at, s.kind]);
     expect(beats('base')).toEqual([[0, 'medium']]);
     expect(beats('mid')).toEqual([
@@ -49,8 +49,10 @@ describe('축하 햅틱 패턴 (M4)', () => {
       [0, 'heavy'],
       [90, 'heavy'],
       [220, 'heavy'],
+      [420, 'success'],
     ]);
-    expect(beats('goal')).toEqual([...beats('big'), [400, 'success']]);
+    // Success 가 두 번 울리지 않게 목표는 big 과 같은 박자 (목표는 소리·배너·틴트로 구분)
+    expect(beats('goal')).toEqual(beats('big'));
   });
 
   it('mid: 바로 Medium, 80ms 뒤 Heavy', () => {
@@ -60,14 +62,22 @@ describe('축하 햅틱 패턴 (M4)', () => {
     expect(fired()).toEqual(['medium', 'heavy']);
   });
 
-  it('goal: Heavy 3연타 뒤 Success 피날레 — Success 는 impact 와 같은 박자에 겹치지 않는다', () => {
-    playCelebrationHaptic('goal');
+  it('big: Heavy 3연타(0/90/220) 뒤 420 에 Success — 4번, Success 는 impact 와 같은 박자에 겹치지 않는다', () => {
+    playCelebrationHaptic('big');
     jest.advanceTimersByTime(220);
     expect(fired()).toEqual(['heavy', 'heavy', 'heavy']);
-    jest.advanceTimersByTime(180);
+    jest.advanceTimersByTime(199);
+    expect(fired()).toEqual(['heavy', 'heavy', 'heavy']);
+    jest.advanceTimersByTime(1);
     expect(fired()).toEqual(['heavy', 'heavy', 'heavy', 'success']);
-    const successAt = HAPTIC_PATTERNS.goal.find((s) => s.kind === 'success')?.at;
-    expect(HAPTIC_PATTERNS.goal.filter((s) => s.at === successAt)).toHaveLength(1);
+    const successAt = HAPTIC_PATTERNS.big.find((s) => s.kind === 'success')?.at;
+    expect(HAPTIC_PATTERNS.big.filter((s) => s.at === successAt)).toHaveLength(1);
+  });
+
+  it('goal: big 과 같은 4박, Success 는 한 번뿐', () => {
+    playCelebrationHaptic('goal');
+    jest.advanceTimersByTime(1000);
+    expect(fired()).toEqual(['heavy', 'heavy', 'heavy', 'success']);
   });
 
   it('돌려받은 함수로 남은 박자를 끊는다 (연속 저장)', () => {

@@ -20,6 +20,8 @@ type Props = {
   size: LabelSize;
   /** 카드 사각형. 가운데에서 떠오른다. 아직 못 쟀으면 화면 위쪽 가운데 */
   rect: CardRect | null;
+  /** big: 더 높이(60pt)·더 오래(880ms, t0+1000 끝)·더 크게(0.5 → 1.4 → 1) 튄다 */
+  big?: boolean;
   reduceMotion?: boolean;
 };
 
@@ -27,24 +29,29 @@ type Props = {
  * (M4) 저장 금액이 카드 가운데에서 톡 튀어 위로 떠오르며 사라지는 라벨.
  * t0+120 시작, 700ms: 위로 40pt(Easing.out cubic) · 크기 0.6 → 1.3 → 1(springHit → springSettle) ·
  * 투명도 0 → 1(80ms) → 유지 → 마지막 250ms 에 0. 마운트할 때 한 번 재생한다.
+ * big 은 60pt · 880ms · 0.5 → 1.4 → 1.
  */
-export function FloatingLabel({ text, size, rect, reduceMotion = false }: Props) {
+export function FloatingLabel({ text, size, rect, big = false, reduceMotion = false }: Props) {
   const { colors, type, sp, motion } = useTheme();
+  const from = big ? motion.labelFromBig : motion.labelFrom;
+  const peak = big ? motion.labelHitBig : motion.labelHit;
+  const riseTo = big ? motion.floatRiseBig : motion.floatRise;
+  const duration = big ? motion.labelMsBig : motion.labelMs;
   const rise = useSharedValue(0);
-  const scale = useSharedValue<number>(motion.labelFrom);
+  const scale = useSharedValue<number>(from);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     const at = motion.labelAt;
-    const hold = motion.labelMs - motion.labelFadeInMs - motion.labelFadeOutMs;
+    const hold = duration - motion.labelFadeInMs - motion.labelFadeOutMs;
     rise.value = withDelay(
       at,
-      withTiming(-motion.floatRise, { duration: motion.labelMs, easing: Easing.out(Easing.cubic) }),
+      withTiming(-riseTo, { duration, easing: Easing.out(Easing.cubic) }),
     );
     scale.value = withDelay(
       at,
       withSequence(
-        withSpring(motion.labelHit, { ...motion.springHit, overshootClamping: true }),
+        withSpring(peak, { ...motion.springHit, overshootClamping: true }),
         withSpring(1, motion.springSettle),
       ),
     );
@@ -56,7 +63,7 @@ export function FloatingLabel({ text, size, rect, reduceMotion = false }: Props)
         withTiming(0, { duration: motion.labelFadeOutMs }),
       ),
     );
-  }, [rise, scale, opacity, motion]);
+  }, [rise, scale, opacity, motion, peak, riseTo, duration]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

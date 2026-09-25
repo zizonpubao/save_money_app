@@ -24,10 +24,12 @@ const FIRST_OPEN_COUNT_UP_MS = 800;
 /** (M4) 저장 한 번의 카드 타격. runId 가 커질 때마다 한 번 재생한다 */
 export type CardHit = {
   runId: number;
-  /** 카드 타격 최고값 (시드로 1.06~1.08) */
+  /** 카드 타격 최고값 (시드로 1.06~1.08, big 1.09) */
   cardHit: number;
-  /** 큰 숫자 오버슈트 최고값 (1.15, big 1.2) */
+  /** 큰 숫자 오버슈트 최고값 (1.15, big 1.25) */
   numberHit: number;
+  /** 카드·숫자가 돌아오는 스프링. 없으면 springSettle (big 은 damping 을 낮춘 springSettleBig) */
+  settle?: { damping: number; stiffness: number };
 };
 
 type Props = {
@@ -88,6 +90,7 @@ export function SummaryCard({
   const seenHit = useRef(hitRunId);
   const cardHit = hit?.cardHit ?? motion.cardHit;
   const numberHit = hit?.numberHit ?? motion.numberHit;
+  const settle = hit?.settle ?? motion.springSettle;
   // 카운트업·목표 바 지연은 저장 연출(runId 가 바뀐 렌더)에서만 준다. 삭제·수정·포커스 재조회로 값만 바뀌면 바로 움직인다.
   // 값이 다시 바뀔 때까지 결정을 유지해야, 연출 도중 다른 이유로 다시 그려져도 지연 중인 애니메이션을 새로 걸지 않는다
   const [timing, setTiming] = useState({ runId: hitRunId, monthTotal, goal, onHit: false });
@@ -108,17 +111,17 @@ export function SummaryCard({
     scale.value = withSequence(
       withTiming(motion.shrink, { duration: motion.hitAt, easing: Easing.out(Easing.quad) }),
       withTiming(cardHit, { duration: motion.cardHitMs, easing: Easing.out(Easing.cubic) }),
-      withSpring(1, motion.springSettle),
+      withSpring(1, settle),
     );
     // 오르는 스프링은 최고값에서 끊고(overshootClamping) 돌아오는 스프링이 출렁임을 맡는다 — 전체가 ~900ms 안에 멈춘다
     numberScale.value = withDelay(
       motion.hitAt,
       withSequence(
         withSpring(numberHit, { ...motion.springHit, overshootClamping: true }),
-        withSpring(1, motion.springSettle),
+        withSpring(1, settle),
       ),
     );
-  }, [hitRunId, cardHit, numberHit, reduceMotion, scale, numberScale, motion]);
+  }, [hitRunId, cardHit, numberHit, settle, reduceMotion, scale, numberScale, motion]);
 
   // 목표 달성 틴트: 타격과 함께 번졌다가 천천히 빠진다 (t0+80 → 880)
   useEffect(() => {

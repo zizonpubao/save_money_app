@@ -37,10 +37,14 @@ export type HapticStep = { at: number; kind: HapticKind };
 
 /**
  * (M4 축하 연출) 패턴별 박자. at 은 타격(t0 + 80) 기준 ms.
- * - base: Medium 한 번 · mid: Medium → Heavy(80) · big: Heavy 3연타 0/90/220 ("쿵쿵—쿵")
- * - goal: big 3연타 + t0+480 Success 피날레 (impact 와 같은 박자에 겹치지 않는다)
+ * - base: Medium 한 번 · mid: Medium → Heavy(80)
+ * - big: Heavy 3연타 0/90/220 ("쿵쿵—쿵") + 420 Success 피날레 (마지막 Heavy 와 200ms 떨어져 겹치지 않는다)
+ * - goal: big 과 같다 (목표는 소리·배너·틴트로 구분한다 — Success 가 두 번 울리지 않게)
  */
-const BIG_STEPS: HapticStep[] = motion.hapticBigAt.map((at) => ({ at, kind: 'heavy' }));
+const BIG_STEPS: HapticStep[] = [
+  ...motion.hapticBigAt.map((at): HapticStep => ({ at, kind: 'heavy' })),
+  { at: motion.finaleAt - motion.hitAt, kind: 'success' },
+];
 
 export const HAPTIC_PATTERNS: Record<HapticPattern, readonly HapticStep[]> = {
   base: [{ at: 0, kind: 'medium' }],
@@ -49,7 +53,7 @@ export const HAPTIC_PATTERNS: Record<HapticPattern, readonly HapticStep[]> = {
     { at: motion.hapticMidAt, kind: 'heavy' },
   ],
   big: BIG_STEPS,
-  goal: [...BIG_STEPS, { at: motion.goalSuccessAt - motion.hitAt, kind: 'success' }],
+  goal: BIG_STEPS,
 };
 
 /**

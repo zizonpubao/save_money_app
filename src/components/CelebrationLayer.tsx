@@ -33,7 +33,8 @@ type Props = {
 /**
  * (M4) 저장 축하 오버레이. 홈 루트 전체를 덮고(pointerEvents none, FAB 위) 한 runId 로
  * 플래시 · 글로우 1~2겹 · 컨페티 · 플로팅 라벨을 조립한다. 모든 조각은 key 에 runId 를 넣어
- * 연달아 저장하면 이전 연출을 버리고 처음부터 다시 마운트한다. 타격 후 ~900ms 뒤 통째로 걷는다.
+ * 연달아 저장하면 이전 연출을 버리고 처음부터 다시 마운트한다. t0+1000 에 통째로 걷는다.
+ * (big 의 화면 흔들림은 홈 영역 자체를 움직여야 해서 app/(tabs)/index.tsx 가 맡는다)
  * 마운트 시점의 run 은 지난 연출이라 재생하지 않는다 (탭을 다시 그렸다고 되살아나지 않게).
  */
 export function CelebrationLayer({ run, rect, reduceMotion = false }: Props) {
@@ -72,6 +73,7 @@ export function CelebrationLayer({ run, rect, reduceMotion = false }: Props) {
         text={floatingLabelText(run.amount, plan.tier, run.seed)}
         size={plan.label}
         rect={rect}
+        big={plan.tier === 'big'}
       />
     </View>
   );

@@ -1,6 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { CelebrationLayer, type CelebrationRun } from '@/src/components/CelebrationLayer';
 import { DailyLine } from '@/src/components/DailyLine';
@@ -17,7 +25,12 @@ import { StatChip } from '@/src/components/StatChip';
 import { StreakChip } from '@/src/components/StreakChip';
 import { SummaryCard, type CardHit } from '@/src/components/SummaryCard';
 import type { Entry, EntryInput } from '@/src/db';
-import { buildCelebrationPlan, cardHitPeak, type CardRect } from '@/src/features/celebration';
+import {
+  buildCelebrationPlan,
+  cardHitPeak,
+  shakeSteps,
+  type CardRect,
+} from '@/src/features/celebration';
 import { useCelebrationSound } from '@/src/features/useCelebrationSound';
 import { useEntryList } from '@/src/features/useEntryList';
 import { useHomeCard } from '@/src/features/useHomeCard';
@@ -54,6 +67,9 @@ export default function HomeScreen() {
   const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelHaptic = useRef<(() => void) | null>(null);
+  // (big) 타격 순간 홈 영역 좌우 흔들림. 오버레이(컨페티·라벨)는 흔들지 않아 화면이 "맞은" 느낌만 준다
+  const shakeX = useSharedValue(0);
+  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
 
   // 카드는 스크롤과 함께 움직이므로 배치가 바뀔 때와 t0 에 다시 잰다.
   // 시트가 떠 있는 동안에는 뒤 화면이 줄어들어 있어서, 시트가 다 내려간 뒤에 재야 글로우가 카드에 맞는다
@@ -108,17 +124,34 @@ export default function HomeScreen() {
       streak: s.streak > streakBefore,
     });
     setRun({ runId: s.celebrateTick, plan, amount: job.amount, seed: s.celebratedAt });
+    // 연속 저장이면 이전 흔들림을 끊고 제자리에서 다시
+    // (콜백 안이라 React Compiler 규칙에 맞게 .value 대입 대신 set)
+    cancelAnimation(shakeX);
+    shakeX.set(0);
+    if (plan.layers.shake && !reduceMotion) {
+      shakeX.set(
+        withDelay(
+          motion.hitAt,
+          withSequence(...shakeSteps().map((step) => withTiming(step.to, { duration: step.ms }))),
+        ),
+      );
+    }
     hitTimer.current = setTimeout(() => {
       hitTimer.current = null;
       cancelHaptic.current = playCelebrationHaptic(plan.haptics);
       playSound(plan.sound);
     }, motion.hitAt);
-  }, [measureCardRect, playSound, stopTimers]);
+  }, [measureCardRect, playSound, stopTimers, reduceMotion, shakeX]);
 
   const cardHit = useMemo<CardHit | null>(
     () =>
       run
-        ? { runId: run.runId, cardHit: cardHitPeak(run.seed), numberHit: run.plan.layers.numberHit }
+        ? {
+            runId: run.runId,
+            cardHit: cardHitPeak(run.seed, run.plan.tier),
+            numberHit: run.plan.layers.numberHit,
+            settle: run.plan.tier === 'big' ? motion.springSettleBig : motion.springSettle,
+          }
         : null,
     [run],
   );
@@ -153,134 +186,136 @@ export default function HomeScreen() {
 
   return (
     <Screen style={styles.noPadding}>
-      <View ref={rootRef} style={styles.fill} collapsable={false}>
-        <SectionList
-          sections={list.sections}
-          keyExtractor={(item) => String(item.id)}
-          stickySectionHeadersEnabled={false}
-          // 아래 여백 = FAB 지름 + FAB 바닥 여백 + 화면 여백 → 마지막 행이 FAB 에 가리지 않는다
-          contentContainerStyle={{ padding: sp.md, paddingBottom: size.fab + sp.lg + sp.md }}
-          ListHeaderComponent={
-            // 구획 사이는 sp.smd 한 가지. 첫 섹션 헤더와의 간격은 헤더 자신의 paddingTop(sp.md)
-            <View style={{ gap: sp.smd }}>
-              {/* (M4) 지난달 회고 카드 — 매달 1~3일에만 맨 위, 닫으면 그달엔 다시 안 뜬다 (DESIGN 홈 규칙) */}
-              {review.message ? <ReviewCard message={review.message} onClose={review.dismiss} /> : null}
-              {/* 축하 오버레이 기준 사각형을 재려고 카드를 감싼다 (오버레이는 스크롤 밖) */}
-              <View ref={cardRef} onLayout={measureCardRect} collapsable={false}>
-                <SummaryCard
-                  todayTotal={list.todayTotal}
-                  monthTotal={list.monthTotal}
-                  hit={cardHit}
+      <Animated.View testID="home-shake" style={[styles.fill, shakeStyle]}>
+        <View ref={rootRef} style={styles.fill} collapsable={false}>
+          <SectionList
+            sections={list.sections}
+            keyExtractor={(item) => String(item.id)}
+            stickySectionHeadersEnabled={false}
+            // 아래 여백 = FAB 지름 + FAB 바닥 여백 + 화면 여백 → 마지막 행이 FAB 에 가리지 않는다
+            contentContainerStyle={{ padding: sp.md, paddingBottom: size.fab + sp.lg + sp.md }}
+            ListHeaderComponent={
+              // 구획 사이는 sp.smd 한 가지. 첫 섹션 헤더와의 간격은 헤더 자신의 paddingTop(sp.md)
+              <View style={{ gap: sp.smd }}>
+                {/* (M4) 지난달 회고 카드 — 매달 1~3일에만 맨 위, 닫으면 그달엔 다시 안 뜬다 (DESIGN 홈 규칙) */}
+                {review.message ? <ReviewCard message={review.message} onClose={review.dismiss} /> : null}
+                {/* 축하 오버레이 기준 사각형을 재려고 카드를 감싼다 (오버레이는 스크롤 밖) */}
+                <View ref={cardRef} onLayout={measureCardRect} collapsable={false}>
+                  <SummaryCard
+                    todayTotal={list.todayTotal}
+                    monthTotal={list.monthTotal}
+                    hit={cardHit}
+                    reduceMotion={reduceMotion}
+                    goal={list.monthlyGoal}
+                    goalReachedTick={list.goalReachedTick}
+                    onGoalPress={() => router.push('/(tabs)/settings')}
+                    ready={card.loaded}
+                    firstOpenTick={card.firstOpenTick}
+                    // DB 를 읽기 전 기본값(0원)으로 만든 문구가 한 프레임 비쳤다 바뀌지 않게, 읽은 뒤에만 그린다
+                    topLine={card.loaded ? <DailyLine text={card.line.text} /> : undefined}
+                  />
+                </View>
+                <RecordBanner
+                  best={list.lastRecord}
+                  goalReached={list.lastGoalReached}
+                  milestone={list.lastMilestone}
+                  celebrateTick={list.celebrateTick}
                   reduceMotion={reduceMotion}
-                  goal={list.monthlyGoal}
-                  goalReachedTick={list.goalReachedTick}
-                  onGoalPress={() => router.push('/(tabs)/settings')}
-                  ready={card.loaded}
-                  firstOpenTick={card.firstOpenTick}
-                  // DB 를 읽기 전 기본값(0원)으로 만든 문구가 한 프레임 비쳤다 바뀌지 않게, 읽은 뒤에만 그린다
-                  topLine={card.loaded ? <DailyLine text={card.line.text} /> : undefined}
+                />
+                {/* 칩 행: 작은 정보를 한 줄에. 🔥 연속 기록일 → 누적 → 이모지 적립(남은 폭). 셋 다 없으면 줄째로 숨긴다 */}
+                {card.streak > 0 || card.totalSum > 0 || card.monthEmojis.length > 0 ? (
+                  <View style={[styles.chipRow, { gap: sp.sm }]}>
+                    <StreakChip
+                      streak={card.streak}
+                      celebrateTick={list.celebrateTick}
+                      reduceMotion={reduceMotion}
+                    />
+                    {card.totalSum > 0 ? (
+                      <StatChip testID="total-chip">{`누적 ${formatWon(card.totalSum)}`}</StatChip>
+                    ) : null}
+                    {card.monthEmojis.length > 0 ? (
+                      <StatChip grow>
+                        <EmojiStrip
+                          items={card.monthEmojis}
+                          celebrateTick={list.celebrateTick}
+                          maxLines={1}
+                          reduceMotion={reduceMotion}
+                        />
+                      </StatChip>
+                    ) : null}
+                  </View>
+                ) : null}
+                {/* 잔디 구획: 제목 없이 요일 헤더만, 보조 카드(안쪽 sp.md·sp.smd) */}
+                <View
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: radius.lg,
+                    paddingHorizontal: sp.md,
+                    paddingVertical: sp.smd,
+                  }}>
+                  <MonthGrass grass={card.grass} />
+                </View>
+              </View>
+            }
+            renderSectionHeader={({ section }) => (
+              <EntrySectionHeader sectionKey={section.key} total={section.total} />
+            )}
+            renderItem={({ item, index, section }) => (
+              <View
+                style={[
+                  index === 0 && { borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md },
+                  index === section.data.length - 1 && {
+                    borderBottomLeftRadius: radius.md,
+                    borderBottomRightRadius: radius.md,
+                  },
+                  styles.rowClip,
+                ]}>
+                <EntryRow
+                  entry={item}
+                  emoji={
+                    (item.categoryId !== null && list.categoryMap.get(item.categoryId)?.emoji) ||
+                    FALLBACK_EMOJI
+                  }
+                  isLast={index === section.data.length - 1}
+                  onPress={openEntry}
+                  onDelete={removeEntry}
                 />
               </View>
-              <RecordBanner
-                best={list.lastRecord}
-                goalReached={list.lastGoalReached}
-                milestone={list.lastMilestone}
-                celebrateTick={list.celebrateTick}
-                reduceMotion={reduceMotion}
-              />
-              {/* 칩 행: 작은 정보를 한 줄에. 🔥 연속 기록일 → 누적 → 이모지 적립(남은 폭). 셋 다 없으면 줄째로 숨긴다 */}
-              {card.streak > 0 || card.totalSum > 0 || card.monthEmojis.length > 0 ? (
-                <View style={[styles.chipRow, { gap: sp.sm }]}>
-                  <StreakChip
-                    streak={card.streak}
-                    celebrateTick={list.celebrateTick}
-                    reduceMotion={reduceMotion}
-                  />
-                  {card.totalSum > 0 ? (
-                    <StatChip testID="total-chip">{`누적 ${formatWon(card.totalSum)}`}</StatChip>
-                  ) : null}
-                  {card.monthEmojis.length > 0 ? (
-                    <StatChip grow>
-                      <EmojiStrip
-                        items={card.monthEmojis}
-                        celebrateTick={list.celebrateTick}
-                        maxLines={1}
-                        reduceMotion={reduceMotion}
-                      />
-                    </StatChip>
-                  ) : null}
-                </View>
-              ) : null}
-              {/* 잔디 구획: 제목 없이 요일 헤더만, 보조 카드(안쪽 sp.md·sp.smd) */}
-              <View
-                style={{
-                  backgroundColor: colors.card,
-                  borderRadius: radius.lg,
-                  paddingHorizontal: sp.md,
-                  paddingVertical: sp.smd,
-                }}>
-                <MonthGrass grass={card.grass} />
+            )}
+            ListEmptyComponent={
+              <View style={[styles.empty, { paddingVertical: sp.xl }]}>
+                <Text style={[type.bodyStrong, { color: colors.text }]}>
+                  이번 달 기록이 없어요
+                </Text>
+                <Text style={[type.note, { color: colors.textMuted, marginTop: sp.xs }]}>
+                  오늘 참은 소비를 + 버튼으로 남겨보세요
+                </Text>
               </View>
-            </View>
-          }
-          renderSectionHeader={({ section }) => (
-            <EntrySectionHeader sectionKey={section.key} total={section.total} />
-          )}
-          renderItem={({ item, index, section }) => (
-            <View
-              style={[
-                index === 0 && { borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md },
-                index === section.data.length - 1 && {
-                  borderBottomLeftRadius: radius.md,
-                  borderBottomRightRadius: radius.md,
-                },
-                styles.rowClip,
-              ]}>
-              <EntryRow
-                entry={item}
-                emoji={
-                  (item.categoryId !== null && list.categoryMap.get(item.categoryId)?.emoji) ||
-                  FALLBACK_EMOJI
-                }
-                isLast={index === section.data.length - 1}
-                onPress={openEntry}
-                onDelete={removeEntry}
-              />
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={[styles.empty, { paddingVertical: sp.xl }]}>
-              <Text style={[type.bodyStrong, { color: colors.text }]}>
-                이번 달 기록이 없어요
-              </Text>
-              <Text style={[type.note, { color: colors.textMuted, marginTop: sp.xs }]}>
-                오늘 참은 소비를 + 버튼으로 남겨보세요
-              </Text>
-            </View>
-          }
-          ListFooterComponent={
-            list.hasMore ? (
-              <Pressable
-                onPress={list.loadMore}
-                accessibilityRole="button"
-                style={({ pressed }) => [
-                  styles.loadMore,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    borderRadius: radius.md,
-                    minHeight: size.touch,
-                    paddingVertical: sp.smd,
-                    marginTop: sp.md,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}>
-                <Text style={[type.label, { color: colors.primary }]}>이전 달 더 보기</Text>
-              </Pressable>
-            ) : null
-          }
-        />
-      </View>
+            }
+            ListFooterComponent={
+              list.hasMore ? (
+                <Pressable
+                  onPress={list.loadMore}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [
+                    styles.loadMore,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      borderRadius: radius.md,
+                      minHeight: size.touch,
+                      paddingVertical: sp.smd,
+                      marginTop: sp.md,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}>
+                  <Text style={[type.label, { color: colors.primary }]}>이전 달 더 보기</Text>
+                </Pressable>
+              ) : null
+            }
+          />
+        </View>
+      </Animated.View>
 
       <Fab onPress={() => setFormVisible(true)} />
 

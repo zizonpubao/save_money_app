@@ -9,8 +9,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import {
-  CONFETTI_BURSTS,
   confettiFrame,
+  confettiSchedule,
   makeConfettiPieces,
   type ConfettiPalette,
   type ConfettiPiece,
@@ -18,7 +18,7 @@ import {
 import { useTheme } from '@/src/theme';
 
 type Props = {
-  /** 터짐 횟수 (0이면 그리지 않는다). 두 번째는 늦게·짧게·넓게 */
+  /** 터짐 횟수 (0이면 그리지 않는다). mid 1번 · big 3번(조각 크게·빠르게, 세 번째는 넓게) */
   bursts: number;
   /** 한 번 터질 때 조각 수 (플랜의 layers.confettiPerBurst) */
   perBurst: number;
@@ -34,8 +34,13 @@ type Props = {
 
 export type ConfettiOrigin = { x: number; y: number };
 
-function Piece({ piece, color, at, ms }: { piece: ConfettiPiece; color: string; at: number; ms: number }) {
+type PieceProps = { piece: ConfettiPiece; color: string; at: number; ms: number; big: boolean };
+
+function Piece({ piece, color, at, ms, big }: PieceProps) {
   const { size } = useTheme();
+  const scale = big ? size.confettiScaleBig : 1;
+  const width = size.confettiWidth * scale;
+  const height = size.confettiHeight * scale;
   const t = useSharedValue(0);
 
   useEffect(() => {
@@ -45,7 +50,7 @@ function Piece({ piece, color, at, ms }: { piece: ConfettiPiece; color: string; 
   const animatedStyle = useAnimatedStyle(() => {
     const f = confettiFrame(piece, t.value);
     return {
-      // 터지기 전(두 번째 터짐 대기 중)에는 가운데에 뭉쳐 보이지 않게 숨긴다
+      // 터지기 전(2·3번째 터짐 대기 중)에는 가운데에 뭉쳐 보이지 않게 숨긴다
       opacity: t.value === 0 ? 0 : f.opacity,
       transform: [{ translateX: f.x }, { translateY: f.y }, { rotate: `${f.rotate}deg` }],
     };
@@ -57,10 +62,10 @@ function Piece({ piece, color, at, ms }: { piece: ConfettiPiece; color: string; 
       style={[
         styles.piece,
         {
-          width: size.confettiWidth,
-          height: size.confettiHeight,
-          marginLeft: -size.confettiWidth / 2,
-          marginTop: -size.confettiHeight / 2,
+          width,
+          height,
+          marginLeft: -width / 2,
+          marginTop: -height / 2,
           backgroundColor: color,
         },
         animatedStyle,
@@ -70,7 +75,7 @@ function Piece({ piece, color, at, ms }: { piece: ConfettiPiece; color: string; 
 }
 
 /**
- * (M4) 저장 컨페티. 마운트하면 origin 점에서 사방으로 터졌다가 떨어지며 사라진다 (t0 기준 80ms 에 첫 터짐).
+ * (M4) 저장 컨페티. 마운트하면 origin 점에서 사방으로 터졌다가 떨어지며 사라진다 (t0 기준 80ms 에 첫 터짐, big 은 180·300 에 더).
  * 언제 걷을지는 부모(CelebrationLayer)가 정한다 — 연출마다 key 로 새로 마운트된다.
  * 스크롤 목록 안에 두면 목록 위쪽 바깥으로 튄 조각이 잘리므로, 화면 전체를 덮는 오버레이로 그린다. 터치는 막지 않는다.
  */
@@ -86,10 +91,10 @@ export function Confetti({
 
   const groups = useMemo(
     () =>
-      CONFETTI_BURSTS.slice(0, Math.max(0, bursts)).map((burst, i) => ({
+      confettiSchedule(bursts).map((burst, i) => ({
         burst,
-        // 두 번째 터짐은 다른 시드로 모양을 바꾼다
-        pieces: makeConfettiPieces(perBurst, seed + i * 7919, burst.spread, palette),
+        // 터짐마다 다른 시드로 모양을 바꾼다
+        pieces: makeConfettiPieces(perBurst, seed + i * 7919, burst.spread, palette, burst.big),
       })),
     [bursts, perBurst, seed, palette],
   );
@@ -108,6 +113,7 @@ export function Confetti({
               color={colorOf[p.color] ?? colors.primary}
               at={burst.at}
               ms={burst.ms}
+              big={burst.big}
             />
           )),
         )}
