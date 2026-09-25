@@ -71,7 +71,7 @@ export function useEntryForm(initial?: EntryInput | null) {
     }));
   }, []);
 
-  /** (M4.5) 금액 프리셋 칩. 값 칩은 금액을 바꾸고 "+1천" 은 지금 금액에 더한다 */
+  /** (M4.5) 금액 프리셋 칩. 누를 때마다 지금 금액에 더한다 */
   const applyPreset = useCallback((preset: AmountPreset) => {
     setValues((v) => ({
       ...v,

@@ -108,38 +108,37 @@ describe('EntryForm (입력 시트)', () => {
   describe('(M4.5) 금액 프리셋 칩', () => {
     beforeEach(() => jest.mocked(Haptics.selectionAsync).mockClear());
 
-    it('금액 칸 아래에 3천 · 4.5천 · 1만 · 2만 · +1천 칩이 있다', async () => {
+    it('금액 칸 아래에 500원 · 1천 · 3천 · 5천 · 1만 칩 다섯 개만 있다 (+1천 칩 없음)', async () => {
       await render(<Harness />);
-      for (const label of ['3천', '4.5천', '1만', '2만', '+1천']) {
+      for (const label of ['500원', '1천', '3천', '5천', '1만']) {
         expect(screen.getByText(label)).toBeOnTheScreen();
       }
+      expect(screen.queryByText('+1천')).toBeNull();
     });
 
-    it('값 칩은 금액을 그 값으로 바꾸고(콤마) selection 햅틱을 낸다', async () => {
-      await render(<Harness />);
-      await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '12000');
-      await fireEvent.press(screen.getByLabelText('금액 4,500원으로'));
-      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('4,500');
-      await fireEvent.press(screen.getByText('2만'));
-      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('20,000');
-      expect(Haptics.selectionAsync).toHaveBeenCalledTimes(2);
-    });
-
-    it('"+1천" 은 지금 금액에 1,000원을 더한다 (빈 칸 → 1,000 → 2,000, 9,500 → 10,500)', async () => {
+    it('칩은 누를 때마다 금액에 더하고(콤마) 매번 selection 햅틱을 낸다: 1천 → 500원 → 1만 ×2 = 21,500', async () => {
       await render(<Harness />);
       await fireEvent.press(screen.getByLabelText('금액에 1,000원 더하기'));
       expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,000');
-      await fireEvent.press(screen.getByText('+1천'));
-      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('2,000');
+      await fireEvent.press(screen.getByText('500원'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,500');
+      await fireEvent.press(screen.getByText('1만'));
+      await fireEvent.press(screen.getByText('1만'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('21,500');
+      expect(Haptics.selectionAsync).toHaveBeenCalledTimes(4);
+    });
+
+    it('직접 친 금액에도 이어서 더한다 (9,500 + 1천 = 10,500)', async () => {
+      await render(<Harness />);
       await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '9500');
-      await fireEvent.press(screen.getByText('+1천'));
+      await fireEvent.press(screen.getByText('1천'));
       expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('10,500');
     });
 
     it('프리셋으로 채운 금액이 저장 값으로 넘어간다', async () => {
       const onSubmit = await renderModal();
       await fireEvent.press(screen.getByText('3천'));
-      await fireEvent.press(screen.getByText('+1천'));
+      await fireEvent.press(screen.getByText('1천'));
       await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '간식');
       await fireEvent.press(screen.getByText('저장'));
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ title: '간식', amount: 4000 }));

@@ -155,23 +155,24 @@ describe('useEntryForm', () => {
   });
 
   describe('(M4.5) 금액 프리셋', () => {
-    const [삼천, , 만원, , 더하기천] = AMOUNT_PRESETS;
+    const [오백, 천, , , 만] = AMOUNT_PRESETS;
 
-    it('값 칩은 지금 금액과 상관없이 그 값으로 바꾸고 콤마를 붙인다', async () => {
+    it('칩은 누를 때마다 금액에 더하고 콤마를 붙인다: 1천 → 500원 → 1만 ×2 = 21,500', async () => {
       const { result } = await setup();
-      await act(() => result.current.setAmountText('4500'));
-      await act(() => result.current.applyPreset(만원!));
-      expect(result.current.values.amountText).toBe('10,000');
-      await act(() => result.current.applyPreset(삼천!));
-      expect(result.current.amount).toBe(3000);
+      await act(() => result.current.applyPreset(천!));
+      expect(result.current.values.amountText).toBe('1,000');
+      await act(() => result.current.applyPreset(오백!));
+      expect(result.current.values.amountText).toBe('1,500');
+      await act(() => result.current.applyPreset(만!));
+      await act(() => result.current.applyPreset(만!));
+      expect(result.current.values.amountText).toBe('21,500');
+      expect(result.current.amount).toBe(21500);
     });
 
-    it('"+1천" 은 빈 칸이면 1,000, 4,500 이면 5,500 으로 더한다', async () => {
+    it('직접 입력한 금액에도 이어서 더한다 (4,500 + 1천 = 5,500)', async () => {
       const { result } = await setup();
-      await act(() => result.current.applyPreset(더하기천!));
-      expect(result.current.values.amountText).toBe('1,000');
       await act(() => result.current.setAmountText('4500'));
-      await act(() => result.current.applyPreset(더하기천!));
+      await act(() => result.current.applyPreset(천!));
       expect(result.current.values.amountText).toBe('5,500');
     });
   });

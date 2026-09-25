@@ -11,7 +11,7 @@ import { numeric, size, useTheme } from '@/src/theme';
 type Props = { onPress: (preset: AmountPreset) => void };
 
 /**
- * (M4.5) 금액 칸 바로 아래 프리셋 칩 한 줄: 3천 · 4.5천 · 1만 · 2만 · +1천.
+ * (M4.5) 금액 칸 바로 아래 프리셋 칩 한 줄: 500원 · 1천 · 3천 · 5천 · 1만. 누를 때마다 금액에 더한다.
  * 모양은 카테고리 칩(선택 안 된 상태)과 같고, 누르는 동작이라 선택 상태가 없다.
  * 키패드가 떠 있어도 첫 탭이 바로 먹도록 keyboardShouldPersistTaps="always".
  */
@@ -26,7 +26,7 @@ export function AmountPresetChips({ onPress }: Props) {
       contentContainerStyle={{ gap: sp.sm }}>
       {AMOUNT_PRESETS.map((preset) => (
         <Pressable
-          key={`${preset.kind}-${preset.value}`}
+          key={preset}
           onPress={() => onPress(preset)}
           accessibilityRole="button"
           accessibilityLabel={presetA11yLabel(preset)}
