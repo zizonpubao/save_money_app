@@ -167,6 +167,8 @@ export function getMaxMonthlyTotal(excludeMonth?: string): number {
 
 /** 카테고리가 없거나 지워진 기록의 이모지 (기록 탭 카테고리 합계의 "미분류" 와 같은 글자) */
 export const UNCATEGORIZED_EMOJI = '📦';
+/** 카테고리가 없거나 지워진 기록의 이름 (기록 탭 카테고리 합계 · CSV) */
+export const UNCATEGORIZED_NAME = '미분류';
 
 /**
  * 그 달 기록의 카테고리 이모지를 등록한 순서(created_at, 같은 초면 id)대로.
@@ -245,6 +247,8 @@ export const SETTING_KEYS = {
   soundEnabled: 'sound_enabled',
   /** (M4) 앱 전체 햅틱 켬/끔 ('1' | '0'). 없으면 켬 */
   hapticsEnabled: 'haptics_enabled',
+  /** 입력 시트 금액 프리셋 칩 5개. JSON 배열 문자열 ('[500,1000,3000,5000,10000]'). 없거나 망가졌으면 기본값 */
+  amountPresets: 'amount_presets',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

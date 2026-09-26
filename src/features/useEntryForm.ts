@@ -1,7 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import type { Category, EntryInput, RecentTitle } from '@/src/db';
-import { applyAmountPreset, type AmountPreset } from '@/src/features/amountPresets';
+import {
+  applyAmountPreset,
+  togglePresetSign as nextPresetSign,
+  type AmountPreset,
+  type PresetSign,
+} from '@/src/features/amountPresets';
 import { today } from '@/src/utils/date';
 import { formatAmountInput, formatNumber, parseWon } from '@/src/utils/money';
 
@@ -29,6 +34,9 @@ function fromInitial(initial?: EntryInput | null): EntryFormValues {
  */
 export function useEntryForm(initial?: EntryInput | null) {
   const [values, setValues] = useState<EntryFormValues>(() => fromInitial(initial));
+  // 프리셋 칩 부호. 폼 값이 아니라 칩 모드라 저장 값(toInput)에는 들어가지 않는다.
+  // 시트가 닫히면(저장 성공 포함) 폼이 언마운트돼 다음에 열 때 + 로 시작한다
+  const [presetSign, setPresetSign] = useState<PresetSign>('+');
 
   const setAmountText = useCallback((text: string) => {
     setValues((v) => ({ ...v, amountText: formatAmountInput(text) }));
@@ -71,16 +79,27 @@ export function useEntryForm(initial?: EntryInput | null) {
     }));
   }, []);
 
-  /** (M4.5) 금액 프리셋 칩. 누를 때마다 지금 금액에 더한다 */
-  const applyPreset = useCallback((preset: AmountPreset) => {
-    setValues((v) => ({
-      ...v,
-      amountText: formatAmountInput(String(applyAmountPreset(parseWon(v.amountText), preset))),
-    }));
+  /** (M4.5) 금액 프리셋 칩. 부호가 + 면 지금 금액에 더하고, − 면 빼되 0 에서 멈춘다 */
+  const applyPreset = useCallback(
+    (preset: AmountPreset) => {
+      setValues((v) => ({
+        ...v,
+        amountText: formatAmountInput(
+          String(applyAmountPreset(parseWon(v.amountText), preset, presetSign)),
+        ),
+      }));
+    },
+    [presetSign],
+  );
+
+  /** 프리셋 칩 맨 앞 부호 칩: + ↔ − */
+  const togglePresetSign = useCallback(() => {
+    setPresetSign(nextPresetSign);
   }, []);
 
   const reset = useCallback((next?: EntryInput | null) => {
     setValues(fromInitial(next));
+    setPresetSign('+');
   }, []);
 
   const amount = parseWon(values.amountText);
@@ -108,6 +127,8 @@ export function useEntryForm(initial?: EntryInput | null) {
     selectCategory,
     applyRecent,
     applyPreset,
+    presetSign,
+    togglePresetSign,
     reset,
     toInput,
   };

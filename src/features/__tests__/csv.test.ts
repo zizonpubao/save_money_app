@@ -39,11 +39,11 @@ describe('buildCsv', () => {
     expect(plain.split('\r\n')[1]).toBe("2026-09-23,'-5,4500,커피,보통 메모,2026-09-23T09:00:00+09:00");
   });
 
-  it('카테고리가 없거나 지워졌으면 빈 칸', () => {
+  it('카테고리가 없거나 지워졌으면 앱 화면과 같이 "미분류"', () => {
     const csv = buildCsv([entry({ categoryId: null }), entry({ categoryId: 99 })], categories);
     const lines = csv.split('\r\n');
-    expect(lines[1]?.split(',')[3]).toBe('');
-    expect(lines[2]?.split(',')[3]).toBe('');
+    expect(lines[1]?.split(',')[3]).toBe('미분류');
+    expect(lines[2]?.split(',')[3]).toBe('미분류');
   });
 
   it('쉼표·큰따옴표·줄바꿈이 든 값은 큰따옴표로 감싸고 안의 따옴표는 두 번', () => {

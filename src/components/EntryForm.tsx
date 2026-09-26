@@ -120,6 +120,11 @@ export function EntryForm({
           </View>
           <View style={{ marginTop: sp.sm }}>
             <AmountPresetChips
+              sign={form.presetSign}
+              onToggleSign={() => {
+                chipTapHaptic();
+                form.togglePresetSign();
+              }}
               onPress={(preset) => {
                 chipTapHaptic();
                 form.applyPreset(preset);

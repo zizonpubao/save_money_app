@@ -5,6 +5,7 @@ import {
   setSetting,
   SETTING_KEYS,
 } from '@/src/db';
+import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
 import { parseFlag, useSettingsStore } from '@/src/store/settingsStore';
 import { isHapticsEnabled, setHapticsEnabled } from '@/src/utils/haptics';
 
@@ -114,5 +115,53 @@ describe('settingsStore — 효과음·햅틱 스위치 (M4)', () => {
     expect(parseFlag('1')).toBe(true);
     expect(parseFlag('yes')).toBe(true);
     expect(parseFlag('0')).toBe(false);
+  });
+});
+
+describe('settingsStore — 빠른 금액 버튼 (amount_presets)', () => {
+  beforeEach(() => {
+    resetDatabaseConnection();
+    initDatabase();
+    useSettingsStore.setState({ amountPresets: [...AMOUNT_PRESETS], loaded: false });
+  });
+
+  afterAll(() => {
+    resetDatabaseConnection();
+  });
+
+  it('키가 없으면 기본 5개', () => {
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().amountPresets).toEqual([500, 1000, 3000, 5000, 10000]);
+  });
+
+  it('DB 값이 망가져 있으면 기본값으로 읽는다', () => {
+    setSetting(SETTING_KEYS.amountPresets, '[500,');
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().amountPresets).toEqual([...AMOUNT_PRESETS]);
+  });
+
+  it('setAmountPresets 는 순서 그대로 DB 에 JSON 으로 적고, 다시 load 해도 같다', () => {
+    useSettingsStore.getState().setAmountPresets([10000, 100, 2500, 700, 1000000]);
+    expect(useSettingsStore.getState().amountPresets).toEqual([10000, 100, 2500, 700, 1000000]);
+    expect(getSetting(SETTING_KEYS.amountPresets)).toBe('[10000,100,2500,700,1000000]');
+    useSettingsStore.setState({ amountPresets: [...AMOUNT_PRESETS] });
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().amountPresets).toEqual([10000, 100, 2500, 700, 1000000]);
+  });
+
+  it('규칙에 어긋나면 던지고 아무것도 바꾸지 않는다', () => {
+    useSettingsStore.getState().setAmountPresets([100, 200, 300, 400, 500]);
+    expect(() => useSettingsStore.getState().setAmountPresets([100, 200, 300, 400])).toThrow();
+    expect(() => useSettingsStore.getState().setAmountPresets([150, 200, 300, 400, 500])).toThrow();
+    expect(() => useSettingsStore.getState().setAmountPresets([100, 100, 300, 400, 500])).toThrow();
+    expect(useSettingsStore.getState().amountPresets).toEqual([100, 200, 300, 400, 500]);
+    expect(getSetting(SETTING_KEYS.amountPresets)).toBe('[100,200,300,400,500]');
+  });
+
+  it('resetAmountPresets 는 DB 키를 지우고 기본값으로 돌린다', () => {
+    useSettingsStore.getState().setAmountPresets([100, 200, 300, 400, 500]);
+    useSettingsStore.getState().resetAmountPresets();
+    expect(useSettingsStore.getState().amountPresets).toEqual([...AMOUNT_PRESETS]);
+    expect(getSetting(SETTING_KEYS.amountPresets)).toBeNull();
   });
 });

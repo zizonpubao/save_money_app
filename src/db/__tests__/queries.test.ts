@@ -505,6 +505,7 @@ describe('queries', () => {
         reviewDismissedMonth: 'review_dismissed_month',
         soundEnabled: 'sound_enabled',
         hapticsEnabled: 'haptics_enabled',
+        amountPresets: 'amount_presets',
       });
     });
   });

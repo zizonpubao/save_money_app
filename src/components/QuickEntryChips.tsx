@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import type { Category, RecentTitle } from '@/src/db';
-import { toCategoryMap } from '@/src/store/categoryStore';
+import { entryEmoji, toCategoryMap } from '@/src/store/categoryStore';
 import { size, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
@@ -29,8 +29,7 @@ export function QuickEntryChips({ items, categories, onPress }: Props) {
       keyboardShouldPersistTaps="always"
       contentContainerStyle={{ gap: sp.sm }}>
       {items.map((item) => {
-        const emoji = item.categoryId !== null ? categoryMap.get(item.categoryId)?.emoji : undefined;
-        const label = emoji ? `${emoji} ${item.title}` : item.title;
+        const label = `${entryEmoji(item.categoryId, categoryMap)} ${item.title}`;
         return (
           <Pressable
             key={item.title}

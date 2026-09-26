@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 
 import { deleteSetting, getSetting, setSetting, SETTING_KEYS } from '@/src/db';
+import {
+  AMOUNT_PRESETS,
+  parseAmountPresets,
+  serializeAmountPresets,
+  validatePresets,
+  type AmountPreset,
+} from '@/src/features/amountPresets';
 import { isValidGoal, parseGoal } from '@/src/features/goal';
 import { setHapticsEnabled } from '@/src/utils/haptics';
 
@@ -11,6 +18,8 @@ type SettingsState = {
   soundEnabled: boolean;
   /** (M4) 앱 전체 햅틱. 기본 켬 */
   hapticsEnabled: boolean;
+  /** 입력 시트 금액 프리셋 칩 5개. 사용자가 넣은 순서 그대로 */
+  amountPresets: AmountPreset[];
   loaded: boolean;
   load: () => void;
   /** 목표를 저장한다. 1원 이상 정수가 아니면 던진다 (화면이 저장 버튼으로 먼저 막는다). */
@@ -18,6 +27,10 @@ type SettingsState = {
   clearGoal: () => void;
   setSoundEnabled: (enabled: boolean) => void;
   setHapticsEnabled: (enabled: boolean) => void;
+  /** 프리셋을 저장한다. validatePresets 를 통과하지 못하면 던진다 (화면이 저장 버튼으로 먼저 막는다) */
+  setAmountPresets: (values: readonly AmountPreset[]) => void;
+  /** 저장한 값을 지우고 기본 프리셋으로 돌린다 */
+  resetAmountPresets: () => void;
 };
 
 /** 켬/끔 설정 값. '0' 만 끔이고, 없거나 다른 값이면 기본값(켬)으로 본다 */
@@ -39,6 +52,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   monthlyGoal: null,
   soundEnabled: true,
   hapticsEnabled: true,
+  amountPresets: [...AMOUNT_PRESETS],
   loaded: false,
 
   load: () => {
@@ -48,6 +62,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       monthlyGoal: parseGoal(getSetting(SETTING_KEYS.monthlyGoal)),
       soundEnabled: parseFlag(getSetting(SETTING_KEYS.soundEnabled)),
       hapticsEnabled,
+      amountPresets: parseAmountPresets(getSetting(SETTING_KEYS.amountPresets)),
       loaded: true,
     });
   },
@@ -76,5 +91,17 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     setSetting(SETTING_KEYS.hapticsEnabled, flagValue(enabled));
     setHapticsEnabled(enabled);
     set({ hapticsEnabled: enabled });
+  },
+
+  setAmountPresets: (values) => {
+    const { ok, errors } = validatePresets(values);
+    if (!ok) throw new Error(errors.join(' / '));
+    setSetting(SETTING_KEYS.amountPresets, serializeAmountPresets(values));
+    set({ amountPresets: [...values] });
+  },
+
+  resetAmountPresets: () => {
+    deleteSetting(SETTING_KEYS.amountPresets);
+    set({ amountPresets: [...AMOUNT_PRESETS] });
   },
 }));

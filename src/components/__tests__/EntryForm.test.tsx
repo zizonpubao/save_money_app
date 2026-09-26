@@ -4,7 +4,9 @@ import * as Haptics from 'expo-haptics';
 import { EntryForm } from '@/src/components/EntryForm';
 import { EntryFormModal } from '@/src/components/EntryFormModal';
 import type { Category } from '@/src/db';
+import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
 import { useEntryForm } from '@/src/features/useEntryForm';
+import { useSettingsStore } from '@/src/store/settingsStore';
 
 jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn(() => Promise.resolve()) }));
 
@@ -106,21 +108,24 @@ describe('EntryForm (입력 시트)', () => {
   });
 
   describe('(M4.5) 금액 프리셋 칩', () => {
-    beforeEach(() => jest.mocked(Haptics.selectionAsync).mockClear());
+    beforeEach(() => {
+      jest.mocked(Haptics.selectionAsync).mockClear();
+      useSettingsStore.setState({ amountPresets: [...AMOUNT_PRESETS] });
+    });
 
-    it('금액 칸 아래에 500원 · 1천 · 3천 · 5천 · 1만 칩 다섯 개만 있다 (+1천 칩 없음)', async () => {
+    it('금액 칸 아래에 5백 · 1천 · 3천 · 5천 · 1만 칩 다섯 개만 있다 (+1천 칩 없음)', async () => {
       await render(<Harness />);
-      for (const label of ['500원', '1천', '3천', '5천', '1만']) {
+      for (const label of ['5백', '1천', '3천', '5천', '1만']) {
         expect(screen.getByText(label)).toBeOnTheScreen();
       }
       expect(screen.queryByText('+1천')).toBeNull();
     });
 
-    it('칩은 누를 때마다 금액에 더하고(콤마) 매번 selection 햅틱을 낸다: 1천 → 500원 → 1만 ×2 = 21,500', async () => {
+    it('칩은 누를 때마다 금액에 더하고(콤마) 매번 selection 햅틱을 낸다: 1천 → 5백 → 1만 ×2 = 21,500', async () => {
       await render(<Harness />);
       await fireEvent.press(screen.getByLabelText('금액에 1,000원 더하기'));
       expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,000');
-      await fireEvent.press(screen.getByText('500원'));
+      await fireEvent.press(screen.getByText('5백'));
       expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,500');
       await fireEvent.press(screen.getByText('1만'));
       await fireEvent.press(screen.getByText('1만'));
@@ -142,6 +147,56 @@ describe('EntryForm (입력 시트)', () => {
       await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '간식');
       await fireEvent.press(screen.getByText('저장'));
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ title: '간식', amount: 4000 }));
+    });
+
+    it('맨 앞 부호 칩은 + 로 시작하고, 누르면 − 로 바뀌며 selection 햅틱을 낸다', async () => {
+      await render(<Harness />);
+      const sign = screen.getByTestId('preset-sign-chip');
+      expect(sign).toHaveTextContent('+');
+      expect(sign).not.toBeSelected();
+      await fireEvent.press(sign);
+      expect(screen.getByTestId('preset-sign-chip')).toHaveTextContent('−');
+      expect(screen.getByTestId('preset-sign-chip')).toBeSelected();
+      expect(screen.getByLabelText('금액에 1,000원 빼기')).toBeOnTheScreen();
+      expect(screen.queryByLabelText('금액에 1,000원 더하기')).toBeNull();
+      expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+      // 다시 누르면 + 로 돌아온다
+      await fireEvent.press(screen.getByTestId('preset-sign-chip'));
+      expect(screen.getByTestId('preset-sign-chip')).toHaveTextContent('+');
+      expect(screen.getByLabelText('금액에 1,000원 더하기')).toBeOnTheScreen();
+    });
+
+    it('− 상태에서 칩은 뺀다: 10,000 − 3천 = 7,000, 거기서 1만을 빼면 0 에서 멈춘다(빈 칸)', async () => {
+      await render(<Harness />);
+      await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '10000');
+      await fireEvent.press(screen.getByTestId('preset-sign-chip'));
+      await fireEvent.press(screen.getByText('3천'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('7,000');
+      await fireEvent.press(screen.getByText('1만'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('');
+      // 부호는 금액 칩을 눌러도 그대로 − 다
+      expect(screen.getByTestId('preset-sign-chip')).toHaveTextContent('−');
+    });
+
+    it('− 로 바꾼 뒤 시트를 닫았다 다시 열면(저장 성공·취소 모두 시트가 닫힘) + 로 돌아온다', async () => {
+      const props = { categories: CATEGORIES, onSubmit: jest.fn(), onClose: jest.fn() };
+      const view = await render(<EntryFormModal visible {...props} />);
+      await fireEvent.press(screen.getByTestId('preset-sign-chip'));
+      expect(screen.getByTestId('preset-sign-chip')).toHaveTextContent('−');
+      await view.rerender(<EntryFormModal visible={false} {...props} />);
+      await view.rerender(<EntryFormModal visible {...props} />);
+      expect(screen.getByTestId('preset-sign-chip')).toHaveTextContent('+');
+    });
+
+    it('칩 값은 설정 스토어를 따른다 (사용자가 바꾼 순서 그대로)', async () => {
+      useSettingsStore.setState({ amountPresets: [2000, 1500, 25000, 100, 1000000] });
+      await render(<Harness />);
+      const labels = ['2천', '1.5천', '2.5만', '1백', '100만'];
+      for (const label of labels) expect(screen.getByText(label)).toBeOnTheScreen();
+      expect(screen.queryByText('5백')).toBeNull();
+      await fireEvent.press(screen.getByText('1.5천'));
+      expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,500');
+      expect(screen.getByLabelText('금액에 25,000원 더하기')).toBeOnTheScreen();
     });
   });
 

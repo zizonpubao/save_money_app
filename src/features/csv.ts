@@ -1,4 +1,4 @@
-import type { Category, Entry } from '@/src/db';
+import { UNCATEGORIZED_NAME, type Category, type Entry } from '@/src/db';
 
 /** 엑셀이 UTF-8 로 읽게 하는 BOM. 없으면 한글이 깨진다 */
 export const CSV_BOM = '\uFEFF';
@@ -19,14 +19,15 @@ export function csvTextField(value: string): string {
 
 /**
  * 엑셀·Numbers 에서 열 CSV. BOM + 헤더 + 기록 한 줄씩, 줄 끝은 CRLF.
- * 금액은 콤마 없는 정수(엑셀이 숫자로 읽게), 카테고리는 이름(없거나 지워졌으면 빈 칸), 메모 없으면 빈 칸.
+ * 금액은 콤마 없는 정수(엑셀이 숫자로 읽게), 카테고리는 이름(없거나 지워졌으면 앱 화면처럼 "미분류"), 메모 없으면 빈 칸.
  * 기록 순서는 받은 그대로 (getAllEntries 가 날짜 → 등록 순으로 준다)
  */
 export function buildCsv(entries: readonly Entry[], categories: readonly Category[]): string {
   const nameById = new Map(categories.map((c) => [c.id, c.name]));
   const lines = [CSV_HEADER.join(',')];
   for (const e of entries) {
-    const category = e.categoryId !== null ? (nameById.get(e.categoryId) ?? '') : '';
+    const category =
+      (e.categoryId !== null ? nameById.get(e.categoryId) : undefined) ?? UNCATEGORIZED_NAME;
     lines.push(
       [
         csvField(e.date),

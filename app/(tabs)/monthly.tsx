@@ -14,9 +14,8 @@ import type { Entry } from '@/src/db';
 import type { EntrySection } from '@/src/features/groupEntries';
 import { useMonthlySummary } from '@/src/features/useMonthlySummary';
 import type { RangeMode } from '@/src/features/rangeMode';
+import { entryEmoji } from '@/src/store/categoryStore';
 import { useTheme } from '@/src/theme';
-
-const FALLBACK_EMOJI = '💰';
 
 /** 기록 탭 (라우트 이름은 monthly 그대로). 월 / 년 단위 통계와 그 기간 전체 목록. */
 export default function RecordsScreen() {
@@ -115,10 +114,7 @@ export default function RecordsScreen() {
             ]}>
             <EntryRow
               entry={item}
-              emoji={
-                (item.categoryId !== null && monthly.categoryMap.get(item.categoryId)?.emoji) ||
-                FALLBACK_EMOJI
-              }
+              emoji={entryEmoji(item.categoryId, monthly.categoryMap)}
               isLast={index === section.data.length - 1}
               onPress={openEntry}
               onDelete={removeEntry}

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { withSpring, withTiming } from 'react-native-reanimated';
 
 import type { Category, RecentTitle } from '@/src/db';
-import { toCategoryMap } from '@/src/store/categoryStore';
+import { entryEmoji, toCategoryMap } from '@/src/store/categoryStore';
 import { motion, numeric, shadow, size, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
@@ -95,7 +95,7 @@ export function QuickSaveMenu({ items, categories, reduceMotion = false, onPick,
           누르면 바로 저장
         </Text>
         {items.map((item, index) => {
-          const emoji = item.categoryId !== null ? categoryMap.get(item.categoryId)?.emoji : undefined;
+          const emoji = entryEmoji(item.categoryId, categoryMap);
           return (
             <Pressable
               key={item.title}
@@ -114,7 +114,7 @@ export function QuickSaveMenu({ items, categories, reduceMotion = false, onPick,
                 },
               ]}>
               <View style={styles.emoji}>
-                <Text style={type.body}>{emoji ?? ''}</Text>
+                <Text style={type.body}>{emoji}</Text>
               </View>
               <Text numberOfLines={1} style={[styles.title, type.body, { color: colors.text }]}>
                 {item.title}

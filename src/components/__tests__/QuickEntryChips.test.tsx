@@ -39,8 +39,8 @@ describe('빠른 입력 칩 (M4)', () => {
     expect(screen.getByText('최근 항목')).toBeOnTheScreen();
     expect(screen.getByText('☕ 아메리카노')).toBeOnTheScreen();
     expect(screen.getByText('🚕 야근 택시')).toBeOnTheScreen();
-    // 카테고리가 없으면 항목명만
-    expect(screen.getByText('편의점')).toBeOnTheScreen();
+    // 카테고리가 없으면 홈 행·기록 탭과 같은 📦
+    expect(screen.getByText('📦 편의점')).toBeOnTheScreen();
   });
 
   it('기록이 없으면 칩 줄째로 숨긴다', async () => {
@@ -62,7 +62,7 @@ describe('빠른 입력 칩 (M4)', () => {
     await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '12000');
     await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '택시');
     await fireEvent.press(screen.getByText('🚕 택시'));
-    await fireEvent.press(screen.getByText('편의점'));
+    await fireEvent.press(screen.getByText('📦 편의점'));
     expect(screen.getByPlaceholderText(TITLE)).toHaveDisplayValue('편의점');
     expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('3,000');
     expect(screen.getByRole('button', { name: '🚕 택시' })).not.toBeSelected();

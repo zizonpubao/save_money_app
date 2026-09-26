@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 
+import { AmountPresetsModal } from '@/src/components/AmountPresetsModal';
 import { CategoryModal } from '@/src/components/CategoryModal';
 import { CategoryRow } from '@/src/components/CategoryRow';
 import { GoalModal } from '@/src/components/GoalModal';
@@ -14,6 +15,7 @@ import {
 } from '@/src/components/SettingsRow';
 import { SettingsSection } from '@/src/components/SettingsSection';
 import type { Category } from '@/src/db';
+import { presetsPreview, type AmountPreset } from '@/src/features/amountPresets';
 import { confirmDeleteAll, exportCsv, exportJson, startRestore } from '@/src/features/backupActions';
 import { moveCategory } from '@/src/features/categoryActions';
 import { SOUND_LABELS, useCelebrationSound } from '@/src/features/useCelebrationSound';
@@ -29,7 +31,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '-';
 /** 카테고리 모달 상태: 닫힘 / 새로 추가 / 이 카테고리 편집 */
 type CategoryEditing = { mode: 'closed' } | { mode: 'add' } | { mode: 'edit'; category: Category };
 
-/** 설정 탭. 목표 · (M4) 효과 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
+/** 설정 탭. 목표 · 입력 · (M4) 효과 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
 export default function SettingsScreen() {
   const { sp } = useTheme();
   const monthlyGoal = useSettingsStore((s) => s.monthlyGoal);
@@ -42,6 +44,10 @@ export default function SettingsScreen() {
   const setSoundEnabled = useSettingsStore((s) => s.setSoundEnabled);
   const setHapticsEnabled = useSettingsStore((s) => s.setHapticsEnabled);
   const [goalModalVisible, setGoalModalVisible] = useState(false);
+  const amountPresets = useSettingsStore((s) => s.amountPresets);
+  const setAmountPresets = useSettingsStore((s) => s.setAmountPresets);
+  const resetAmountPresets = useSettingsStore((s) => s.resetAmountPresets);
+  const [presetsModalVisible, setPresetsModalVisible] = useState(false);
   const categories = useCategoryStore((s) => s.categories);
   const categoriesLoaded = useCategoryStore((s) => s.loaded);
   const reloadCategories = useCategoryStore((s) => s.reload);
@@ -82,6 +88,26 @@ export default function SettingsScreen() {
     setGoalModalVisible(false);
   };
 
+  const savePresets = (values: AmountPreset[]) => {
+    try {
+      setAmountPresets(values);
+    } catch {
+      Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    setPresetsModalVisible(false);
+  };
+
+  const restorePresets = () => {
+    try {
+      resetAmountPresets();
+    } catch {
+      Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    setPresetsModalVisible(false);
+  };
+
   // 스위치는 바로 저장한다. 실패하면 스토어 값이 그대로라 스위치도 원래 자리로 돌아간다
   const toggle = (apply: (enabled: boolean) => void) => (enabled: boolean) => {
     try {
@@ -99,6 +125,15 @@ export default function SettingsScreen() {
             label="월 목표 금액"
             value={monthlyGoal !== null ? formatWon(monthlyGoal) : '없음'}
             onPress={() => setGoalModalVisible(true)}
+            isLast
+          />
+        </SettingsSection>
+        {/* 입력 시트 금액 칸 아래 프리셋 칩 5개 */}
+        <SettingsSection title="입력">
+          <SettingsRow
+            label="빠른 금액 버튼"
+            value={presetsPreview(amountPresets)}
+            onPress={() => setPresetsModalVisible(true)}
             isLast
           />
         </SettingsSection>
@@ -163,6 +198,14 @@ export default function SettingsScreen() {
         onSave={saveGoal}
         onClear={removeGoal}
         onClose={() => setGoalModalVisible(false)}
+      />
+
+      <AmountPresetsModal
+        visible={presetsModalVisible}
+        current={amountPresets}
+        onSave={savePresets}
+        onReset={restorePresets}
+        onClose={() => setPresetsModalVisible(false)}
       />
 
       <CategoryModal

@@ -38,14 +38,12 @@ import { useHomeCard } from '@/src/features/useHomeCard';
 import { useMonthReview } from '@/src/features/useMonthReview';
 import { QUICK_SAVE_LIMIT, readRecentTitles } from '@/src/features/useRecentTitles';
 import { useReduceMotion } from '@/src/features/useReduceMotion';
-import { useCategoryStore } from '@/src/store/categoryStore';
+import { entryEmoji, useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
 import { motion, useTheme } from '@/src/theme';
 import { today } from '@/src/utils/date';
 import { longPressHaptic, playCelebrationHaptic, saveTapHaptic } from '@/src/utils/haptics';
 import { formatWon } from '@/src/utils/money';
-
-const FALLBACK_EMOJI = '💰';
 
 type PendingSave = { publish: () => void; amount: number };
 
@@ -317,10 +315,7 @@ export default function HomeScreen() {
                 ]}>
                 <EntryRow
                   entry={item}
-                  emoji={
-                    (item.categoryId !== null && list.categoryMap.get(item.categoryId)?.emoji) ||
-                    FALLBACK_EMOJI
-                  }
+                  emoji={entryEmoji(item.categoryId, list.categoryMap)}
                   isLast={index === section.data.length - 1}
                   onPress={openEntry}
                   onDelete={removeEntry}

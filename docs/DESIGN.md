@@ -39,7 +39,10 @@
 - **(M4.5) 원탭 저장 메뉴**: FAB 을 `motion.longPressMs`(500ms) 길게 누르면 Medium 햅틱과 함께 FAB 바로 위(`bottom: sp.lg + size.fab + sp.sm`, 오른쪽 `sp.lg`)에 뜬다. `card` 배경 + `radius.lg` + `shadow.fab`(떠 있는 것), 폭 `size.quickMenuWidth`(240), 위에 `caption` 회색 "누르면 바로 저장" 한 줄.
 - 행은 최근 항목 최대 4개, 한 행 `minHeight: size.touch` · 이모지 · 항목명(`body`) · 금액(`bodyStrong` + `numeric`), 행 사이 hairline `divider`, 눌림 `opacity 0.7`. 스크린리더 라벨은 "커피 4,500원 바로 저장".
 - FAB 쪽 모서리 기준 scale `motion.quickMenuFrom`(0.9) → 1 spring + opacity, 150ms(`motion.quickMenuMs`)로 펼치고 같은 시간에 접는다(동작 줄이기면 opacity 만). 뒤는 투명한 막으로 덮어 메뉴 밖 탭·쓸기·FAB 짧은 탭이 모두 "닫기" 가 된다.
-- **(M4.5) 금액 프리셋 칩**: 금액 칸 바로 아래(`sp.sm`) 한 줄 `500원` `1천` `3천` `5천` `1만`, **누적 방식**(누를 때마다 현재 금액에 더함, 지우기는 키패드 백스페이스). 빠른 입력 칩과 같은 모양(선택 상태 없음, 눌림 `opacity 0.7`), 누르면 selection 햅틱.
+- **(M4.5) 금액 프리셋 칩**: 금액 칸 바로 아래(`sp.sm`) 한 줄 `+` `5백` `1천` `3천` `5천` `1만`, **누적 방식**(누를 때마다 현재 금액에 더함, 지우기는 키패드 백스페이스). 금액 칩은 빠른 입력 칩과 같은 모양(선택 상태 없음, 눌림 `opacity 0.7`), 누르면 selection 햅틱.
+  - **부호 칩**: 맨 앞, 최소 폭 `size.touch`, 글자 `bodyStrong`. `+` 는 금액 칩과 같은 모양, `−`(U+2212) 는 선택 칩처럼 `primary` 채움 + `onPrimary` 글자(글자 하나만이 아니라 채움으로도 구분, `accessibilityState.selected`). 탭하면 selection 햅틱. `−` 동안 금액 칩은 빼고 0 에서 멈춘다. 저장 성공·시트 닫힘이면 `+` 로 돌아온다.
+  - **글자 축약**: 100~999 `N백` · 1,000~9,999 `N천` · 10,000↑ `N만`, 소수 첫째 자리까지 버림(`.0` 없음). 스크린리더는 원 단위 전체 "금액에 1,500원 더하기/빼기".
+  - 값 5개는 설정 "입력 → 빠른 금액 버튼" 이 출처(`settingsStore.amountPresets`).
 - **헤더·탭바**: 배경 `card`, 그림자 숨김(`headerShadowVisible: false`), 활성 탭 `primary` / 비활성 `textMuted`, 본문 영역은 `bg`.
 - **입력 필드**: `card` 배경 + `border` 테두리 + `radius.md`, 라벨은 위에 `type.caption` `textMuted`, 필드 간 간격 `sp.md`. 금액 필드만 `type.title` 로 크게, 오른쪽에 "원".
 - **빈 상태**: 가운데 정렬, `type.bodyStrong` 한 줄 + `type.note` 한 줄. 일러스트·느낌표 없음, 문구는 다음 행동을 알려준다("오늘 참은 소비를 + 버튼으로 남겨보세요").
