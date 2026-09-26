@@ -7,7 +7,7 @@ import {
   type AmountPreset,
   type PresetSign,
 } from '@/src/features/amountPresets';
-import { today } from '@/src/utils/date';
+import { clampDate, entryDateBounds, today } from '@/src/utils/date';
 import { formatAmountInput, formatNumber, parseWon } from '@/src/utils/money';
 
 export type EntryFormValues = {
@@ -46,8 +46,13 @@ export function useEntryForm(initial?: EntryInput | null) {
     setValues((v) => ({ ...v, title }));
   }, []);
 
+  /**
+   * 피커가 이미 범위를 막지만 방어로 한 번 더 작년 1월 1일 ~ 오늘 안으로 당긴다.
+   * 수정 화면의 기존 날짜(범위 밖이어도)는 초기값이라 여기를 거치지 않아 그대로 보존된다
+   */
   const setDate = useCallback((date: string) => {
-    setValues((v) => ({ ...v, date }));
+    const { min, max } = entryDateBounds();
+    setValues((v) => ({ ...v, date: clampDate(date, min, max) }));
   }, []);
 
   const setMemo = useCallback((memo: string) => {

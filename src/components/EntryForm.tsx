@@ -20,7 +20,7 @@ import { QuickEntryChips } from '@/src/components/QuickEntryChips';
 import type { Category, RecentTitle } from '@/src/db';
 import type { useEntryForm } from '@/src/features/useEntryForm';
 import { numeric, size, useTheme } from '@/src/theme';
-import { formatKoDate, fromDate, toDate } from '@/src/utils/date';
+import { entryDateBounds, formatKoDate, fromDate, toDate } from '@/src/utils/date';
 import { chipTapHaptic } from '@/src/utils/haptics';
 
 type Props = PropsWithChildren<{
@@ -59,6 +59,11 @@ export function EntryForm({
     return () => clearTimeout(timer);
   }, [autoFocusAmount, motion.focusDelayMs]);
 
+  // 작년 1월 1일 ~ 오늘. 범위 밖 기존 기록은 날짜 칸에 그대로 보이고, 피커만 범위 안에서 연다(고르기 전엔 데이터 불변)
+  const bounds = entryDateBounds();
+  const minimumDate = toDate(bounds.min);
+  const maximumDate = toDate(bounds.max);
+
   const onDateChange = (event: DateTimePickerEvent, selected?: Date) => {
     // 취소는 event.type === 'dismissed' 로 와서 아무것도 바꾸지 않는다
     if (event.type === 'set' && selected) form.setDate(fromDate(selected));
@@ -74,7 +79,8 @@ export function EntryForm({
       DateTimePickerAndroid.open({
         value: toDate(values.date),
         mode: 'date',
-        maximumDate: new Date(),
+        minimumDate,
+        maximumDate,
         onChange: onDateChange,
       });
       return;
@@ -196,7 +202,8 @@ export function EntryForm({
               mode="date"
               display="spinner"
               locale="ko-KR"
-              maximumDate={new Date()}
+              minimumDate={minimumDate}
+              maximumDate={maximumDate}
               themeVariant={isDark ? 'dark' : 'light'}
               onChange={onDateChange}
             />

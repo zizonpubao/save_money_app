@@ -74,6 +74,21 @@ export function toDate(date: string): Date {
   return d.isValid() ? d.toDate() : new Date();
 }
 
+/**
+ * 기록 날짜로 고를 수 있는 범위: 작년 1월 1일 ~ 오늘 (2026-09-26 사용자 결정: 올해와 작년만, 미래 불가).
+ * entryDateBounds('2026-01-01') → { min: '2025-01-01', max: '2026-01-01' }
+ */
+export function entryDateBounds(base: string = today()): { min: string; max: string } {
+  return { min: `${addYears(toYear(base), -1)}-01-01`, max: base };
+}
+
+/** 'YYYY-MM-DD' 를 [min, max] 안으로 당긴다. 같은 형식이라 문자열 비교로 충분하다 */
+export function clampDate(date: string, min: string, max: string): string {
+  if (date < min) return min;
+  if (date > max) return max;
+  return date;
+}
+
 /** Date → 'YYYY-MM-DD' (로컬 기준) */
 export function fromDate(d: Date): string {
   return dayjs(d).format(DATE_FORMAT);

@@ -11,7 +11,7 @@ import { backupPickerTypes } from '@/src/features/backupFile';
 import { axisDays, buildDailyBars, toDailyChartBars } from '@/src/features/monthlyStats';
 import { useEntryForm } from '@/src/features/useEntryForm';
 import { useModalInsets } from '@/src/features/useModalInsets';
-import { formatKoDate, today } from '@/src/utils/date';
+import { entryDateBounds, formatKoDate, toDate, today } from '@/src/utils/date';
 
 /**
  * Android 전용 분기 (친구 APK 배포 전 코드 점검). jest-expo 기본은 iOS 라 Platform.OS 를 바꿔 끼워 확인한다.
@@ -81,7 +81,10 @@ describe('Android 대응', () => {
 
     const params = jest.mocked(DateTimePickerAndroid.open).mock.calls[0][0];
     expect(params.mode).toBe('date');
-    expect(params.maximumDate).toBeInstanceOf(Date);
+    // 작년 1월 1일 ~ 오늘
+    const bounds = entryDateBounds();
+    expect(params.minimumDate).toEqual(toDate(bounds.min));
+    expect(params.maximumDate).toEqual(toDate(bounds.max));
 
     await act(async () => {
       params.onChange?.({ type: 'set', nativeEvent: { timestamp: 0, utcOffset: 0 } }, new Date(2026, 8, 1));
@@ -107,6 +110,29 @@ describe('Android 대응', () => {
     expect(DateTimePickerAndroid.open).not.toHaveBeenCalled();
     expect(DateTimePicker).toHaveBeenCalled();
     expect(jest.mocked(DateTimePicker).mock.calls[0][0]).toMatchObject({ display: 'spinner' });
+  });
+
+  it('날짜: iOS 휠도 작년 1월 1일 ~ 오늘로 막는다 (minimumDate · maximumDate)', async () => {
+    await render(<Harness />);
+    await fireEvent.press(screen.getByTestId('date-field'));
+    const bounds = entryDateBounds();
+    expect(jest.mocked(DateTimePicker).mock.calls[0][0]).toMatchObject({
+      minimumDate: toDate(bounds.min),
+      maximumDate: toDate(bounds.max),
+    });
+  });
+
+  it('날짜: 범위 밖(2년 전) 기존 기록은 날짜 칸에 그대로 보이고, 피커를 열기만 해서는 바뀌지 않는다', async () => {
+    const old = `${Number(today().slice(0, 4)) - 2}-06-15`;
+    function EditHarness() {
+      const form = useEntryForm({ date: old, title: '옛날', amount: 1000, categoryId: null, memo: null });
+      return <EntryForm form={form} categories={[커피]} />;
+    }
+    await render(<EditHarness />);
+    expect(screen.getByText(formatKoDate(old))).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('date-field'));
+    expect(jest.mocked(DateTimePicker).mock.calls[0][0]).toMatchObject({ value: toDate(old) });
+    expect(screen.getByText(formatKoDate(old))).toBeOnTheScreen();
   });
 
   it('백업 파일 고르기: Android 는 모든 파일(*/*), iOS 는 JSON·텍스트·UTI', () => {

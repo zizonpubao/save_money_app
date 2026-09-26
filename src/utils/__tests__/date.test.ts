@@ -2,7 +2,9 @@ import {
   addDays,
   addMonths,
   addYears,
+  clampDate,
   dayNumber,
+  entryDateBounds,
   daysInMonth,
   firstWeekday,
   formatKoDate,
@@ -151,5 +153,33 @@ describe('addDays / firstWeekday / dayNumber (M3.6)', () => {
   it('dayNumber 는 하루에 1씩 늘고 달 경계에서도 이어진다', () => {
     expect(dayNumber('1970-01-01')).toBe(0);
     expect(dayNumber('2026-10-01') - dayNumber('2026-09-30')).toBe(1);
+  });
+});
+
+describe('entryDateBounds (기록 날짜 범위: 작년 1월 1일 ~ 오늘)', () => {
+  it('연중: 2026-09-26 → 2025-01-01 ~ 2026-09-26', () => {
+    expect(entryDateBounds('2026-09-26')).toEqual({ min: '2025-01-01', max: '2026-09-26' });
+  });
+  it('연초 경계: 2026-01-01 → 2025-01-01 ~ 2026-01-01', () => {
+    expect(entryDateBounds('2026-01-01')).toEqual({ min: '2025-01-01', max: '2026-01-01' });
+  });
+  it('연말 경계: 2026-12-31 → 2025-01-01 ~ 2026-12-31 (다음 날 2027-01-01 이면 min 이 2026-01-01)', () => {
+    expect(entryDateBounds('2026-12-31')).toEqual({ min: '2025-01-01', max: '2026-12-31' });
+    expect(entryDateBounds('2027-01-01')).toEqual({ min: '2026-01-01', max: '2027-01-01' });
+  });
+  it('인자가 없으면 오늘 기준이다', () => {
+    const bounds = entryDateBounds();
+    expect(bounds.max).toBe(today());
+    expect(bounds.min).toBe(`${Number(thisYear()) - 1}-01-01`);
+  });
+});
+
+describe('clampDate', () => {
+  it('범위 안은 그대로, 밖은 가까운 끝으로 당긴다', () => {
+    expect(clampDate('2025-06-15', '2025-01-01', '2026-09-26')).toBe('2025-06-15');
+    expect(clampDate('2024-12-31', '2025-01-01', '2026-09-26')).toBe('2025-01-01');
+    expect(clampDate('2026-09-27', '2025-01-01', '2026-09-26')).toBe('2026-09-26');
+    expect(clampDate('2025-01-01', '2025-01-01', '2026-09-26')).toBe('2025-01-01');
+    expect(clampDate('2026-09-26', '2025-01-01', '2026-09-26')).toBe('2026-09-26');
   });
 });

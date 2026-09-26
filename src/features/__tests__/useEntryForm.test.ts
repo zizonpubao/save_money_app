@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react-native';
 import type { Category, EntryInput } from '@/src/db';
 import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
 import { useEntryForm } from '@/src/features/useEntryForm';
-import { today } from '@/src/utils/date';
+import { addDays, entryDateBounds, today } from '@/src/utils/date';
 
 const 커피: Category = { id: 1, name: '커피', emoji: '☕', sortOrder: 0, isDefault: true };
 const 밥값: Category = { id: 2, name: '밥값', emoji: '🍚', sortOrder: 1, isDefault: true };
@@ -174,6 +174,37 @@ describe('useEntryForm', () => {
       await act(() => result.current.setAmountText('4500'));
       await act(() => result.current.applyPreset(천!));
       expect(result.current.values.amountText).toBe('5,500');
+    });
+  });
+
+  describe('날짜 범위 (작년 1월 1일 ~ 오늘)', () => {
+    it('범위 안 날짜는 그대로 들어간다 (작년 1월 1일 포함)', async () => {
+      const { min } = entryDateBounds();
+      const { result } = await setup();
+      await act(() => result.current.setDate(min));
+      expect(result.current.values.date).toBe(min);
+    });
+
+    it('작년 1월 1일보다 이전이면 작년 1월 1일로 당긴다', async () => {
+      const { min } = entryDateBounds();
+      const { result } = await setup();
+      await act(() => result.current.setDate(addDays(min, -1)));
+      expect(result.current.values.date).toBe(min);
+      await act(() => result.current.setDate('2000-01-01'));
+      expect(result.current.values.date).toBe(min);
+    });
+
+    it('미래 날짜는 오늘로 당긴다', async () => {
+      const { result } = await setup();
+      await act(() => result.current.setDate(addDays(today(), 1)));
+      expect(result.current.values.date).toBe(today());
+    });
+
+    it('수정 화면의 기존 날짜는 범위 밖이어도 그대로 둔다 (데이터 불변) · 저장 값도 그대로', async () => {
+      const old = addDays(entryDateBounds().min, -400);
+      const { result } = await setup({ date: old, title: '옛날', amount: 1000, categoryId: null, memo: null });
+      expect(result.current.values.date).toBe(old);
+      expect(result.current.toInput().date).toBe(old);
     });
   });
 });
