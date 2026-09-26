@@ -7,6 +7,7 @@
 ## 절대 규칙 (어기면 앱이 아이폰에서 안 돈다)
 1. **Expo Go 호환만 사용한다.** 개발자는 Windows PC만 있고 Mac/Xcode가 없다. 테스트는 아이폰의 Expo Go 앱으로만 한다. 따라서:
    - 커스텀 네이티브 모듈, `expo prebuild`, `npx expo run:ios`, config plugin이 필요한 라이브러리 **금지**
+   - 예외: **안드로이드 APK 배포는 EAS Build(클라우드)** 로 한다(`eas.json` preview 프로필). 로컬 prebuild 는 여전히 금지. iOS 는 Expo Go 만
    - Expo SDK에 포함된 모듈(`expo-sqlite`, `expo-sharing`, `expo-file-system`, `expo-haptics` 등)과 순수 JS 라이브러리만 사용
    - 라이브러리 추가 전에 반드시 "Expo Go에서 동작하는지" 확인하고, 설치는 `npx expo install <pkg>` 로만 한다 (버전 호환 자동 맞춤)
 2. **데이터는 기기 로컬(SQLite)에만 저장한다.** 서버, 로그인, 클라우드 동기화 없음. 대신 JSON 백업/복원 기능은 필수.

@@ -18,12 +18,13 @@
       "Write",
       "Edit",
       "Glob",
-      "Grep"
+      "Grep",
+      "Bash(npx eas-cli:*)",
+      "Bash(eas:*)"
     ],
     "deny": [
       "Bash(npx expo prebuild:*)",
       "Bash(npx expo run:*)",
-      "Bash(eas:*)",
       "Bash(git push:*)",
       "Bash(rm -rf:*)"
     ]
