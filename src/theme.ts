@@ -48,7 +48,8 @@ export type ColorTokens = {
 };
 
 /*
- * (B 방향 "따뜻한 저금통") 크림 바탕 + 숲 초록 메인 + 주황 강조(면에만) + 갈색 톤 글자.
+ * (B 방향 "따뜻한 저금통") 크림 바탕 + 숲 초록 메인 + 주황 강조(면에만) + 갈색 톤 글자 (라이트).
+ * 다크는 중성 차콜 + 생생한 초록·주황 (갈색 다크가 "썩은 나무" 같다는 피드백으로 교체).
  * 대비는 WCAG 2.x 로 계산한 값 (src/utils/__tests__/themeContrast.test.ts 가 지킨다).
  */
 export const lightColors: ColorTokens = {
@@ -84,39 +85,41 @@ export const lightColors: ColorTokens = {
 };
 
 export const darkColors: ColorTokens = {
-  // 푸른 검정이 아니라 갈색 검정
-  bg: '#17140F',
-  card: '#221E18',
-  // bg 위 15.5
-  text: '#F2EDE4',
-  // card 위 6.24 · bg 위 6.91
-  textMuted: '#A99D8F',
-  // card 위 7.20 · bg 위 7.98
-  primary: '#4FBF85',
-  // 밝은 초록 위 흰 글자는 2.3 이라 어두운 글자로 (7.98). danger 위에 얹어도 5.44
-  onPrimary: '#17140F',
-  primarySoft: '#1D3326',
-  // primarySoft 위 7.46 (primary 는 5.87)
-  onPrimarySoft: '#6FD49E',
-  // card 위 4.91
-  danger: '#F2555A',
-  border: '#3A3229',
-  // 카드보다 한 단계 밝은 구분선
-  divider: '#342D24',
+  // (사용자 피드백 "갈색 다크 = 썩은 나무") 갈색 검정 → 아주 살짝 차가운 중성 차콜. 순수 검정은 쓰지 않는다
+  bg: '#131517',
+  // bg 와 1.13 — 카드가 한 단계 밝다
+  card: '#1E2125',
+  // bg 위 16.5 · card 위 14.6
+  text: '#F2F3F4',
+  // card 위 6.20 · bg 위 7.02
+  textMuted: '#9BA1A8',
+  // 생생한 초록. card 위 8.62 · bg 위 9.76
+  primary: '#3DD68C',
+  // 밝은 초록 위 흰 글자는 대비가 모자라 어두운 글자로 (9.76). danger 위에 얹어도 6.06
+  onPrimary: '#131517',
+  primarySoft: '#163526',
+  // primarySoft 위 8.38 (primary 는 7.12)
+  onPrimarySoft: '#6BE3A6',
+  // card 위 5.35
+  danger: '#FF5C61',
+  // card 와 1.50
+  border: '#393E45',
+  // 카드보다 한 단계 밝은 구분선 (card 와 1.25)
+  divider: '#2E3237',
   // 라이트처럼 미래 칸은 bg 와 같은 "움푹한" 칸
-  grassFuture: '#17140F',
-  // 기록 없는 날(divider)과 구분되게 채도를 올린 1단계
-  grass1: '#1F4A31',
-  grass2: '#2B6B46',
-  grass3: '#3C9563',
-  grass4: '#4FBF85',
-  good: '#F2C94C',
-  // 면 전용. onWarn 글자 9.2
-  warn: '#FFA24C',
-  onWarn: '#17140F',
-  // primary 글자 5.99 · textMuted 5.19
-  warnSoft: '#3A2A18',
-  todayRing: '#F2EDE4',
+  grassFuture: '#131517',
+  // 기록 없는 날(divider)과 1.42 로 구분되게 채도를 올린 1단계. 단계 사이 1.65~1.72
+  grass1: '#1A5236',
+  grass2: '#227A4E',
+  grass3: '#2BA366',
+  grass4: '#3DD68C',
+  good: '#F5CB4A',
+  // 면 전용. onWarn 글자 8.97
+  warn: '#FF9F43',
+  onWarn: '#131517',
+  // primary 글자 7.20 · textMuted 5.18
+  warnSoft: '#42290F',
+  todayRing: '#F2F3F4',
   shadow: '#000000',
 };
 

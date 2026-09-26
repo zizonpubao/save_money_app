@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, Appearance, type AlertButton } from 'react-native';
 
 import type * as FileSystemMock from '@/__mocks__/expo-file-system';
 import type * as PickerMock from '@/__mocks__/expo-document-picker';
@@ -128,6 +128,15 @@ describe('백업 동작 (M5)', () => {
       expect(json.entries).toHaveLength(2);
       expect(json.categories).toHaveLength(10);
       expect(alertSpy).not.toHaveBeenCalled();
+    });
+
+    it('테마는 기기 설정이라 백업 JSON 에 넣지 않는다', async () => {
+      setSetting(SETTING_KEYS.themeMode, 'dark');
+      await exportJson();
+      const text = mockFiles.get(`file:///cache/savelog-backup-${today()}.json`) ?? '';
+      expect(JSON.parse(text)).toMatchObject({ settings: { monthlyGoal: null } });
+      expect(text).not.toContain('dark');
+      expect(text).not.toContain('theme');
     });
 
     it('공유를 못 하는 기기면 알림', async () => {
@@ -358,6 +367,22 @@ describe('백업 동작 (M5)', () => {
       expect(useSettingsStore.getState().monthlyGoal).toBeNull();
       expect(useCategoryStore.getState().categories).toHaveLength(9);
       expect(lastAlert().title).toBe('삭제 완료');
+    });
+
+    it('삭제하면 테마가 시스템으로 돌아가고 바로 적용된다', async () => {
+      const appearanceSpy = jest.spyOn(Appearance, 'setColorScheme');
+      useSettingsStore.getState().setThemeMode('dark');
+      expect(getSetting(SETTING_KEYS.themeMode)).toBe('dark');
+      appearanceSpy.mockClear();
+
+      confirmDeleteAll();
+      await press('삭제 계속');
+      await press('정말 삭제');
+
+      expect(getSetting(SETTING_KEYS.themeMode)).toBeNull();
+      expect(useSettingsStore.getState().themeMode).toBe('system');
+      expect(appearanceSpy).toHaveBeenLastCalledWith('unspecified');
+      appearanceSpy.mockRestore();
     });
   });
 });

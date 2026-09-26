@@ -1,3 +1,5 @@
+import { Appearance } from 'react-native';
+
 import {
   getSetting,
   initDatabase,
@@ -6,6 +8,7 @@ import {
   SETTING_KEYS,
 } from '@/src/db';
 import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
+import { parseThemeMode } from '@/src/features/themeMode';
 import { parseFlag, useSettingsStore } from '@/src/store/settingsStore';
 import { isHapticsEnabled, setHapticsEnabled } from '@/src/utils/haptics';
 
@@ -163,5 +166,58 @@ describe('settingsStore — 빠른 금액 버튼 (amount_presets)', () => {
     useSettingsStore.getState().resetAmountPresets();
     expect(useSettingsStore.getState().amountPresets).toEqual([...AMOUNT_PRESETS]);
     expect(getSetting(SETTING_KEYS.amountPresets)).toBeNull();
+  });
+});
+
+describe('settingsStore — 테마 (theme_mode)', () => {
+  const appearanceSpy = jest.spyOn(Appearance, 'setColorScheme');
+
+  beforeEach(() => {
+    resetDatabaseConnection();
+    initDatabase();
+    useSettingsStore.setState({ themeMode: 'system', loaded: false });
+    appearanceSpy.mockClear();
+  });
+
+  afterAll(() => {
+    appearanceSpy.mockRestore();
+    resetDatabaseConnection();
+  });
+
+  it('키가 없으면(첫 설치) system 이고 시스템 설정 따르기(unspecified)로 적용한다', () => {
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().themeMode).toBe('system');
+    expect(appearanceSpy).toHaveBeenLastCalledWith('unspecified');
+  });
+
+  it('저장한 dark 를 읽어 적용한다', () => {
+    setSetting(SETTING_KEYS.themeMode, 'dark');
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().themeMode).toBe('dark');
+    expect(appearanceSpy).toHaveBeenLastCalledWith('dark');
+  });
+
+  it('setThemeMode 는 DB 에 적고 바로 적용하며, 다시 load 해도 같다', () => {
+    useSettingsStore.getState().setThemeMode('light');
+    expect(getSetting(SETTING_KEYS.themeMode)).toBe('light');
+    expect(useSettingsStore.getState().themeMode).toBe('light');
+    expect(appearanceSpy).toHaveBeenLastCalledWith('light');
+
+    useSettingsStore.getState().setThemeMode('system');
+    expect(getSetting(SETTING_KEYS.themeMode)).toBe('system');
+    expect(appearanceSpy).toHaveBeenLastCalledWith('unspecified');
+
+    useSettingsStore.getState().setThemeMode('dark');
+    useSettingsStore.setState({ themeMode: 'system' });
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().themeMode).toBe('dark');
+  });
+
+  it('parseThemeMode: light·dark 만 그대로, 없음·이상한 값은 system', () => {
+    expect(parseThemeMode('light')).toBe('light');
+    expect(parseThemeMode('dark')).toBe('dark');
+    expect(parseThemeMode('system')).toBe('system');
+    expect(parseThemeMode(null)).toBe('system');
+    expect(parseThemeMode('DARK')).toBe('system');
   });
 });

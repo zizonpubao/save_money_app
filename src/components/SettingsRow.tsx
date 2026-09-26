@@ -138,9 +138,13 @@ export type SettingsChip = {
   /** 스크린리더 이름 (예: "톡 미리 듣기") */
   accessibilityLabel: string;
   onPress: () => void;
+  /** 고르는 칩(테마)의 선택 상태. 선택 칩은 primary 채움 + onPrimary 글자. 미리 듣기처럼 누르기만 하는 칩은 비워 둔다 */
+  selected?: boolean;
 };
 
 type ChipsProps = {
+  /** 칩 위 행 이름 (예: "테마"). 없으면 위 스위치 행에 붙은 칩 줄 */
+  label?: string;
   chips: readonly SettingsChip[];
   /** 위 스위치가 꺼져 있으면 칩을 흐리게 하고 누를 수 없게 한다 */
   disabled?: boolean;
@@ -150,8 +154,18 @@ type ChipsProps = {
   testID?: string;
 };
 
-/** (M4) 스위치 아래 "미리 듣기·느껴 보기" 칩 줄. 행 여백·구분선은 SettingsRow 와 같다 */
-export function SettingsChipsRow({ chips, disabled = false, note, isLast = false, testID }: ChipsProps) {
+/**
+ * (M4) 스위치 아래 "미리 듣기·느껴 보기" 칩 줄. 행 여백·구분선은 SettingsRow 와 같다.
+ * label 이 있으면 이름 한 줄 + 고르는 칩 줄(테마)로 혼자 한 행이 된다
+ */
+export function SettingsChipsRow({
+  label,
+  chips,
+  disabled = false,
+  note,
+  isLast = false,
+  testID,
+}: ChipsProps) {
   const { colors, type, sp, radius } = useTheme();
   return (
     <View
@@ -159,11 +173,18 @@ export function SettingsChipsRow({ chips, disabled = false, note, isLast = false
       style={{
         backgroundColor: colors.card,
         paddingHorizontal: sp.md,
+        // 이름이 있으면 SettingsRow 와 같은 위 여백. 없으면 위 스위치 행의 아래 여백을 이어 쓴다
+        paddingTop: label ? sp.smd : 0,
         paddingBottom: sp.smd,
         borderBottomColor: colors.divider,
         borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
         gap: sp.sm,
       }}>
+      {label ? (
+        <Text numberOfLines={1} style={[type.body, { color: colors.text }]}>
+          {label}
+        </Text>
+      ) : null}
       <View style={[styles.chips, { gap: sp.sm, opacity: disabled ? 0.4 : 1 }]}>
         {chips.map((chip) => (
           <Pressable
@@ -172,20 +193,22 @@ export function SettingsChipsRow({ chips, disabled = false, note, isLast = false
             disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={chip.accessibilityLabel}
-            accessibilityState={{ disabled }}
+            accessibilityState={{ disabled, selected: chip.selected }}
             // 눌림은 다른 칩(빠른 입력·금액 칩)과 같은 opacity 0.7
             style={({ pressed }) => [
               styles.chip,
               {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
+                backgroundColor: chip.selected ? colors.primary : colors.card,
+                borderColor: chip.selected ? colors.primary : colors.border,
                 borderRadius: radius.pill,
                 paddingHorizontal: sp.md,
                 minHeight: size.touch,
                 opacity: pressed ? 0.7 : 1,
               },
             ]}>
-            <Text style={[type.note, { color: colors.text }]}>{chip.label}</Text>
+            <Text style={[type.note, { color: chip.selected ? colors.onPrimary : colors.text }]}>
+              {chip.label}
+            </Text>
           </Pressable>
         ))}
       </View>

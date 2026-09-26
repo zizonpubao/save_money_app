@@ -249,6 +249,8 @@ export const SETTING_KEYS = {
   hapticsEnabled: 'haptics_enabled',
   /** 입력 시트 금액 프리셋 칩 5개. JSON 배열 문자열 ('[500,1000,3000,5000,10000]'). 없거나 망가졌으면 기본값 */
   amountPresets: 'amount_presets',
+  /** 앱 테마 ('system' | 'light' | 'dark'). 없거나 다른 값이면 system. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
+  themeMode: 'theme_mode',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

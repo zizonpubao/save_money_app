@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
+import { Appearance } from 'react-native';
 
 import type * as AudioMock from '@/__mocks__/expo-audio';
 import SettingsScreen from '@/app/(tabs)/settings';
@@ -186,5 +187,57 @@ describe('설정 화면 — 효과 (M4)', () => {
     expect(screen.getByLabelText('진동 느껴 보기')).toBeDisabled();
     await fireEvent.press(screen.getByLabelText('진동 느껴 보기'));
     expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('설정 화면 — 화면(테마)', () => {
+  const appearanceSpy = jest.spyOn(Appearance, 'setColorScheme');
+
+  beforeEach(() => {
+    resetDatabaseConnection();
+    initDatabase();
+    useSettingsStore.setState({ themeMode: 'system', loaded: false });
+    appearanceSpy.mockClear();
+    jest.mocked(Haptics.selectionAsync).mockClear();
+  });
+
+  afterAll(() => {
+    appearanceSpy.mockRestore();
+    resetDatabaseConnection();
+  });
+
+  it('"화면" 섹션 "테마" 행에 시스템·라이트·다크 칩이 있고 기본은 시스템 선택', async () => {
+    await render(<SettingsScreen />);
+    expect(screen.getByText('화면')).toBeOnTheScreen();
+    expect(screen.getByText('테마')).toBeOnTheScreen();
+    expect(screen.getByLabelText('테마 시스템')).toBeSelected();
+    expect(screen.getByLabelText('테마 라이트')).not.toBeSelected();
+    expect(screen.getByLabelText('테마 다크')).not.toBeSelected();
+  });
+
+  it('다크를 누르면 selection 햅틱 · DB 저장 · Appearance 에 dark 적용 · 선택이 옮겨간다', async () => {
+    await render(<SettingsScreen />);
+    appearanceSpy.mockClear();
+    await fireEvent.press(screen.getByLabelText('테마 다크'));
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+    expect(getSetting(SETTING_KEYS.themeMode)).toBe('dark');
+    expect(appearanceSpy).toHaveBeenCalledWith('dark');
+    expect(screen.getByLabelText('테마 다크')).toBeSelected();
+    expect(screen.getByLabelText('테마 시스템')).not.toBeSelected();
+  });
+
+  it("라이트는 'light', 시스템은 'unspecified'(시스템 설정 따르기)로 적용한다", async () => {
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByLabelText('테마 라이트'));
+    expect(appearanceSpy).toHaveBeenLastCalledWith('light');
+    await fireEvent.press(screen.getByLabelText('테마 시스템'));
+    expect(appearanceSpy).toHaveBeenLastCalledWith('unspecified');
+    expect(getSetting(SETTING_KEYS.themeMode)).toBe('system');
+  });
+
+  it('저장해 둔 값이 있으면 열 때 그 칩이 선택돼 있다', async () => {
+    setSetting(SETTING_KEYS.themeMode, 'light');
+    await render(<SettingsScreen />);
+    expect(screen.getByLabelText('테마 라이트')).toBeSelected();
   });
 });

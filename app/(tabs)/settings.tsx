@@ -18,11 +18,12 @@ import type { Category } from '@/src/db';
 import { presetsPreview, type AmountPreset } from '@/src/features/amountPresets';
 import { confirmDeleteAll, exportCsv, exportJson, startRestore } from '@/src/features/backupActions';
 import { moveCategory } from '@/src/features/categoryActions';
+import { THEME_MODE_LABELS, THEME_MODES, type ThemeMode } from '@/src/features/themeMode';
 import { SOUND_LABELS, useCelebrationSound } from '@/src/features/useCelebrationSound';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { useTheme } from '@/src/theme';
-import { previewHaptic } from '@/src/utils/haptics';
+import { chipTapHaptic, previewHaptic } from '@/src/utils/haptics';
 import { formatWon } from '@/src/utils/money';
 
 /** 앱 버전 (app.json expo.version). 읽지 못하면 대시 */
@@ -31,7 +32,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '-';
 /** 카테고리 모달 상태: 닫힘 / 새로 추가 / 이 카테고리 편집 */
 type CategoryEditing = { mode: 'closed' } | { mode: 'add' } | { mode: 'edit'; category: Category };
 
-/** 설정 탭. 목표 · 입력 · (M4) 효과 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
+/** 설정 탭. 목표 · 입력 · 화면 · (M4) 효과 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
 export default function SettingsScreen() {
   const { sp } = useTheme();
   const monthlyGoal = useSettingsStore((s) => s.monthlyGoal);
@@ -48,6 +49,8 @@ export default function SettingsScreen() {
   const setAmountPresets = useSettingsStore((s) => s.setAmountPresets);
   const resetAmountPresets = useSettingsStore((s) => s.resetAmountPresets);
   const [presetsModalVisible, setPresetsModalVisible] = useState(false);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const categories = useCategoryStore((s) => s.categories);
   const categoriesLoaded = useCategoryStore((s) => s.loaded);
   const reloadCategories = useCategoryStore((s) => s.reload);
@@ -58,6 +61,22 @@ export default function SettingsScreen() {
     label: SOUND_LABELS[sound],
     accessibilityLabel: `${SOUND_LABELS[sound]} 미리 듣기`,
     onPress: () => playSound(sound),
+  }));
+
+  // 테마 칩: 누르면 바로 저장·적용. 실패하면 스토어 값이 그대로라 선택 칩도 원래 자리에 남는다
+  const chooseTheme = (mode: ThemeMode) => {
+    chipTapHaptic();
+    try {
+      setThemeMode(mode);
+    } catch {
+      Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
+    }
+  };
+  const themeChips = THEME_MODES.map((mode) => ({
+    label: THEME_MODE_LABELS[mode],
+    accessibilityLabel: `테마 ${THEME_MODE_LABELS[mode]}`,
+    onPress: () => chooseTheme(mode),
+    selected: mode === themeMode,
   }));
 
   useEffect(() => {
@@ -136,6 +155,10 @@ export default function SettingsScreen() {
             onPress={() => setPresetsModalVisible(true)}
             isLast
           />
+        </SettingsSection>
+        {/* 앱 안에서 라이트/다크 고르기. 시스템은 iOS 설정을 따른다 */}
+        <SettingsSection title="화면">
+          <SettingsChipsRow testID="theme-mode" label="테마" chips={themeChips} isLast />
         </SettingsSection>
         {/* (M4) 저장 축하 효과음·햅틱 + 미리 듣기/느껴 보기 */}
         <SettingsSection title="효과">

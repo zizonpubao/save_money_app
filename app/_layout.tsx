@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { initDatabase } from '@/src/db';
+import { applyThemeMode, readThemeMode } from '@/src/features/themeMode';
 import { numFont, sp, typeScale, useTheme } from '@/src/theme';
 
 export { ErrorBoundary } from 'expo-router';
@@ -36,10 +37,14 @@ const NUMBER_FONTS = {
 
 type DbState = { ready: true; error: null } | { ready: false; error: Error };
 
-/** initDatabase() 는 동기 함수라 첫 렌더 전에 한 번만 실행하면 된다 (useState 초기화 함수). */
+/**
+ * initDatabase() 는 동기 함수라 첫 렌더 전에 한 번만 실행하면 된다 (useState 초기화 함수).
+ * 저장한 테마도 여기서 적용한다 — 같은 렌더의 useTheme() 부터 그 색이라 시스템 색으로 한 번 그렸다 바뀌는 깜빡임이 없다
+ */
 function bootDatabase(): DbState {
   try {
     initDatabase();
+    applyThemeMode(readThemeMode());
     return { ready: true, error: null };
   } catch (e) {
     return { ready: false, error: e instanceof Error ? e : new Error(String(e)) };

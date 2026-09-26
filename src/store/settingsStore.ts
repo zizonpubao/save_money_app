@@ -9,6 +9,7 @@ import {
   type AmountPreset,
 } from '@/src/features/amountPresets';
 import { isValidGoal, parseGoal } from '@/src/features/goal';
+import { applyThemeMode, parseThemeMode, type ThemeMode } from '@/src/features/themeMode';
 import { setHapticsEnabled } from '@/src/utils/haptics';
 
 type SettingsState = {
@@ -20,6 +21,8 @@ type SettingsState = {
   hapticsEnabled: boolean;
   /** 입력 시트 금액 프리셋 칩 5개. 사용자가 넣은 순서 그대로 */
   amountPresets: AmountPreset[];
+  /** 앱 테마. 기본 system */
+  themeMode: ThemeMode;
   loaded: boolean;
   load: () => void;
   /** 목표를 저장한다. 1원 이상 정수가 아니면 던진다 (화면이 저장 버튼으로 먼저 막는다). */
@@ -31,6 +34,8 @@ type SettingsState = {
   setAmountPresets: (values: readonly AmountPreset[]) => void;
   /** 저장한 값을 지우고 기본 프리셋으로 돌린다 */
   resetAmountPresets: () => void;
+  /** 테마를 저장하고 바로 적용한다 */
+  setThemeMode: (mode: ThemeMode) => void;
 };
 
 /** 켬/끔 설정 값. '0' 만 끔이고, 없거나 다른 값이면 기본값(켬)으로 본다 */
@@ -47,22 +52,27 @@ function flagValue(enabled: boolean): string {
  * 목표를 정하거나 바꾸거나 없애면 goal_reached_month 를 지운다 — 새 목표로 이번 달에 다시 축하받을 수 있게.
  * 이미 넘긴 금액보다 낮은 목표로 바꾸면 "이전 합계 < 목표" 가 아니라서 이펙트 없이 초과 문구만 뜬다.
  * 햅틱 스위치는 utils/haptics 에도 넣어 준다 — 모든 햅틱이 그 한 곳에서 켬/끔을 검사한다.
+ * 테마는 load 때도 다시 적용한다 — 전체 삭제로 theme_mode 가 지워지면 시스템 설정으로 돌아가게.
  */
 export const useSettingsStore = create<SettingsState>((set) => ({
   monthlyGoal: null,
   soundEnabled: true,
   hapticsEnabled: true,
   amountPresets: [...AMOUNT_PRESETS],
+  themeMode: 'system',
   loaded: false,
 
   load: () => {
     const hapticsEnabled = parseFlag(getSetting(SETTING_KEYS.hapticsEnabled));
     setHapticsEnabled(hapticsEnabled);
+    const themeMode = parseThemeMode(getSetting(SETTING_KEYS.themeMode));
+    applyThemeMode(themeMode);
     set({
       monthlyGoal: parseGoal(getSetting(SETTING_KEYS.monthlyGoal)),
       soundEnabled: parseFlag(getSetting(SETTING_KEYS.soundEnabled)),
       hapticsEnabled,
       amountPresets: parseAmountPresets(getSetting(SETTING_KEYS.amountPresets)),
+      themeMode,
       loaded: true,
     });
   },
@@ -103,5 +113,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   resetAmountPresets: () => {
     deleteSetting(SETTING_KEYS.amountPresets);
     set({ amountPresets: [...AMOUNT_PRESETS] });
+  },
+
+  setThemeMode: (mode) => {
+    setSetting(SETTING_KEYS.themeMode, mode);
+    applyThemeMode(mode);
+    set({ themeMode: mode });
   },
 }));
