@@ -21,7 +21,9 @@ export function ReviewCard({ message, onClose }: Props) {
         styles.row,
         { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: sp.smd },
       ]}>
-      <Text numberOfLines={2} style={[styles.text, type.label, numeric, { color: colors.primary }]}>
+      <Text
+        numberOfLines={2}
+        style={[styles.text, type.label, numeric, { color: colors.onPrimarySoft }]}>
         {message}
       </Text>
       <Pressable
@@ -38,7 +40,7 @@ export function ReviewCard({ message, onClose }: Props) {
             opacity: pressed ? 0.7 : 1,
           },
         ]}>
-        <Ionicons name="close" size={fs.lg} color={colors.primary} />
+        <Ionicons name="close" size={fs.lg} color={colors.onPrimarySoft} />
       </Pressable>
     </View>
   );

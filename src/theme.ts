@@ -10,6 +10,8 @@ export type ColorTokens = {
   onPrimary: string;
   /** primary 를 옅게 깐 배경 (선택 강조, 카드 포인트) */
   primarySoft: string;
+  /** (폴리싱) primarySoft 배경 위 글자·아이콘색. primary 는 라이트에서 대비 3.9 라 한 단계 진하게 (다크는 밝게) */
+  onPrimarySoft: string;
   danger: string;
   /** 컨트롤 테두리 (입력 필드, 칩, 토글) */
   border: string;
@@ -37,6 +39,8 @@ export const lightColors: ColorTokens = {
   primary: '#2F6FED',
   onPrimary: '#FFFFFF',
   primarySoft: '#E8EFFD',
+  // (폴리싱) primarySoft 위 대비 5.65 (primary 는 3.94)
+  onPrimarySoft: '#1F56C8',
   // (폴리싱) #E5484D 는 card 위 글자 대비 3.9 → 4.5 이상으로 한 단계 진하게 (흰 글자 얹어도 5.2)
   danger: '#CE2C31',
   border: '#E5E7EB',
@@ -59,6 +63,8 @@ export const darkColors: ColorTokens = {
   primary: '#5B8DEF',
   onPrimary: '#FFFFFF',
   primarySoft: '#1F2A44',
+  // (폴리싱) primarySoft 위 대비 5.18 (primary 는 4.41)
+  onPrimarySoft: '#6E9BF2',
   danger: '#F2555A',
   border: '#2A2E36',
   divider: '#2E333C',

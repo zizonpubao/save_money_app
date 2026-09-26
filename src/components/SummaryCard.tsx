@@ -182,7 +182,9 @@ export function SummaryCard({
             style={bigNumberStyle}
           />
         ) : (
-          <Text style={bigNumberStyle}>{formatWon(monthTotal)}</Text>
+          <Text style={bigNumberStyle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            {formatWon(monthTotal)}
+          </Text>
         )}
       </Animated.View>
 

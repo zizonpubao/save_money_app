@@ -64,7 +64,9 @@ function Banner({ message, entrance }: { message: string; entrance: Entrance }) 
         { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: sp.smd },
         animatedStyle,
       ]}>
-      <Text style={[type.label, numeric, styles.text, { color: colors.primary }]}>{message}</Text>
+      <Text style={[type.label, numeric, styles.text, { color: colors.onPrimarySoft }]}>
+        {message}
+      </Text>
     </Animated.View>
   );
 }

@@ -9,6 +9,7 @@
 | 색 | `bg` / `card` | `#F5F6F8` `#FFFFFF` / `#0F1115` `#1A1D23` |
 | | `text` / `textMuted` | `#111418` `#6B7280` / `#F3F4F6` `#9CA3AF` |
 | | `primary` / `onPrimary` / `primarySoft` | `#2F6FED` `#FFF` `#E8EFFD` / `#5B8DEF` `#FFF` `#1F2A44` |
+| | `onPrimarySoft`(primarySoft 위 글자·아이콘) | `#1F56C8` / `#6E9BF2` (폴리싱: primarySoft 위 대비 5.65 / 5.18, primary 는 3.94 / 4.41) |
 | | `danger` | `#CE2C31` / `#F2555A` (폴리싱: 라이트 `#E5484D` 는 card 위 대비 3.9 → 5.2) |
 | | `border`(컨트롤 테두리) / `divider`(카드 안 구분선) | `#E5E7EB` `#EDEFF2` / `#2A2E36` `#2E333C` |
 | | `grass1~4`(잔디 농도) / `grassFuture`(잔디 미래 칸) | `#BACFF9` `#8CAFF5` `#5D8FF1` `#2F6FED` `#F5F6F8` / `#2E436F` `#3D5C9A` `#4C74C4` `#5B8DEF` `#0F1115` (M4: 라이트처럼 `bg` 와 같은 움푹한 칸, 기록 없는 날 `divider` 와 구분) |
@@ -50,6 +51,7 @@
 - **모달 헤더**(입력·목표·빠른 금액·카테고리): `card` 바탕, 선 없음, 좌 "취소"(`body` 회색) · 가운데 제목(`bodyStrong`) · 우 "저장"(`action` primary, 못 누르면 `textMuted`). 좌우 칸 `size.headerAction` × `size.touch`.
 - **입력 필드**: `card` 배경 + `border` 테두리 + `radius.md`, 라벨은 위에 `type.caption` `textMuted`, 필드 간 간격 `sp.md`. 금액 필드만 `type.title` 로 크게, 오른쪽에 "원".
 - **빈 상태**: 가운데 정렬, `type.bodyStrong` 한 줄 + `type.note` 한 줄. 일러스트·느낌표 없음, 문구는 다음 행동을 알려준다("오늘 참은 소비를 + 버튼으로 남겨보세요"). 목록 빈 상태는 `paddingVertical: sp.xl`. "찾을 수 없음"(기록 수정·없는 화면)은 두 번째 줄 대신 `label` primary 텍스트 버튼(44pt).
+- **빈 상태·안내·버튼 문구**: 짧은 해요체 허용("이 달엔 기록이 없어요", "목표를 정하면 진행률이 보여요"). 문서·README·커밋은 합니다체 (`docs/STYLE-KO.md` 톤 예외).
 
 ## 홈 배치 (위→아래, 구획 사이 `sp.smd` 한 가지)
 첫 화면(390×844, 헤더·탭바 제외 ≈670pt)에 **목록 3행 이상**이 보이도록 머리 영역을 ≈460pt 안에 둔다 (카드 ≈250 · 칩 32 · 잔디 5줄 140 / 6줄 160).
@@ -195,3 +197,4 @@
 - **모달 4종**: 헤더를 `card` 바탕·선 없음으로 탭 헤더와 맞춤. 취소·저장 터치 38 → 44pt. 목표 모달 안내문 합니다체.
 - **입력**: 빠른 입력 칩 최대 폭 `size.chipMaxWidth`(긴 항목명 말줄임).
 - **기록 수정·없는 화면**: 삭제 버튼을 다른 지우기 버튼과 같은 `card` + `border` + `danger` 글자로. "찾을 수 없음" 은 빈 상태 모양(`bodyStrong` + `label` primary 44pt 버튼).
+- **후속**: `onPrimarySoft` 토큰 추가 → 배너·회고 카드 글자·닫기 아이콘(대비 4.5↑). 홈 큰 숫자 `numberOfLines 1` + `adjustsFontSizeToFit`(최소 0.6배)로 9자리 금액도 한 줄.

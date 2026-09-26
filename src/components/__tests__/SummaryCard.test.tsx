@@ -29,6 +29,14 @@ describe('SummaryCard (홈 상단 카드)', () => {
     expect(screen.getByLabelText(/^오늘 4,500원 · \d{4}년/)).toBeOnTheScreen();
   });
 
+  it('9자리 금액은 한 줄에서 폭에 맞춰 줄어든다 (최소 0.6배)', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={123456789} />);
+    const big = screen.getByText('123,456,789원');
+    expect(big.props.numberOfLines).toBe(1);
+    expect(big.props.adjustsFontSizeToFit).toBe(true);
+    expect(big.props.minimumFontScale).toBe(0.6);
+  });
+
   it('이번 달 절약액이 0이면 "0원" 으로 보인다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={0} />);
     // 큰 숫자 0원, 오늘 줄도 0원

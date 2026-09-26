@@ -53,5 +53,10 @@ export function AnimatedWon({ value, duration = 600, from, fromDuration, delay =
     },
   );
 
-  return <Text style={style}>{formatWon(display)}</Text>;
+  // 9자리 금액도 한 줄에 들어가게 폭에 맞춰 줄인다. 줄 높이는 lineHeight 로 고정돼 카운트업 중에도 카드가 튀지 않는다
+  return (
+    <Text style={style} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+      {formatWon(display)}
+    </Text>
+  );
 }
