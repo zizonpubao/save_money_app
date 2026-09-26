@@ -1,17 +1,21 @@
-// SaveLog 앱 아이콘·스플래시를 그린다. 모양: primary(#2F6FED) 바탕 위 흰 "₩" (W 한 획 + 가로줄 두 개).
+// SaveLog 앱 아이콘·스플래시를 그린다. 모양: primary(#23794B 숲 초록) 바탕 위 크림(#FAF6EF) "₩" (W 한 획 + 가로줄 두 개).
 // Node 기본 모듈만 쓴다 (PNG 인코딩은 zlib 의 deflateSync·crc32). 실행: node scripts/gen-icon.mjs → assets/images/*.png
 // - icon.png (1024², RGB): iOS·기본 아이콘. 바탕을 끝까지 채운다 (둥근 모서리는 OS 가 깎는다)
-// - android-icon-foreground.png / android-icon-monochrome.png (1024², RGBA): 투명 바탕 + 흰 글자만.
-//   런처가 원·물방울 등으로 가리므로 글자는 가운데 안전 영역(지름 66%) 안에 작게 둔다. 바탕색은 app.json adaptiveIcon.backgroundColor
-// - splash-icon.png (1024², RGBA): 투명 + 흰 글자. 스플래시 바탕색(primary)은 app.json expo-splash-screen 설정
+// - android-icon-foreground.png (1024², RGBA): 투명 바탕 + 크림 글자만. 바탕색(primary)은 app.json adaptiveIcon.backgroundColor
+// - android-icon-monochrome.png (1024², RGBA): 투명 바탕 + 흰 글자 (테마 아이콘은 런처가 알파만 보고 다시 칠한다)
+//   두 파일 모두 런처가 원·물방울 등으로 가리므로 글자는 가운데 안전 영역(지름 66%) 안에 작게 둔다
+// - splash-icon.png (1024², RGBA): 투명 + primary 글자. 스플래시 바탕색(크림 bg)은 app.json expo-splash-screen 설정.
+//   Expo Go 는 다크 스플래시를 따로 못 두어 라이트 bg 한 가지로 통일
 // - favicon.png (48², RGB): 웹용
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crc32, deflateSync } from 'node:zlib';
 
-/** src/theme.ts lightColors.primary 와 같은 값 */
-const PRIMARY = [0x2f, 0x6f, 0xed];
+/** src/theme.ts 라이트 primary(숲 초록) 와 같은 값 */
+const PRIMARY = [0x23, 0x79, 0x4b];
+/** src/theme.ts 라이트 bg(크림) 와 같은 값 */
+const CREAM = [0xfa, 0xf6, 0xef];
 const WHITE = [0xff, 0xff, 0xff];
 /** 한 픽셀을 4×4 로 나눠 가장자리를 부드럽게 (안티에일리어싱) */
 const SUB = 4;
@@ -110,26 +114,26 @@ function encodePng(size, channels, pixels) {
   ]);
 }
 
-/** 바탕을 primary 로 채우고 흰 글자를 덮임만큼 섞는다 (RGB) */
+/** 바탕을 primary 로 채우고 크림 글자를 덮임만큼 섞는다 (RGB) */
 function solidIcon(size, glyph) {
   const cover = renderCoverage(size, glyph);
   const px = Buffer.alloc(size * size * 3);
   for (let i = 0; i < cover.length; i += 1) {
     for (let c = 0; c < 3; c += 1) {
-      px[i * 3 + c] = Math.round(PRIMARY[c] + (WHITE[c] - PRIMARY[c]) * cover[i]);
+      px[i * 3 + c] = Math.round(PRIMARY[c] + (CREAM[c] - PRIMARY[c]) * cover[i]);
     }
   }
   return encodePng(size, 3, px);
 }
 
-/** 투명 바탕 + 흰 글자 (RGBA, 덮임 = 알파) */
-function glyphOnly(size, glyph) {
+/** 투명 바탕 + color 글자 (RGBA, 덮임 = 알파) */
+function glyphOnly(size, glyph, color) {
   const cover = renderCoverage(size, glyph);
   const px = Buffer.alloc(size * size * 4);
   for (let i = 0; i < cover.length; i += 1) {
-    px[i * 4] = WHITE[0];
-    px[i * 4 + 1] = WHITE[1];
-    px[i * 4 + 2] = WHITE[2];
+    px[i * 4] = color[0];
+    px[i * 4 + 1] = color[1];
+    px[i * 4 + 2] = color[2];
     px[i * 4 + 3] = Math.round(255 * cover[i]);
   }
   return encodePng(size, 4, px);
@@ -139,10 +143,10 @@ const FILES = {
   // 글자 폭 = 캔버스의 50% (가로줄이 양옆으로 10% 더 나와 60%)
   'icon.png': () => solidIcon(1024, 512),
   // 적응형 아이콘 안전 영역(지름 66% ≈ 676px) 안: 글자 폭 36%(가로줄 포함 ≈ 44%)
-  'android-icon-foreground.png': () => glyphOnly(1024, 368),
-  'android-icon-monochrome.png': () => glyphOnly(1024, 368),
+  'android-icon-foreground.png': () => glyphOnly(1024, 368, CREAM),
+  'android-icon-monochrome.png': () => glyphOnly(1024, 368, WHITE),
   // 스플래시는 가운데 작은 로고 (resizeMode contain, imageWidth 기본 200)
-  'splash-icon.png': () => glyphOnly(1024, 512),
+  'splash-icon.png': () => glyphOnly(1024, 512, PRIMARY),
   'favicon.png': () => solidIcon(48, 24),
 };
 
