@@ -32,3 +32,11 @@ jest.mock('expo-audio');
 jest.mock('expo-file-system');
 jest.mock('expo-sharing');
 jest.mock('expo-document-picker');
+
+/**
+ * (Android 대응) 모달·기록 수정 화면이 useSafeAreaInsets 를 쓴다. 테스트는 SafeAreaProvider 없이 화면을 그리므로
+ * 라이브러리 공식 대역으로 바꾼다 (inset 0, useSafeAreaInsets 는 jest.fn 이라 테스트가 값을 정할 수 있다).
+ */
+jest.mock('react-native-safe-area-context', () =>
+  jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);

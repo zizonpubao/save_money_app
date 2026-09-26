@@ -8,15 +8,18 @@
     "scheme": "savelog",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.zizonpubao.savelog"
     },
     "android": {
+      "package": "com.zizonpubao.savelog",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#2F6FED",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -31,7 +34,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#2F6FED"
         }
       ],
       "expo-sqlite",

@@ -5,6 +5,7 @@ import { EntryForm } from '@/src/components/EntryForm';
 import { Screen } from '@/src/components/Screen';
 import { useEntryEditor } from '@/src/features/useEntryEditor';
 import { useEntryForm } from '@/src/features/useEntryForm';
+import { useModalInsets } from '@/src/features/useModalInsets';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useTheme } from '@/src/theme';
 import { saveTapHaptic } from '@/src/utils/haptics';
@@ -16,6 +17,8 @@ export default function EntryEditScreen() {
   const categories = useCategoryStore((s) => s.categories);
   const { entry, save, destroy } = useEntryEditor(id);
   const form = useEntryForm(entry);
+  // Android(edge-to-edge)는 화면이 내비게이션 바 밑까지 가서 삭제 버튼이 가리지 않게 아래를 더 비운다 (iOS 0)
+  const insets = useModalInsets();
 
   const onSave = () => {
     if (!form.canSave) return;
@@ -87,7 +90,7 @@ export default function EntryEditScreen() {
         }}
       />
       <Screen style={styles.noPadding}>
-        <EntryForm form={form} categories={categories}>
+        <EntryForm form={form} categories={categories} bottomInset={insets.bottom}>
           <View style={{ marginTop: sp.md }}>
             <Pressable
               onPress={onDelete}

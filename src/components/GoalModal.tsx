@@ -2,6 +2,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 
 import { GOAL_PRESETS, presetLabel } from '@/src/features/goal';
 import { useGoalForm } from '@/src/features/useGoalForm';
+import { useModalInsets } from '@/src/features/useModalInsets';
 import { numeric, size, useTheme } from '@/src/theme';
 
 type Props = {
@@ -20,6 +21,9 @@ export function GoalModal({ visible, current, onSave, onClear, onClose }: Props)
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android(pageSheet 없음 → 풀스크린): edge-to-edge 와 같게 상태바·내비 바 밑까지 그리고 여백은 useModalInsets 로 준다
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
       onDismiss={onClose}>
       {/* 열릴 때마다 새로 마운트돼 입력이 지금 목표로 초기화된다 */}
@@ -31,13 +35,19 @@ export function GoalModal({ visible, current, onSave, onClear, onClose }: Props)
 function GoalModalBody({ current, onSave, onClear, onClose }: Omit<Props, 'visible'>) {
   const { colors, type, fs, sp, radius } = useTheme();
   const form = useGoalForm(current);
+  const insets = useModalInsets();
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.xs, backgroundColor: colors.card },
+          {
+            paddingHorizontal: sp.md,
+            paddingVertical: sp.xs,
+            paddingTop: sp.xs + insets.top,
+            backgroundColor: colors.card,
+          },
         ]}>
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
@@ -57,7 +67,7 @@ function GoalModalBody({ current, onSave, onClear, onClose }: Omit<Props, 'visib
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl }}>
+        contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl + insets.bottom }}>
         <View>
           <Text style={[type.caption, { color: colors.textMuted, marginBottom: sp.xs }]}>
             한 달에 아끼고 싶은 금액

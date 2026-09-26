@@ -1,4 +1,7 @@
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import {
   KeyboardAvoidingView,
@@ -27,6 +30,8 @@ type Props = PropsWithChildren<{
   autoFocusAmount?: boolean;
   /** (M4) 빠른 입력 칩. 비어 있으면 줄째로 숨긴다 (수정 화면은 넘기지 않는다) */
   recent?: RecentTitle[];
+  /** 스크롤 끝에 더 비워 둘 여백. Android 에서 내비게이션 바(제스처 바)에 마지막 필드가 가리지 않게 (iOS 는 0) */
+  bottomInset?: number;
 }>;
 
 /**
@@ -38,6 +43,7 @@ export function EntryForm({
   categories,
   autoFocusAmount = false,
   recent = [],
+  bottomInset = 0,
   children,
 }: Props) {
   const { colors, type, fs, sp, radius, isDark, motion } = useTheme();
@@ -54,9 +60,26 @@ export function EntryForm({
   }, [autoFocusAmount, motion.focusDelayMs]);
 
   const onDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    // Android 는 다이얼로그라 선택/취소 후 닫아야 하고, iOS 휠은 계속 열어둔다
-    if (Platform.OS === 'android') setPickerOpen(false);
+    // 취소는 event.type === 'dismissed' 로 와서 아무것도 바꾸지 않는다
     if (event.type === 'set' && selected) form.setDate(fromDate(selected));
+  };
+
+  /**
+   * iOS: 날짜 행 아래 휠을 펼치고 접는다.
+   * Android: 컴포넌트로 그리면 다시 그려질 때마다(onChange 가 새 함수) 다이얼로그가 또 뜨는 문제가 있어,
+   * 라이브러리가 권하는 명령형 API 로 한 번만 연다. 다이얼로그는 선택·취소하면 스스로 닫힌다
+   */
+  const onDatePress = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: toDate(values.date),
+        mode: 'date',
+        maximumDate: new Date(),
+        onChange: onDateChange,
+      });
+      return;
+    }
+    setPickerOpen((v) => !v);
   };
 
   const fieldStyle = {
@@ -74,11 +97,12 @@ export function EntryForm({
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      // Android(edge-to-edge)는 키보드가 창을 줄여 주지 않을 수 있어 높이로 비킨다. 이미 줄었으면 겹침이 0 이라 무해하다
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl }}>
+        contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl + bottomInset }}>
         {recent.length > 0 ? (
           <View>
             <Text style={labelStyle}>최근 항목</Text>
@@ -158,7 +182,8 @@ export function EntryForm({
         <View>
           <Text style={labelStyle}>날짜</Text>
           <Pressable
-            onPress={() => setPickerOpen((v) => !v)}
+            onPress={onDatePress}
+            testID="date-field"
             accessibilityRole="button"
             style={[styles.input, fieldStyle]}>
             <Text style={[type.body, { color: pickerOpen ? colors.primary : colors.text }]}>
@@ -169,7 +194,7 @@ export function EntryForm({
             <DateTimePicker
               value={toDate(values.date)}
               mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              display="spinner"
               locale="ko-KR"
               maximumDate={new Date()}
               themeVariant={isDark ? 'dark' : 'light'}

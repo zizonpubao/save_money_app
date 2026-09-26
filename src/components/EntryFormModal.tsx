@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EntryForm } from '@/src/components/EntryForm';
 import type { Category, EntryInput } from '@/src/db';
 import { useEntryForm } from '@/src/features/useEntryForm';
+import { useModalInsets } from '@/src/features/useModalInsets';
 import { useRecentTitles } from '@/src/features/useRecentTitles';
 import { size, useTheme } from '@/src/theme';
 
@@ -37,6 +38,9 @@ export function EntryFormModal({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android(pageSheet 없음 → 풀스크린): edge-to-edge 와 같게 상태바·내비 바 밑까지 그리고 여백은 useModalInsets 로 준다
+      statusBarTranslucent
+      navigationBarTranslucent
       testID="entry-form-modal"
       onRequestClose={onClose}
       onDismiss={() => {
@@ -61,13 +65,19 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
   const form = useEntryForm(initial);
   // 빠른 입력 칩은 새 기록에만. 열릴 때마다 새로 마운트되므로 방금 저장한 항목도 다음에 바로 보인다
   const recent = useRecentTitles(initial === null);
+  const insets = useModalInsets();
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.xs, backgroundColor: colors.card },
+          {
+            paddingHorizontal: sp.md,
+            paddingVertical: sp.xs,
+            paddingTop: sp.xs + insets.top,
+            backgroundColor: colors.card,
+          },
         ]}>
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
@@ -83,7 +93,7 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
           </Text>
         </Pressable>
       </View>
-      <EntryForm form={form} categories={categories} recent={recent} autoFocusAmount />
+      <EntryForm form={form} categories={categories} recent={recent} autoFocusAmount bottomInset={insets.bottom} />
     </View>
   );
 }

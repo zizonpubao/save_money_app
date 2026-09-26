@@ -10,7 +10,7 @@ import {
   type CardRect,
   type CelebrationPlan,
 } from '@/src/features/celebration';
-import { motion } from '@/src/theme';
+import { layer, motion } from '@/src/theme';
 
 /** 저장 한 번의 연출. runId 가 커질 때마다 한 번 재생한다 */
 export type CelebrationRun = {
@@ -80,6 +80,6 @@ export function CelebrationLayer({ run, rect, reduceMotion = false }: Props) {
 }
 
 const styles = StyleSheet.create({
-  // 목록·칩·FAB 보다 위
-  layer: { zIndex: 2 },
+  // 목록·칩·FAB 보다 위 (Android 는 FAB 의 elevation 을 넘어야 위에 그려진다)
+  layer: layer.overlay,
 });

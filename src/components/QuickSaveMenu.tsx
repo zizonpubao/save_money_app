@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { withSpring, withTiming } from 'react-native-reanimated';
 
 import type { Category, RecentTitle } from '@/src/db';
@@ -62,6 +63,15 @@ function fadeOut() {
 export function QuickSaveMenu({ items, categories, reduceMotion = false, onPick, onClose }: Props) {
   const { colors, type, sp, radius } = useTheme();
   const categoryMap = toCategoryMap(categories);
+
+  // Android 뒤로 가기는 앱을 빠져나가지 않고 메뉴만 닫는다 (열려 있을 때만 마운트되므로 그동안만 가로챈다. iOS 는 오지 않음)
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [onClose]);
 
   return (
     <>

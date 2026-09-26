@@ -1,6 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 
 /**
  * (M5) 기기 파일 입출력만 모은 곳. 백업 내용 만들기·검증은 순수 함수(backup.ts · csv.ts · restore.ts)라
@@ -52,13 +53,23 @@ export async function shareFile(uri: string, kind: ShareKind): Promise<boolean> 
 }
 
 /**
+ * 백업 파일 고르기에서 보여 줄 형식.
+ * iOS 는 MIME + UTI(public.json). Android 는 MIME 만 알아듣고, 카톡·메일로 받은 .json 이
+ * application/octet-stream 으로 잡혀 회색으로 막히는 일이 흔해 모든 파일을 보여 준다 (어차피 내용으로 판정한다)
+ */
+export function backupPickerTypes(): string[] {
+  return Platform.OS === 'android' ? ['*/*'] : ['application/json', 'text/plain', 'public.json'];
+}
+
+/**
  * 파일 앱에서 백업 파일을 골라 내용을 읽는다. 취소하면 null.
  * 카톡·메일로 받으면 확장자·형식이 바뀌어 오기도 해서 텍스트까지 고를 수 있게 하고,
  * 백업인지는 파일 이름이 아니라 내용(JSON.parse + validateBackup)으로 판정한다
  */
 export async function pickJsonText(): Promise<string | null> {
   const result = await DocumentPicker.getDocumentAsync({
-    type: ['application/json', 'text/plain', 'public.json'],
+    type: backupPickerTypes(),
+    // Android 의 content:// 주소는 바로 읽을 수 없어 캐시에 복사한 file:// 로 읽는다
     copyToCacheDirectory: true,
     multiple: false,
   });

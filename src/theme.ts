@@ -137,8 +137,11 @@ export const typeScale = {
   caption: { fontSize: fs.xs, fontWeight: '400', lineHeight: 16 },
 } as const satisfies Record<string, TypeToken>;
 
-/** 금액·날짜처럼 자리를 맞춰야 하는 숫자에 함께 쓴다 */
-export const numeric: TextStyle = { fontVariant: ['tabular-nums'] };
+/**
+ * 금액·날짜처럼 자리를 맞춰야 하는 숫자에 함께 쓴다.
+ * includeFontPadding: Android 글꼴의 위아래 여백을 빼서 큰 숫자·칩 글자가 세로 가운데에 오게 한다 (iOS 는 무시)
+ */
+export const numeric: TextStyle = { fontVariant: ['tabular-nums'], includeFontPadding: false };
 
 export type ShadowToken = Pick<
   ViewStyle,
@@ -150,9 +153,18 @@ export type ShadowToken = Pick<
  * 카드·행·칩은 그림자 없이 배경색 대비로만 구분한다.
  */
 export const shadow = {
-  fab: { shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  // Android 는 shadow* 를 무시하고 elevation 으로만 그림자를 그린다 (색은 shadowColor 를 따라 다크에서도 검정)
+  fab: { shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
   sheet: { shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: -2 }, elevation: 8 },
 } as const satisfies Record<string, ShadowToken>;
+
+/**
+ * 화면 위를 덮는 층. Android 는 elevation 이 있는 뷰(FAB)를 zIndex 와 상관없이 위에 그리므로,
+ * 축하 오버레이는 떠 있는 것들(shadow.*)보다 높은 elevation 을 함께 준다. 배경 없는 뷰라 그림자는 생기지 않는다
+ */
+export const layer = {
+  overlay: { zIndex: 2, elevation: 12 },
+} as const satisfies Record<string, Pick<ViewStyle, 'zIndex' | 'elevation'>>;
 
 /** 크기 토큰 (px) */
 export const size = {

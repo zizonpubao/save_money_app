@@ -7,6 +7,7 @@ import {
   type AmountPreset,
 } from '@/src/features/amountPresets';
 import { useAmountPresetsForm } from '@/src/features/useAmountPresetsForm';
+import { useModalInsets } from '@/src/features/useModalInsets';
 import { numeric, size, useTheme } from '@/src/theme';
 
 type Props = {
@@ -29,6 +30,9 @@ export function AmountPresetsModal({ visible, current, onSave, onReset, onClose 
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android(pageSheet 없음 → 풀스크린): edge-to-edge 와 같게 상태바·내비 바 밑까지 그리고 여백은 useModalInsets 로 준다
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
       onDismiss={onClose}>
       {/* 열릴 때마다 새로 마운트돼 5칸이 지금 값으로 초기화된다 */}
@@ -40,6 +44,7 @@ export function AmountPresetsModal({ visible, current, onSave, onReset, onClose 
 function Body({ current, onSave, onReset, onClose }: Omit<Props, 'visible'>) {
   const { colors, type, sp, radius } = useTheme();
   const form = useAmountPresetsForm(current);
+  const insets = useModalInsets();
 
   const save = () => {
     const values = form.submit();
@@ -51,7 +56,12 @@ function Body({ current, onSave, onReset, onClose }: Omit<Props, 'visible'>) {
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.xs, backgroundColor: colors.card },
+          {
+            paddingHorizontal: sp.md,
+            paddingVertical: sp.xs,
+            paddingTop: sp.xs + insets.top,
+            backgroundColor: colors.card,
+          },
         ]}>
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
@@ -70,7 +80,7 @@ function Body({ current, onSave, onReset, onClose }: Omit<Props, 'visible'>) {
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: sp.md, gap: sp.sm, paddingBottom: sp.xl }}>
+        contentContainerStyle={{ padding: sp.md, gap: sp.sm, paddingBottom: sp.xl + insets.bottom }}>
         <Text style={[type.caption, { color: colors.textMuted }]}>
           입력 시트 금액 칸 아래에 이 순서대로 보입니다
         </Text>

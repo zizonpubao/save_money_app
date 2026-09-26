@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  BackHandler,
   StyleSheet,
   Text,
   View,
@@ -71,6 +72,17 @@ export function BarChart({ bars }: Props) {
     setSelectedIndex((prev) => (prev === index ? null : index));
   }, []);
   const clear = useCallback(() => setSelectedIndex(null), []);
+
+  // Android 뒤로 가기: 툴팁이 떠 있으면 화면을 떠나지 않고 툴팁만 닫는다 (iOS 는 오지 않음)
+  const tooltipOpen = selectedIndex !== null;
+  useEffect(() => {
+    if (!tooltipOpen) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setSelectedIndex(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [tooltipOpen]);
 
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()

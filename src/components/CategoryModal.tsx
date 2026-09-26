@@ -8,6 +8,7 @@ import {
   categoryErrorMessage,
   validateCategoryInput,
 } from '@/src/features/categoryForm';
+import { useModalInsets } from '@/src/features/useModalInsets';
 import { size, useTheme } from '@/src/theme';
 
 type Props = {
@@ -24,6 +25,9 @@ export function CategoryModal({ visible, category, onClose }: Props) {
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android(pageSheet 없음 → 풀스크린): edge-to-edge 와 같게 상태바·내비 바 밑까지 그리고 여백은 useModalInsets 로 준다
+      statusBarTranslucent
+      navigationBarTranslucent
       onRequestClose={onClose}
       onDismiss={onClose}>
       {/* 열 때마다 새로 마운트돼 입력이 고칠 카테고리 값으로 초기화된다 */}
@@ -36,6 +40,7 @@ function CategoryModalBody({ category, onClose }: Omit<Props, 'visible'>) {
   const { colors, type, fs, sp, radius } = useTheme();
   const [emoji, setEmoji] = useState(category?.emoji ?? '');
   const [name, setName] = useState(category?.name ?? '');
+  const insets = useModalInsets();
   const error = validateCategoryInput({ name, emoji });
   const canSave = error === null;
   const hint = categoryErrorMessage(error);
@@ -52,7 +57,12 @@ function CategoryModalBody({ category, onClose }: Omit<Props, 'visible'>) {
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.xs, backgroundColor: colors.card },
+          {
+            paddingHorizontal: sp.md,
+            paddingVertical: sp.xs,
+            paddingTop: sp.xs + insets.top,
+            backgroundColor: colors.card,
+          },
         ]}>
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
@@ -76,7 +86,7 @@ function CategoryModalBody({ category, onClose }: Omit<Props, 'visible'>) {
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl }}>
+        contentContainerStyle={{ padding: sp.md, gap: sp.md, paddingBottom: sp.xl + insets.bottom }}>
         <View style={[styles.fields, { gap: sp.smd }]}>
           <View>
             <Text style={[type.caption, { color: colors.textMuted, marginBottom: sp.xs }]}>
