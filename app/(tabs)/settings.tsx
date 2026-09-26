@@ -211,6 +211,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="앱 정보">
           <SettingsInfoRow label="버전" value={APP_VERSION} />
+          <SettingsInfoRow label="만든 사람" value="zizonpubao" />
           <SettingsRow label="데이터 전체 삭제" onPress={confirmDeleteAll} danger isLast />
         </SettingsSection>
       </ScrollView>
