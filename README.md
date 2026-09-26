@@ -11,7 +11,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-742%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-839%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
@@ -26,6 +26,7 @@
 - 서버 · 로그인 없음. 데이터는 아이폰 SQLite에만 저장
 - Windows PC + 아이폰 Expo Go만으로 개발 (Mac 없음)
 - 기획 → 구현 → 리뷰 → 테스트를 역할별 AI 서브 에이전트가 분담, 사람은 결정만
+- 디자인 방향 B: 크림 바탕에 숲 초록 · 주황 강조, 금액 숫자는 Outfit 폰트
 
 ## 🧭 유스케이스
 
@@ -96,6 +97,18 @@ sequenceDiagram
     H-->>U: 햅틱 → 카운트업 → 펄스 → (배너)
 ```
 
+## 📱 화면
+
+다크 모드 화면 기록에서 뽑은 캡처입니다. 라이트는 크림 바탕입니다.
+
+| <img src="docs/img/home.png" width="240"> | <img src="docs/img/entry-modal.png" width="240"> | <img src="docs/img/records-month.png" width="240"> |
+|---|---|---|
+| 홈 · 이번 달 카드, 칩, 잔디, 목록 | 입력 시트 · 빠른 입력, 프리셋 칩, 카테고리 | 기록 월 모드 · 월 합계, 일별 막대, 카테고리 |
+
+| <img src="docs/img/records-year.png" width="240"> | <img src="docs/img/settings.png" width="240"> | <img src="docs/img/save-effect.gif" width="240"> |
+|---|---|---|
+| 기록 년 모드 · 월별 막대 | 설정 · 목표, 효과, 백업, 카테고리 | 저장 연출 · 컨페티 + 라벨 + 카운트업 |
+
 ## ✨ 주요 기능
 
 | # | 기능 | 요약 |
@@ -107,6 +120,13 @@ sequenceDiagram
 | 5 | 월 목표 | 목표 금액 설정(프리셋 · 직접 입력), 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 |
 | 6 | 홈 활기 | 오늘의 한 줄(명언 39개 · 속담·유명인 · 환산 · 어제 대비), 하루 첫 오픈 카운트업, 이번 달 잔디, 이모지 적립 |
 | 7 | 백업 | JSON 내보내기 · 복원(병합/덮어쓰기, 자동 백업), CSV(엑셀 호환), 카테고리 관리(추가·이름·이모지·순서·삭제), 데이터 전체 삭제 |
+| 8 | 설정 | 테마(시스템·라이트·다크), 효과음·햅틱, 빠른 금액 버튼, 만든 사람 |
+
+### 🎨 따뜻한 저금통
+
+바탕은 크림색, 강조는 숲 초록과 주황입니다. 다크 모드는 차콜 팔레트로 톤만 바꿉니다.
+금액 숫자는 Outfit 폰트를 쓰고 한글은 시스템 폰트를 그대로 씁니다.
+테마는 설정 → 화면에서 시스템 · 라이트 · 다크 중 고릅니다.
 
 ### 🎯 저장 순간의 이펙트
 
@@ -136,8 +156,10 @@ sequenceDiagram
 | 애니메이션 | react-native-reanimated 4 · gesture-handler | 카운트업, 펄스, 스와이프 |
 | 효과음 | expo-audio · 생성 WAV | 무음 스위치 준수 |
 | 날짜 | dayjs (locale ko) | `2026년 9월 23일 (수)` |
+| 폰트 | Outfit (@expo-google-fonts) | 금액 숫자 전용, 한글은 시스템 |
 | 테스트 | jest-expo · @testing-library/react-native · sql.js | sql.js로 expo-sqlite를 대역해 DB 계층까지 PC에서 검증 |
 | 백업 | expo-file-system · expo-sharing · expo-document-picker | JSON · CSV, 공유 시트 |
+| 배포 | EAS Build (클라우드) | 안드로이드 APK, iOS는 Expo Go |
 | 개발 도구 | Claude Code 서브 에이전트 7개 | 아래 "개발 방식" 참고 |
 
 ## 🏗 아키텍처
@@ -207,9 +229,13 @@ savelog/
 ├── __mocks__/expo-sqlite.ts  # sql.js 기반 대역 (jest 전용)
 ├── assets/sounds/          # 저장 효과음 WAV (생성 파일)
 ├── scripts/gen-sounds.mjs  # 효과음 WAV 생성 스크립트
+├── eas.json                # EAS Build 프로필 (안드로이드 preview)
+├── metro.config.js         # Metro 번들러 설정
 ├── docs/
 │   ├── PRD.md              # 제품 요구사항, 마일스톤
-│   └── DESIGN.md           # 디자인 가이드
+│   ├── DESIGN.md           # 디자인 가이드
+│   ├── img/                # README 스크린샷 · GIF
+│   └── video/              # 화면 기록 원본
 └── .claude/
     ├── agents/             # 서브 에이전트 7개
     └── commands/           # /feature, /check 등
@@ -255,6 +281,13 @@ npx expo-doctor    # 의존성 호환 점검
 
 > 💡 Expo Go에 로그인했다면 PC의 CLI도 같은 계정이어야 합니다. 구글 SSO 계정은 expo.dev에서 액세스 토큰을 만들어 `EXPO_TOKEN` 환경 변수에 넣습니다.
 
+## 📦 안드로이드 APK
+
+`npx eas-cli build -p android --profile preview` 로 클라우드에서 APK를 만듭니다.
+결과물 APK는 지인에게 파일로 전달합니다.
+설치할 때 "알 수 없는 출처" 설치를 허용해야 합니다.
+스토어 출시는 하지 않습니다.
+
 ## 🗺 로드맵
 
 | 단계 | 내용 | 상태 |
@@ -267,7 +300,7 @@ npx expo-doctor    # 의존성 호환 점검
 | M4 편의 | 빠른 입력 칩, 연속 기록일, 누적 이정표, 회고 카드 | ✅ |
 | M4.5 입력 마찰 줄이기 | 원탭 저장, 프리셋 칩, 자동 포커스 | ✅ |
 | M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | ✅ |
-| 폴리싱 · 안드로이드 · APK | 디자이너 전체 폴리싱, 안드로이드 점검, EAS Build APK, 스크린샷 | 예정 |
+| 폴리싱 · 안드로이드 · APK | 전체 폴리싱, 디자인 방향 B, 안드로이드 점검, EAS APK, 스크린샷 | ✅ |
 
 ## 👤 Author
 
