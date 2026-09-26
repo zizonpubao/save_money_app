@@ -44,6 +44,8 @@ export function QuickEntryChips({ items, categories, onPress }: Props) {
                 borderRadius: radius.pill,
                 paddingHorizontal: sp.md,
                 paddingVertical: sp.sm,
+                // 긴 항목명(최대 40자)은 칩 하나가 줄을 다 먹지 않게 말줄임
+                maxWidth: size.chipMaxWidth,
                 opacity: pressed ? 0.7 : 1,
               },
             ]}>

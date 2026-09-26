@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -52,10 +52,26 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { isDark, colors } = useTheme();
+  // 내비게이션 기본 테마 색을 앱 토큰으로 바꾼다. 화면 전환 중 비치는 바탕·기본 헤더(없는 화면)가
+  // React Navigation 기본색(다크 거의 검정 · 라이트 회색)이 아니라 bg·card 로 보이게
+  const navTheme = useMemo(() => {
+    const base = isDark ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.primary,
+        background: colors.bg,
+        card: colors.card,
+        text: colors.text,
+        border: colors.divider,
+      },
+    };
+  }, [isDark, colors]);
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={navTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen

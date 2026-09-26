@@ -9,33 +9,36 @@
 | 색 | `bg` / `card` | `#F5F6F8` `#FFFFFF` / `#0F1115` `#1A1D23` |
 | | `text` / `textMuted` | `#111418` `#6B7280` / `#F3F4F6` `#9CA3AF` |
 | | `primary` / `onPrimary` / `primarySoft` | `#2F6FED` `#FFF` `#E8EFFD` / `#5B8DEF` `#FFF` `#1F2A44` |
-| | `danger` | `#E5484D` / `#F2555A` |
+| | `danger` | `#CE2C31` / `#F2555A` (폴리싱: 라이트 `#E5484D` 는 card 위 대비 3.9 → 5.2) |
 | | `border`(컨트롤 테두리) / `divider`(카드 안 구분선) | `#E5E7EB` `#EDEFF2` / `#2A2E36` `#2E333C` |
 | | `grass1~4`(잔디 농도) / `grassFuture`(잔디 미래 칸) | `#BACFF9` `#8CAFF5` `#5D8FF1` `#2F6FED` `#F5F6F8` / `#2E436F` `#3D5C9A` `#4C74C4` `#5B8DEF` `#0F1115` (M4: 라이트처럼 `bg` 와 같은 움푹한 칸, 기록 없는 날 `divider` 와 구분) |
 | | `good` / `warn`(M4 컨페티 조각 전용, 글자·넓은 면에 쓰지 않음) | `#30A46C` `#F5A524` / `#4CC38A` `#FFB224` |
+| | `shadow`(그림자 색 전용) | `#111418` / `#000000` (다크에서 `text` 를 쓰면 흰 번짐) |
 | 간격 | `sp.xs/sm/smd/md/lg/xl` | 4 / 8 / 12 / 16 / 24 / 32 (4의 배수만) |
 | 타이포 | `type.display` | 36 / 800 / 42 — 이번 달 절약액 |
 | | `type.title` | 28 / 700 / 34 — 화면 제목, 금액 입력값 |
-| | `type.heading` | 20 / 700 / 26 — 카드·섹션 제목 |
+| | `type.heading` | 20 / 700 / 26 — 기간 제목(`2026년 9월`)·플로팅 라벨. 카드 안 소제목("일별")은 `bodyStrong` |
 | | `type.action` | 16 / 700 / 22 — 헤더 "저장" |
 | | `type.bodyStrong` / `type.body` | 16 / 600·400 / 22 — 금액·버튼 / 항목명 |
 | | `type.label` / `type.note` | 14 / 600·400 / 20 — 섹션 날짜 / 보조 문장 |
 | | `type.caption` | 12 / 400 / 16 — 필드 라벨, 메모 |
 | radius | `radius.xs/sm/md/lg/pill` | 4(잔디 칸) / 8(세그먼트) / 12(입력·버튼·행 묶음) / 16(카드) / 999(칩) |
-| 그림자 | `shadow.fab` / `shadow.sheet` | 떠 있는 것에만. 색은 `shadowColor: colors.text` |
+| 그림자 | `shadow.fab` / `shadow.sheet` | 떠 있는 것에만. 색은 `shadowColor: colors.shadow` |
 | 크기 | `size.touch/fab/fabIcon` | 44 / 56 / 30 |
 | | `size.swipeAction/headerAction/memoMin/toggleMin` | 88 / 56 / 80 / 120 |
 | | `size.barTrack` / `size.bar` / `size.axisLabel` | 120 / 10 / 28 (M3 그래프용) |
 | | `size.todayRing` / `size.emojiCell` / `size.grassCell` / `size.statChip` | 2 / 24 / 16 / 32 (잔디 오늘 테두리, 이모지 적립 칸, 잔디 칸 높이, 정보 칩 높이) |
 | | `size.confettiWidth` / `size.confettiHeight` / `size.confettiScaleBig` | 6 / 10 / 1.4 (M4 저장 컨페티 한 조각, big 은 1.4배 = 8.4 × 14) |
+| | `size.chipMaxWidth` / `size.percentLabel` | 200 / 40 (빠른 입력 칩 최대 폭, 카테고리 합계 % 칸 고정 폭) |
 
 ## 컴포넌트 규칙
 - **카드**: `card` 배경 + `radius.lg` + `padding: sp.lg`. 그림자 없음, 테두리 없음 — 배경 대비로만 뜬다.
 - **보조 구획**: 카드와 같은 `card` 배경 + `radius.lg` 지만 안쪽은 `paddingHorizontal: sp.md` / `paddingVertical: sp.smd` — 주인공 카드(`sp.lg`)보다 한 단계 가볍다. 제목 없이 내용만.
 - **목록 행**: `card` 배경, `paddingHorizontal: sp.md` / `paddingVertical: sp.smd`, `minHeight: size.touch`. 행 사이만 hairline `divider`, 섹션 마지막 행은 선 없음. 섹션의 첫/마지막 행에 `radius.md` 를 줘서 한 덩어리로 보이게 한다.
-- **섹션 헤더**: `bg` 위에 `paddingTop: sp.md` / `paddingBottom: sp.sm` / 좌우 `sp.md`(아래 행 안쪽 여백과 세로 줄 맞춤), 왼쪽 날짜(`type.label`)·오른쪽 합계(`type.note`) 둘 다 `textMuted`. 카드 밖 요소라 배경색은 `bg`.
+- **섹션 헤더**: `bg` 위에 `paddingTop: sp.md` / `paddingBottom: sp.sm` / 좌우 `sp.md`(아래 행 안쪽 여백과 세로 줄 맞춤), 왼쪽 날짜(`type.label`)·오른쪽 합계(`type.note`) 둘 다 `textMuted`. 카드 밖 요소라 배경색은 `bg`. 설정 섹션 제목도 같은 자리·같은 글자.
+- **행 글자 넘침**: 이름은 `flex: 1` + 1줄 말줄임, 오른쪽 값·금액은 `marginLeft: sp.sm` 로 이름과 띄운다.
 - **칩(선택)**: `radius.pill`, `paddingHorizontal: sp.md` / `paddingVertical: sp.sm`, 테두리 1px. 선택 시 `primary` 배경 + `onPrimary` 글자(색만이 아니라 채움으로 구분). 보기 전용 정보 칩은 홈 배치 4번(`StatChip`). (M4) 입력 시트 맨 위 빠른 입력 칩도 이 모양(선택 상태 없이 누르면 채움, 눌림 `opacity 0.7`).
-- **버튼/FAB**: 텍스트 버튼은 테두리 1px + `radius.md` + `minHeight: size.touch`, 눌림은 `opacity 0.7`. FAB 은 `size.fab` 원형, `primary`, `shadow.fab`, 우하단 `sp.lg` 여백, 눌림 `opacity 0.85`.
+- **버튼/FAB**: 텍스트 버튼은 `card` 바탕 + `border` 테두리 1px + `radius.md` + `minHeight: size.touch`, 눌림은 `opacity 0.7`. 지우는 버튼("이 기록 삭제"·"목표 없애기"·"카테고리 삭제")도 같은 모양에 글자만 `danger`. FAB 은 `size.fab` 원형, `primary`, `shadow.fab`, 우하단 `sp.lg` 여백, 눌림 `opacity 0.85`.
 - **(M4.5) 원탭 저장 메뉴**: FAB 을 `motion.longPressMs`(500ms) 길게 누르면 Medium 햅틱과 함께 FAB 바로 위(`bottom: sp.lg + size.fab + sp.sm`, 오른쪽 `sp.lg`)에 뜬다. `card` 배경 + `radius.lg` + `shadow.fab`(떠 있는 것), 폭 `size.quickMenuWidth`(240), 위에 `caption` 회색 "누르면 바로 저장" 한 줄.
 - 행은 최근 항목 최대 4개, 한 행 `minHeight: size.touch` · 이모지 · 항목명(`body`) · 금액(`bodyStrong` + `numeric`), 행 사이 hairline `divider`, 눌림 `opacity 0.7`. 스크린리더 라벨은 "커피 4,500원 바로 저장".
 - FAB 쪽 모서리 기준 scale `motion.quickMenuFrom`(0.9) → 1 spring + opacity, 150ms(`motion.quickMenuMs`)로 펼치고 같은 시간에 접는다(동작 줄이기면 opacity 만). 뒤는 투명한 막으로 덮어 메뉴 밖 탭·쓸기·FAB 짧은 탭이 모두 "닫기" 가 된다.
@@ -43,9 +46,10 @@
   - **부호 칩**: 맨 앞, 최소 폭 `size.touch`, 글자 `bodyStrong`. `+` 는 금액 칩과 같은 모양, `−`(U+2212) 는 선택 칩처럼 `primary` 채움 + `onPrimary` 글자(글자 하나만이 아니라 채움으로도 구분, `accessibilityState.selected`). 탭하면 selection 햅틱. `−` 동안 금액 칩은 빼고 0 에서 멈춘다. 저장 성공·시트 닫힘이면 `+` 로 돌아온다.
   - **글자 축약**: 100~999 `N백` · 1,000~9,999 `N천` · 10,000↑ `N만`, 소수 첫째 자리까지 버림(`.0` 없음). 스크린리더는 원 단위 전체 "금액에 1,500원 더하기/빼기".
   - 값 5개는 설정 "입력 → 빠른 금액 버튼" 이 출처(`settingsStore.amountPresets`).
-- **헤더·탭바**: 배경 `card`, 그림자 숨김(`headerShadowVisible: false`), 활성 탭 `primary` / 비활성 `textMuted`, 본문 영역은 `bg`.
+- **헤더·탭바**: 배경 `card`, 그림자 숨김(`headerShadowVisible: false`), 활성 탭 `primary` + 채운 아이콘 / 비활성 `textMuted` + `-outline` 아이콘(색만으로 구분하지 않음), 탭바 윗선 `divider`, 본문 영역은 `bg`. 내비게이션 테마 색도 토큰으로 덮는다(전환 중 바탕).
+- **모달 헤더**(입력·목표·빠른 금액·카테고리): `card` 바탕, 선 없음, 좌 "취소"(`body` 회색) · 가운데 제목(`bodyStrong`) · 우 "저장"(`action` primary, 못 누르면 `textMuted`). 좌우 칸 `size.headerAction` × `size.touch`.
 - **입력 필드**: `card` 배경 + `border` 테두리 + `radius.md`, 라벨은 위에 `type.caption` `textMuted`, 필드 간 간격 `sp.md`. 금액 필드만 `type.title` 로 크게, 오른쪽에 "원".
-- **빈 상태**: 가운데 정렬, `type.bodyStrong` 한 줄 + `type.note` 한 줄. 일러스트·느낌표 없음, 문구는 다음 행동을 알려준다("오늘 참은 소비를 + 버튼으로 남겨보세요").
+- **빈 상태**: 가운데 정렬, `type.bodyStrong` 한 줄 + `type.note` 한 줄. 일러스트·느낌표 없음, 문구는 다음 행동을 알려준다("오늘 참은 소비를 + 버튼으로 남겨보세요"). 목록 빈 상태는 `paddingVertical: sp.xl`. "찾을 수 없음"(기록 수정·없는 화면)은 두 번째 줄 대신 `label` primary 텍스트 버튼(44pt).
 
 ## 홈 배치 (위→아래, 구획 사이 `sp.smd` 한 가지)
 첫 화면(390×844, 헤더·탭바 제외 ≈670pt)에 **목록 3행 이상**이 보이도록 머리 영역을 ≈460pt 안에 둔다 (카드 ≈250 · 칩 32 · 잔디 5줄 140 / 6줄 160).
@@ -180,3 +184,14 @@
 - 1초를 넘는 애니메이션, 화면 전환마다 다른 모션, 이모지를 UI 아이콘 대용으로 쓰기(카테고리 이모지는 데이터라 예외).
 - 화면마다 다른 여백 — 화면 바깥 패딩은 `sp.md`, 카드 안쪽은 `sp.lg`, 보조 구획 안쪽은 `sp.md`/`sp.smd` 로 고정.
 - 홈 카드 안에 다섯 번째 정보 넣기, 같은 "패턴"(이모지 줄·잔디)을 한 구획에 겹쳐 두기.
+
+## 폴리싱 기록 (M5 이후 앱 전체)
+- **공통**: 라이트 `danger` 를 `#CE2C31` 로(대비 4.5↑), 그림자 색 `colors.shadow` 추가(다크 FAB·원탭 메뉴의 흰 번짐 제거). 내비게이션 테마 색을 토큰으로 덮어 화면 전환 중 바탕이 `bg` 로 보인다.
+- **탭바·헤더**: 활성 탭은 채운 아이콘, 비활성은 `-outline`(모양으로도 구분). 탭바 윗선 `border` → `divider`. 기록 수정 헤더 "저장" 터치 44pt.
+- **홈**: 목록 행 금액을 항목명과 `sp.sm` 띄움(긴 항목명 말줄임이 금액에 붙지 않게). 행 안 하드코딩 `gap: 2` 삭제. 배너·회고·오늘의 한 줄 글자에 `numeric`.
+- **기록 탭**: 요약 카드 제목을 홈 카드처럼 `caption` 회색 라벨로. 기간 화살표를 Ionicons chevron(비활성 opacity 0.3)으로. 카드 사이 `sp.md` → 홈과 같은 `sp.smd`.
+- **기록 탭 계속**: 월/년 토글 칸 위아래 `hitSlop sp.xs`(36 → 44pt). 카테고리 합계 % 칸 고정 폭(`size.percentLabel`)으로 금액 오른쪽 끝 정렬, 이름과 금액 사이 `sp.sm`.
+- **설정**: 섹션 제목 좌우 `sp.md`(목록 섹션 헤더와 같은 자리). 행 이름·값 1줄 말줄임 + 값 `marginLeft: sp.sm`. 미리 듣기 칩 눌림을 다른 칩과 같은 `opacity 0.7` 로.
+- **모달 4종**: 헤더를 `card` 바탕·선 없음으로 탭 헤더와 맞춤. 취소·저장 터치 38 → 44pt. 목표 모달 안내문 합니다체.
+- **입력**: 빠른 입력 칩 최대 폭 `size.chipMaxWidth`(긴 항목명 말줄임).
+- **기록 수정·없는 화면**: 삭제 버튼을 다른 지우기 버튼과 같은 `card` + `border` + `danger` 글자로. "찾을 수 없음" 은 빈 상태 모양(`bodyStrong` + `label` primary 44pt 버튼).

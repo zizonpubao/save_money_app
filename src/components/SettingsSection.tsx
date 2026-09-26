@@ -13,8 +13,12 @@ export function SettingsSection({ title, children }: Props) {
   const { colors, type, sp, radius } = useTheme();
   return (
     <View>
+      {/* 목록 섹션 헤더(EntrySectionHeader)와 같은 자리: 좌우 sp.md 들여 아래 행 글자와 세로 줄을 맞춘다 */}
       <Text
-        style={[type.label, { color: colors.textMuted, paddingTop: sp.md, paddingBottom: sp.sm }]}>
+        style={[
+          type.label,
+          { color: colors.textMuted, paddingTop: sp.md, paddingBottom: sp.sm, paddingHorizontal: sp.md },
+        ]}>
         {title}
       </Text>
       <View style={[styles.group, { borderRadius: radius.md, backgroundColor: colors.card }]}>

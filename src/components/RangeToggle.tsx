@@ -35,6 +35,8 @@ export function RangeToggle({ mode, onChange }: Props) {
             onPress={() => onChange(o.value)}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
+            // 칸 높이 36(라벨 20 + sp.sm × 2) → 위아래만 sp.xs 씩 넓혀 터치 44pt (좌우는 옆 칸과 겹치지 않게 그대로)
+            hitSlop={{ top: sp.xs, bottom: sp.xs }}
             style={[
               styles.segment,
               {

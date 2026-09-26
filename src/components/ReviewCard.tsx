@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useTheme } from '@/src/theme';
+import { numeric, useTheme } from '@/src/theme';
 
 type Props = {
   message: string;
@@ -21,7 +21,7 @@ export function ReviewCard({ message, onClose }: Props) {
         styles.row,
         { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: sp.smd },
       ]}>
-      <Text numberOfLines={2} style={[styles.text, type.label, { color: colors.primary }]}>
+      <Text numberOfLines={2} style={[styles.text, type.label, numeric, { color: colors.primary }]}>
         {message}
       </Text>
       <Pressable

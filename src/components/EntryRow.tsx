@@ -68,7 +68,8 @@ export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Pr
             </Text>
           ) : null}
         </View>
-        <Text style={[type.bodyStrong, numeric, { color: colors.text }]}>
+        {/* 긴 항목명이 말줄임될 때 금액에 붙지 않게 sp.sm 띄운다 */}
+        <Text style={[type.bodyStrong, numeric, { color: colors.text, marginLeft: sp.sm }]}>
           {formatWon(entry.amount)}
         </Text>
       </Pressable>
@@ -78,6 +79,7 @@ export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Pr
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  body: { flex: 1, gap: 2 },
+  // 항목명(22)·메모(16) 줄 높이만으로 충분해 따로 간격을 두지 않는다
+  body: { flex: 1 },
   action: { justifyContent: 'center', alignItems: 'center' },
 });

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { useTheme } from '@/src/theme';
+import { numeric, useTheme } from '@/src/theme';
 
 /** 문구가 바뀔 때 나타나는 시간 (ms) */
 const FADE_MS = 200;
@@ -37,7 +37,7 @@ export function DailyLine({ text }: Props) {
       accessibilityRole="text"
       numberOfLines={2}
       ellipsizeMode="tail"
-      style={[type.body, { color: colors.textMuted }, fadeStyle]}>
+      style={[type.body, numeric, { color: colors.textMuted }, fadeStyle]}>
       {text}
     </Animated.Text>
   );

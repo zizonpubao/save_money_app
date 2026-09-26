@@ -84,7 +84,7 @@ export function QuickSaveMenu({ items, categories, reduceMotion = false, onPick,
             backgroundColor: colors.card,
             borderRadius: radius.lg,
             paddingVertical: sp.xs,
-            shadowColor: colors.text,
+            shadowColor: colors.shadow,
           },
         ]}>
         <Text

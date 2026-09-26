@@ -55,9 +55,16 @@ export default function EntryEditScreen() {
       <>
         <Stack.Screen options={{ title: '기록 수정' }} />
         <Screen style={styles.center}>
-          <Text style={[type.body, { color: colors.text }]}>기록을 찾을 수 없어요</Text>
-          <Pressable onPress={() => router.back()} style={{ marginTop: sp.md }}>
-            <Text style={[type.bodyStrong, { color: colors.primary }]}>돌아가기</Text>
+          {/* 빈 상태 규칙: 가운데 bodyStrong 한 줄 + 다음 행동. 되돌아가기는 44pt 텍스트 버튼 */}
+          <Text style={[type.bodyStrong, { color: colors.text }]}>기록을 찾을 수 없어요</Text>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.back,
+              { minHeight: size.touch, marginTop: sp.sm, opacity: pressed ? 0.7 : 1 },
+            ]}>
+            <Text style={[type.label, { color: colors.primary }]}>돌아가기</Text>
           </Pressable>
         </Screen>
       </>
@@ -70,7 +77,7 @@ export default function EntryEditScreen() {
         options={{
           title: '기록 수정',
           headerRight: () => (
-            <Pressable onPress={onSave} disabled={!form.canSave} hitSlop={sp.sm}>
+            <Pressable onPress={onSave} disabled={!form.canSave} hitSlop={sp.smd}>
               <Text
                 style={[type.action, { color: form.canSave ? colors.primary : colors.textMuted }]}>
                 저장
@@ -85,10 +92,12 @@ export default function EntryEditScreen() {
             <Pressable
               onPress={onDelete}
               accessibilityRole="button"
+              // 목표 없애기·카테고리 삭제와 같은 텍스트 버튼: card 바탕 + border 테두리 + danger 글자
               style={({ pressed }) => [
                 styles.delete,
                 {
-                  borderColor: colors.danger,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
                   borderRadius: radius.md,
                   minHeight: size.touch,
                   paddingVertical: sp.smd,
@@ -107,5 +116,6 @@ export default function EntryEditScreen() {
 const styles = StyleSheet.create({
   noPadding: { padding: 0 },
   center: { alignItems: 'center', justifyContent: 'center' },
+  back: { justifyContent: 'center' },
   delete: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

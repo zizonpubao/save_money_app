@@ -54,7 +54,8 @@ export default function RecordsScreen() {
         stickySectionHeadersEnabled={false}
         contentContainerStyle={{ padding: sp.md, paddingBottom: sp.xl }}
         ListHeaderComponent={
-          <View style={{ gap: sp.md, marginBottom: sp.sm }}>
+          // 구획 사이는 홈과 같은 sp.smd 한 가지
+          <View style={{ gap: sp.smd }}>
             <RangeToggle mode={monthly.mode} onChange={changeMode} />
             <MonthNavigator
               period={monthly.period}

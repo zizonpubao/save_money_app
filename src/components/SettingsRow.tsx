@@ -37,6 +37,7 @@ export function SettingsRow({ label, value, onPress, isLast = false, danger = fa
         },
       ]}>
       <Text
+        numberOfLines={1}
         style={[
           type.body,
           styles.label,
@@ -45,7 +46,14 @@ export function SettingsRow({ label, value, onPress, isLast = false, danger = fa
         {label}
       </Text>
       {value ? (
-        <Text style={[type.note, numeric, { color: colors.textMuted, marginRight: sp.xs }]}>
+        <Text
+          numberOfLines={1}
+          style={[
+            type.note,
+            numeric,
+            styles.value,
+            { color: colors.textMuted, marginLeft: sp.sm, marginRight: sp.xs },
+          ]}>
           {value}
         </Text>
       ) : null}
@@ -78,8 +86,14 @@ export function SettingsInfoRow({ label, value, isLast = false }: InfoProps) {
           borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
         },
       ]}>
-      <Text style={[type.body, styles.label, { color: colors.text }]}>{label}</Text>
-      <Text style={[type.note, numeric, { color: colors.textMuted }]}>{value}</Text>
+      <Text numberOfLines={1} style={[type.body, styles.label, { color: colors.text }]}>
+        {label}
+      </Text>
+      <Text
+        numberOfLines={1}
+        style={[type.note, numeric, styles.value, { color: colors.textMuted, marginLeft: sp.sm }]}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -159,14 +173,16 @@ export function SettingsChipsRow({ chips, disabled = false, note, isLast = false
             accessibilityRole="button"
             accessibilityLabel={chip.accessibilityLabel}
             accessibilityState={{ disabled }}
+            // 눌림은 다른 칩(빠른 입력·금액 칩)과 같은 opacity 0.7
             style={({ pressed }) => [
               styles.chip,
               {
-                backgroundColor: pressed ? colors.primarySoft : colors.card,
-                borderColor: pressed ? colors.primary : colors.border,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
                 borderRadius: radius.pill,
                 paddingHorizontal: sp.md,
                 minHeight: size.touch,
+                opacity: pressed ? 0.7 : 1,
               },
             ]}>
             <Text style={[type.note, { color: colors.text }]}>{chip.label}</Text>
@@ -181,6 +197,8 @@ export function SettingsChipsRow({ chips, disabled = false, note, isLast = false
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   label: { flex: 1 },
+  // 값이 길면 이름보다 먼저 줄어 말줄임 (이름은 flex 1 로 남은 폭)
+  value: { flexShrink: 1, maxWidth: '60%' },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: { borderWidth: 1, justifyContent: 'center' },
 });

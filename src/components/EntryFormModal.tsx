@@ -67,7 +67,7 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.md, borderBottomColor: colors.divider },
+          { paddingHorizontal: sp.md, paddingVertical: sp.xs, backgroundColor: colors.card },
         ]}>
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
@@ -90,12 +90,10 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerSide: { width: size.headerAction },
+  // 탭 화면 헤더(headerShadowVisible: false)처럼 선 없이 card 바탕으로만 본문(bg)과 나눈다
+  header: { flexDirection: 'row', alignItems: 'center' },
+  // 취소·저장 터치 영역 44pt
+  headerSide: { width: size.headerAction, minHeight: size.touch, justifyContent: 'center' },
   headerRight: { alignItems: 'flex-end' },
   headerTitle: { flex: 1, textAlign: 'center' },
 });

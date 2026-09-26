@@ -25,6 +25,8 @@ export type ColorTokens = {
   /** (M4) 컨페티 조각 색. primary·primarySoft 와 함께 4색으로 쓴다. 넓은 면적·글자에는 쓰지 않는다 */
   good: string;
   warn: string;
+  /** (폴리싱) 떠 있는 것(FAB·원탭 메뉴)의 그림자 색. 다크에서 text(밝은 색)를 쓰면 흰 번짐이 생겨 검정으로 */
+  shadow: string;
 };
 
 export const lightColors: ColorTokens = {
@@ -35,7 +37,8 @@ export const lightColors: ColorTokens = {
   primary: '#2F6FED',
   onPrimary: '#FFFFFF',
   primarySoft: '#E8EFFD',
-  danger: '#E5484D',
+  // (폴리싱) #E5484D 는 card 위 글자 대비 3.9 → 4.5 이상으로 한 단계 진하게 (흰 글자 얹어도 5.2)
+  danger: '#CE2C31',
   border: '#E5E7EB',
   divider: '#EDEFF2',
   grassFuture: '#F5F6F8',
@@ -45,6 +48,7 @@ export const lightColors: ColorTokens = {
   grass4: '#2F6FED',
   good: '#30A46C',
   warn: '#F5A524',
+  shadow: '#111418',
 };
 
 export const darkColors: ColorTokens = {
@@ -66,6 +70,7 @@ export const darkColors: ColorTokens = {
   grass4: '#5B8DEF',
   good: '#4CC38A',
   warn: '#FFB224',
+  shadow: '#000000',
 };
 
 /** 간격 토큰 (px) — 4의 배수만 */
@@ -135,7 +140,7 @@ export type ShadowToken = Pick<
 >;
 
 /**
- * 그림자는 "떠 있어야 하는 것"에만. 색은 쓰는 쪽에서 `shadowColor: colors.text` 로 준다.
+ * 그림자는 "떠 있어야 하는 것"에만. 색은 쓰는 쪽에서 `shadowColor: colors.shadow` 로 준다.
  * 카드·행·칩은 그림자 없이 배경색 대비로만 구분한다.
  */
 export const shadow = {
@@ -185,6 +190,10 @@ export const size = {
   quickMenuWidth: 240,
   /** (M5) 카테고리 편집 모달의 이모지 입력 칸 폭 (이모지 2자 + 좌우 여백) */
   emojiInput: 72,
+  /** (폴리싱) 빠른 입력 칩 최대 폭. 긴 항목명은 말줄임 */
+  chipMaxWidth: 200,
+  /** (폴리싱) 카테고리별 합계의 % 칸 폭 ("100%" 가 들어가는 폭). 금액이 오른쪽 줄에 맞는다 */
+  percentLabel: 40,
 } as const;
 
 /**

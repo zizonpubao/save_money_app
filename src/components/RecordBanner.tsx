@@ -10,7 +10,7 @@ import Animated, {
 
 import { celebrationMessage } from '@/src/features/goal';
 import type { PersonalBest } from '@/src/features/personalBest';
-import { motion, useTheme } from '@/src/theme';
+import { motion, numeric, useTheme } from '@/src/theme';
 
 /** 축하 문구를 띄워 두는 시간 (ms). 등장(t0+300) 뒤부터 센다 */
 const SHOW_MS = 1500;
@@ -64,7 +64,7 @@ function Banner({ message, entrance }: { message: string; entrance: Entrance }) 
         { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: sp.smd },
         animatedStyle,
       ]}>
-      <Text style={[type.label, { color: colors.primary }]}>{message}</Text>
+      <Text style={[type.label, numeric, styles.text, { color: colors.primary }]}>{message}</Text>
     </Animated.View>
   );
 }
@@ -100,4 +100,6 @@ export function RecordBanner({
 
 const styles = StyleSheet.create({
   banner: { alignItems: 'center' },
+  // 두 줄로 넘어가도 가운데 정렬 유지
+  text: { textAlign: 'center' },
 });

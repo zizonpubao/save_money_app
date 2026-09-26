@@ -25,7 +25,8 @@ export function MonthStatsCard({
   const { colors, type, sp, radius } = useTheme();
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.lg, padding: sp.lg }]}>
-      <Text style={[type.bodyStrong, { color: colors.text }]}>{title}</Text>
+      {/* 홈 카드와 같은 모양: caption 회색 라벨 → display primary 숫자 → 회색 보조 한 줄 */}
+      <Text style={[type.caption, { color: colors.textMuted }]}>{title}</Text>
       <Text style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}>
         {formatWon(total)}
       </Text>

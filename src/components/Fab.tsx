@@ -27,7 +27,7 @@ export function Fab({ onPress, onLongPress }: Props) {
           right: sp.lg,
           bottom: sp.lg,
           opacity: pressed ? 0.85 : 1,
-          shadowColor: colors.text,
+          shadowColor: colors.shadow,
         },
       ]}>
       <Ionicons name="add" size={size.fabIcon} color={colors.onPrimary} />

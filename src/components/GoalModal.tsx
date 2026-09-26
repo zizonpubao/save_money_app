@@ -37,7 +37,7 @@ function GoalModalBody({ current, onSave, onClear, onClose }: Omit<Props, 'visib
       <View
         style={[
           styles.header,
-          { paddingHorizontal: sp.md, paddingVertical: sp.md, borderBottomColor: colors.divider },
+          { paddingHorizontal: sp.md, paddingVertical: sp.xs, backgroundColor: colors.card },
         ]}>
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
@@ -121,7 +121,7 @@ function GoalModalBody({ current, onSave, onClear, onClose }: Omit<Props, 'visib
         </View>
 
         <Text style={[type.note, { color: colors.textMuted }]}>
-          홈 카드에 이번 달 진행률이 보이고, 목표를 넘기는 순간 한 번 축하해요.
+          홈 카드에 이번 달 진행률이 보입니다. 목표를 넘기는 저장에서 한 번 축하합니다.
         </Text>
 
         {current !== null ? (
@@ -150,12 +150,10 @@ function GoalModalBody({ current, onSave, onClear, onClose }: Omit<Props, 'visib
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerSide: { width: size.headerAction },
+  // 탭 화면 헤더(headerShadowVisible: false)처럼 선 없이 card 바탕으로만 본문(bg)과 나눈다
+  header: { flexDirection: 'row', alignItems: 'center' },
+  // 취소·저장 터치 영역 44pt
+  headerSide: { width: size.headerAction, minHeight: size.touch, justifyContent: 'center' },
   headerRight: { alignItems: 'flex-end' },
   headerTitle: { flex: 1, textAlign: 'center' },
   amountRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1 },

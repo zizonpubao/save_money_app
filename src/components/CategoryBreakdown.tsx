@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBar } from '@/src/features/monthlyStats';
-import { numeric, useTheme } from '@/src/theme';
+import { numeric, size, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = { rows: CategoryBar[] };
 
 /** 카테고리별 합계. 많은 순, 미분류는 맨 뒤. 비율 바 + 금액 + %. */
 export function CategoryBreakdown({ rows }: Props) {
-  const { colors, type, fs, sp, radius, size } = useTheme();
+  const { colors, type, fs, sp, radius } = useTheme();
 
   return (
     <View style={{ gap: sp.md }}>
@@ -19,10 +19,17 @@ export function CategoryBreakdown({ rows }: Props) {
             <Text numberOfLines={1} style={[type.body, styles.name, { color: colors.text }]}>
               {row.name}
             </Text>
-            <Text style={[type.bodyStrong, numeric, { color: colors.text }]}>
+            <Text style={[type.bodyStrong, numeric, { color: colors.text, marginLeft: sp.sm }]}>
               {formatWon(row.total)}
             </Text>
-            <Text style={[type.note, numeric, { color: colors.textMuted, marginLeft: sp.sm }]}>
+            {/* % 칸 폭을 고정해 줄마다 금액의 오른쪽 끝이 맞는다 (5% · 100%) */}
+            <Text
+              style={[
+                type.note,
+                numeric,
+                styles.percent,
+                { color: colors.textMuted, marginLeft: sp.xs },
+              ]}>
               {row.percent}%
             </Text>
           </View>
@@ -51,4 +58,5 @@ export function CategoryBreakdown({ rows }: Props) {
 const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center' },
   name: { flex: 1 },
+  percent: { width: size.percentLabel, textAlign: 'right' },
 });
