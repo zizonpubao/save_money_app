@@ -64,7 +64,9 @@ export function StreakChip({ streak, celebrateTick, reduceMotion = false }: Prop
 
   return (
     <Animated.View style={animatedStyle}>
-      <StatChip testID="streak-chip">{streakLabel(streak)}</StatChip>
+      <StatChip testID="streak-chip" tone="warn">
+        {streakLabel(streak)}
+      </StatChip>
     </Animated.View>
   );
 }

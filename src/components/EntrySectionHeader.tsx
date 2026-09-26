@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 import { MONTH_FORMAT, formatKoDate, formatKoMonth } from '@/src/utils/date';
 import { formatWon } from '@/src/utils/money';
 
@@ -31,7 +31,7 @@ export function EntrySectionHeader({ sectionKey, total }: Props) {
         },
       ]}>
       <Text style={[type.label, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[type.note, numeric, { color: colors.textMuted }]}>{formatWon(total)}</Text>
+      <Text style={[type.note, numeric, numFace.regular, { color: colors.textMuted }]}>{formatWon(total)}</Text>
     </View>
   );
 }

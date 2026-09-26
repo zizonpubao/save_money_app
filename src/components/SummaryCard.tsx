@@ -14,7 +14,7 @@ import Animated, {
 import { AnimatedWon } from '@/src/components/AnimatedWon';
 import { GoalProgressBar } from '@/src/components/GoalProgressBar';
 import { goalProgress } from '@/src/features/goal';
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 import { formatKoDate, formatKoMonth, thisMonth, today } from '@/src/utils/date';
 import { formatWon } from '@/src/utils/money';
 
@@ -150,12 +150,12 @@ export function SummaryCard({
         animatedStyle,
         { backgroundColor: colors.card, borderRadius: radius.lg, padding: sp.lg },
       ]}>
-      {/* 달성 틴트는 내용 뒤에 깐 primarySoft 층의 투명도로 낸다 (글자 위를 덮지 않게 맨 앞 자식) */}
+      {/* 달성 틴트는 내용 뒤에 깐 warnSoft(옅은 주황) 층의 투명도로 낸다 (글자 위를 덮지 않게 맨 앞 자식). 주황은 성취 순간의 면에만 */}
       <Animated.View
         pointerEvents="none"
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: colors.primarySoft, borderRadius: radius.lg },
+          { backgroundColor: colors.warnSoft, borderRadius: radius.lg },
           tintStyle,
         ]}
       />
@@ -192,7 +192,7 @@ export function SummaryCard({
       <Text
         accessibilityLabel={`오늘 ${formatWon(todayTotal)} · ${todayLabel}`}
         numberOfLines={1}
-        style={[type.caption, numeric, { color: colors.textMuted, marginTop: sp.xs }]}>
+        style={[type.caption, numeric, numFace.regular, { color: colors.textMuted, marginTop: sp.xs }]}>
         오늘 {formatWon(todayTotal)} · {todayLabel}
       </Text>
 

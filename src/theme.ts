@@ -19,63 +19,104 @@ export type ColorTokens = {
   divider: string;
   /** (M3.6) 잔디의 아직 오지 않은 날 칸. divider 보다 한 단계 연하다 */
   grassFuture: string;
-  /** (M3.6) 잔디 농도 1~4단계. primarySoft → primary 사이를 4등분 (4 = primary) */
+  /** (M3.6) 잔디 농도 1~4단계. 옅은 새싹색 → primary 초록 4단계 (4 = primary). 1단계는 기록 없는 날(divider)과 구분되게 */
   grass1: string;
   grass2: string;
   grass3: string;
   grass4: string;
-  /** (M4) 컨페티 조각 색. primary·primarySoft 와 함께 4색으로 쓴다. 넓은 면적·글자에는 쓰지 않는다 */
+  /**
+   * (M4 → B 방향) 컨페티 조각 색. 버터 노랑 — 목표 달성 컨페티의 절반을 맡는다.
+   * 메인 초록(primary)과 겹치지 않게 초록에서 뺐다. 넓은 면적·글자에는 쓰지 않는다
+   */
   good: string;
+  /**
+   * (B 방향) 강조 주황. 면으로만 쓴다 — 🔥 칩 바탕 · 컨페티. 글자색으로는 대비가 모자라 쓰지 않는다.
+   * 위에 올리는 글자는 onWarn
+   */
   warn: string;
+  /** (B 방향) warn 면 위 글자색 */
+  onWarn: string;
+  /** (B 방향) 목표 달성 순간 카드에 번졌다 빠지는 옅은 주황 틴트. 위의 primary·textMuted 글자 대비 4.5 이상 */
+  warnSoft: string;
+  /**
+   * (B 방향) 잔디 오늘 칸 테두리. primary 로 두면 가장 진한 칸(grass4 = primary)에서 사라져서 글자 톤으로.
+   * 칸 안쪽 grass4 와는 3:1 이 안 되지만 테두리 바깥이 card 와 14:1 이라 모양으로 읽힌다
+   */
+  todayRing: string;
   /** (폴리싱) 떠 있는 것(FAB·원탭 메뉴)의 그림자 색. 다크에서 text(밝은 색)를 쓰면 흰 번짐이 생겨 검정으로 */
   shadow: string;
 };
 
+/*
+ * (B 방향 "따뜻한 저금통") 크림 바탕 + 숲 초록 메인 + 주황 강조(면에만) + 갈색 톤 글자.
+ * 대비는 WCAG 2.x 로 계산한 값 (src/utils/__tests__/themeContrast.test.ts 가 지킨다).
+ */
 export const lightColors: ColorTokens = {
-  bg: '#F5F6F8',
+  bg: '#FAF6EF',
   card: '#FFFFFF',
-  text: '#111418',
-  textMuted: '#6B7280',
-  primary: '#2F6FED',
+  // bg 위 14.0
+  text: '#2B2520',
+  // bg 위 5.35 · card 위 5.76 (진단서의 #7A6F64 는 bg 위 4.55 로 경계라 한 단계 진하게)
+  textMuted: '#6F645A',
+  // card 위 5.37 · bg 위 4.99 · 흰 글자 5.37
+  primary: '#23794B',
   onPrimary: '#FFFFFF',
-  primarySoft: '#E8EFFD',
-  // (폴리싱) primarySoft 위 대비 5.65 (primary 는 3.94)
-  onPrimarySoft: '#1F56C8',
-  // (폴리싱) #E5484D 는 card 위 글자 대비 3.9 → 4.5 이상으로 한 단계 진하게 (흰 글자 얹어도 5.2)
+  primarySoft: '#E3F1E8',
+  // primarySoft 위 5.59 (primary 는 4.61)
+  onPrimarySoft: '#1A6B40',
+  // card 위 5.21 · bg 위 4.84
   danger: '#CE2C31',
-  border: '#E5E7EB',
-  divider: '#EDEFF2',
-  grassFuture: '#F5F6F8',
-  grass1: '#BACFF9',
-  grass2: '#8CAFF5',
-  grass3: '#5D8FF1',
-  grass4: '#2F6FED',
-  good: '#30A46C',
-  warn: '#F5A524',
-  shadow: '#111418',
+  border: '#EAE2D6',
+  divider: '#F1EBE1',
+  grassFuture: '#FAF6EF',
+  grass1: '#B6DCC1',
+  grass2: '#7FC096',
+  grass3: '#4C9E70',
+  grass4: '#23794B',
+  good: '#EDB83D',
+  // 면 전용. onWarn 글자 6.16
+  warn: '#F28C28',
+  onWarn: '#2B2520',
+  // primary 글자 4.61 · textMuted 4.94
+  warnSoft: '#FDEBD6',
+  todayRing: '#2B2520',
+  shadow: '#2B2520',
 };
 
 export const darkColors: ColorTokens = {
-  bg: '#0F1115',
-  card: '#1A1D23',
-  text: '#F3F4F6',
-  textMuted: '#9CA3AF',
-  primary: '#5B8DEF',
-  onPrimary: '#FFFFFF',
-  primarySoft: '#1F2A44',
-  // (폴리싱) primarySoft 위 대비 5.18 (primary 는 4.41)
-  onPrimarySoft: '#6E9BF2',
+  // 푸른 검정이 아니라 갈색 검정
+  bg: '#17140F',
+  card: '#221E18',
+  // bg 위 15.5
+  text: '#F2EDE4',
+  // card 위 6.24 · bg 위 6.91
+  textMuted: '#A99D8F',
+  // card 위 7.20 · bg 위 7.98
+  primary: '#4FBF85',
+  // 밝은 초록 위 흰 글자는 2.3 이라 어두운 글자로 (7.98). danger 위에 얹어도 5.44
+  onPrimary: '#17140F',
+  primarySoft: '#1D3326',
+  // primarySoft 위 7.46 (primary 는 5.87)
+  onPrimarySoft: '#6FD49E',
+  // card 위 4.91
   danger: '#F2555A',
-  border: '#2A2E36',
-  divider: '#2E333C',
-  // (M4) 라이트처럼 미래 칸은 bg 와 같은 "움푹한" 칸으로. 기존 #22262D 는 기록 없는 날(divider)과 구분이 안 됐다
-  grassFuture: '#0F1115',
-  grass1: '#2E436F',
-  grass2: '#3D5C9A',
-  grass3: '#4C74C4',
-  grass4: '#5B8DEF',
-  good: '#4CC38A',
-  warn: '#FFB224',
+  border: '#3A3229',
+  // 카드보다 한 단계 밝은 구분선
+  divider: '#342D24',
+  // 라이트처럼 미래 칸은 bg 와 같은 "움푹한" 칸
+  grassFuture: '#17140F',
+  // 기록 없는 날(divider)과 구분되게 채도를 올린 1단계
+  grass1: '#1F4A31',
+  grass2: '#2B6B46',
+  grass3: '#3C9563',
+  grass4: '#4FBF85',
+  good: '#F2C94C',
+  // 면 전용. onWarn 글자 9.2
+  warn: '#FFA24C',
+  onWarn: '#17140F',
+  // primary 글자 5.99 · textMuted 5.19
+  warnSoft: '#3A2A18',
+  todayRing: '#F2EDE4',
   shadow: '#000000',
 };
 
@@ -97,30 +138,59 @@ export const fs = {
   md: 16,
   lg: 20,
   xl: 28,
-  xxl: 36,
+  /** (B 방향) 36 → 40: 숫자 폰트(Outfit)로 바꾸며 주인공 숫자를 한 단계 키운다 */
+  xxl: 40,
 } as const;
 
 export const radius = {
   /** (홈 폴리싱) 잔디 칸처럼 16pt 이하 작은 면 */
   xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
+  /** 세그먼트 토글 안 칸. (B 방향) 8 → 12: 바깥 md(16) − 안쪽 여백 sp.xs(4) 로 모서리가 겹쳐 보이게 */
+  sm: 12,
+  /** 입력·버튼·행 묶음·배너. (B 방향) 12 → 16 */
+  md: 16,
+  /** 카드. (B 방향) 16 → 22 — 둥근 저금통 느낌 */
+  lg: 22,
   /** 알약 모양 (칩) */
   pill: 999,
 } as const;
 
-export type TypeToken = Pick<TextStyle, 'fontSize' | 'fontWeight' | 'lineHeight'>;
+export type TypeToken = Pick<TextStyle, 'fontSize' | 'fontWeight' | 'lineHeight' | 'fontFamily'>;
+
+/**
+ * (B 방향) 숫자 전용 라틴 폰트 Outfit — 굵기별 파일이 따로라 fontWeight 대신 fontFamily 이름으로 고른다.
+ * app/_layout.tsx 가 useFonts 로 이 이름 그대로 로드한다. 한글(“원”·“누적”)은 글꼴에 없어서 시스템 폰트로 자동 대체된다.
+ * 금액·숫자 텍스트에만 쓴다 — 한글 위주 문장(오늘의 한 줄·배너·설정 값)은 시스템 폰트 그대로.
+ */
+export const numFont = {
+  regular: 'Outfit_400Regular',
+  semibold: 'Outfit_600SemiBold',
+  bold: 'Outfit_700Bold',
+  extrabold: 'Outfit_800ExtraBold',
+} as const;
+
+/**
+ * 숫자 폰트 얼굴. typeScale 스타일 뒤에 같은 굵기로 덧붙인다 — 예: [type.bodyStrong, numeric, numFace.semibold].
+ * fontWeight 를 파일 굵기와 같게 둬서 폰트 로드 실패 때도 시스템 폰트가 같은 굵기로 대신 그린다
+ * (Android 는 요청 굵기와 파일 굵기가 같으면 가짜 굵게를 입히지 않는다)
+ */
+export const numFace = {
+  regular: { fontFamily: numFont.regular, fontWeight: '400' },
+  semibold: { fontFamily: numFont.semibold, fontWeight: '600' },
+  bold: { fontFamily: numFont.bold, fontWeight: '700' },
+  extrabold: { fontFamily: numFont.extrabold, fontWeight: '800' },
+} as const satisfies Record<string, TextStyle>;
 
 /**
  * 타이포 스케일. 크기·굵기·행간을 한 덩어리로 쓴다.
  * 위계: display(절약액) > title > heading > action/bodyStrong > body > label/note > caption
+ * (B 방향) display·title 은 숫자에만 쓰여서 숫자 폰트를 넣었다. 행간은 Outfit 의 글자 높이(1.26em)보다 크게 — Android 잘림 방지
  */
 export const typeScale = {
-  /** 이번 달 절약액 같은 주인공 숫자 */
-  display: { fontSize: fs.xxl, fontWeight: '800', lineHeight: 42 },
-  /** 화면 제목, 금액 입력값 */
-  title: { fontSize: fs.xl, fontWeight: '700', lineHeight: 34 },
+  /** 이번 달 절약액 같은 주인공 숫자 (40 × 1.26 = 50.4 → 행간 52) */
+  display: { fontSize: fs.xxl, fontWeight: '800', lineHeight: 52, fontFamily: numFont.extrabold },
+  /** 금액 입력값 (28 × 1.26 = 35.3 → 36) */
+  title: { fontSize: fs.xl, fontWeight: '700', lineHeight: 36, fontFamily: numFont.bold },
   /** 카드·섹션 제목 */
   heading: { fontSize: fs.lg, fontWeight: '700', lineHeight: 26 },
   /** 헤더의 저장 같은 주요 액션 */

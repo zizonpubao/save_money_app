@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import type { CardRect, LabelSize } from '@/src/features/celebration';
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 
 type Props = {
   /** "+4,500원 적립" 같은 문구 (floatingLabelText) */
@@ -73,6 +73,8 @@ export function FloatingLabel({ text, size, rect, big = false, reduceMotion = fa
   if (reduceMotion) return null;
 
   const font = type[size];
+  // 숫자 폰트: display(800)·title(700) 은 typeScale 에 이미 들어 있고, base 의 heading(700) 만 덧붙인다
+  const face = size === 'heading' ? numFace.bold : null;
   const lineHeight = font.lineHeight ?? 0;
   const place = rect
     ? { left: rect.x, width: rect.w, top: rect.y + rect.h / 2 - lineHeight / 2 }
@@ -82,7 +84,7 @@ export function FloatingLabel({ text, size, rect, big = false, reduceMotion = fa
     <Animated.Text
       testID="floating-label"
       numberOfLines={1}
-      style={[styles.label, place, font, numeric, { color: colors.primary }, animatedStyle]}>
+      style={[styles.label, place, font, numeric, face, { color: colors.primary }, animatedStyle]}>
       {text}
     </Animated.Text>
   );

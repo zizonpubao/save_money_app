@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { type GoalProgress } from '@/src/features/goal';
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = {
@@ -92,7 +92,7 @@ export function GoalProgressBar({
               +{formatWon(progress.over)} 초과
             </Text>
           ) : null}
-          <Text style={[type.bodyStrong, numeric, { color: colors.primary }]}>
+          <Text style={[type.bodyStrong, numeric, numFace.semibold, { color: colors.primary }]}>
             {progress.percent}%
           </Text>
         </View>

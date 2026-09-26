@@ -98,7 +98,8 @@ export function Confetti({
       })),
     [bursts, perBurst, seed, palette],
   );
-  const colorOf = [colors.primary, colors.primarySoft, colors.good, colors.warn];
+  // (B 방향) 숲 초록 · 새싹 연두 · 버터 노랑 · 주황. 자리(0~3)는 pickColor 가 정한다 — 목표 달성은 2(good) 50% · 0 25% · 3 25%
+  const colorOf = [colors.primary, colors.grass2, colors.good, colors.warn];
 
   if (reduceMotion || groups.length === 0) return null;
 

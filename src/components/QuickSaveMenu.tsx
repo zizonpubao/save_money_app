@@ -4,7 +4,7 @@ import Animated, { withSpring, withTiming } from 'react-native-reanimated';
 
 import type { Category, RecentTitle } from '@/src/db';
 import { entryEmoji, toCategoryMap } from '@/src/store/categoryStore';
-import { motion, numeric, shadow, size, useTheme } from '@/src/theme';
+import { motion, numFace, numeric, shadow, size, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = {
@@ -129,7 +129,7 @@ export function QuickSaveMenu({ items, categories, reduceMotion = false, onPick,
               <Text numberOfLines={1} style={[styles.title, type.body, { color: colors.text }]}>
                 {item.title}
               </Text>
-              <Text style={[type.bodyStrong, numeric, { color: colors.text }]}>
+              <Text style={[type.bodyStrong, numeric, numFace.semibold, { color: colors.text }]}>
                 {formatWon(item.amount)}
               </Text>
             </Pressable>

@@ -1,3 +1,8 @@
+import { Outfit_400Regular } from '@expo-google-fonts/outfit/400Regular';
+import { Outfit_600SemiBold } from '@expo-google-fonts/outfit/600SemiBold';
+import { Outfit_700Bold } from '@expo-google-fonts/outfit/700Bold';
+import { Outfit_800ExtraBold } from '@expo-google-fonts/outfit/800ExtraBold';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -7,7 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { initDatabase } from '@/src/db';
-import { sp, typeScale, useTheme } from '@/src/theme';
+import { numFont, sp, typeScale, useTheme } from '@/src/theme';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -15,8 +20,19 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
 
-// DB 준비 전까지 스플래시 유지
+// DB 준비 + 숫자 폰트 로드 전까지 스플래시 유지
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * (B 방향) 숫자 전용 폰트 Outfit 4굵기. 이름은 theme 의 numFont 와 같다.
+ * 루트 패키지(@expo-google-fonts/outfit)는 9굵기를 모두 require 해서 번들에 들어가므로 굵기별 경로로 가져온다
+ */
+const NUMBER_FONTS = {
+  [numFont.regular]: Outfit_400Regular,
+  [numFont.semibold]: Outfit_600SemiBold,
+  [numFont.bold]: Outfit_700Bold,
+  [numFont.extrabold]: Outfit_800ExtraBold,
+};
 
 type DbState = { ready: true; error: null } | { ready: false; error: Error };
 
@@ -33,10 +49,16 @@ function bootDatabase(): DbState {
 export default function RootLayout() {
   const [db] = useState<DbState>(bootDatabase);
   const { colors } = useTheme();
+  // 폰트 로드가 실패해도 앱은 연다 — 숫자는 같은 굵기의 시스템 폰트로 대신 그려진다 (numFace 의 fontWeight)
+  const [fontsLoaded, fontError] = useFonts(NUMBER_FONTS);
+  const fontsSettled = fontsLoaded || fontError !== null;
 
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
+    if (fontsSettled) SplashScreen.hideAsync();
+  }, [fontsSettled]);
+
+  // 폰트가 오기 전엔 스플래시 뒤에서 아무것도 그리지 않는다 (시스템 폰트 숫자가 번쩍 바뀌는 것 방지)
+  if (!fontsSettled) return null;
 
   if (!db.ready) {
     return (

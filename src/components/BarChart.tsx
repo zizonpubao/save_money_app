@@ -12,7 +12,7 @@ import { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import type { ChartBar } from '@/src/features/monthlyStats';
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 import { scrubTick } from '@/src/utils/haptics';
 import { formatWon } from '@/src/utils/money';
 
@@ -147,7 +147,7 @@ export function BarChart({ bars }: Props) {
         {/* 툴팁 자리는 항상 비워 둬서 탭할 때 그래프가 밀리지 않게 한다 */}
         <View style={[styles.tooltip, { height: type.note.lineHeight, marginBottom: sp.sm }]}>
           {selected ? (
-            <Text style={[type.note, numeric, { color: colors.text }]}>
+            <Text style={[type.note, numeric, numFace.regular, { color: colors.text }]}>
               {selected.label} · {formatWon(selected.total)}
             </Text>
           ) : null}

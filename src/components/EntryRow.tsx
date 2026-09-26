@@ -5,7 +5,7 @@ import ReanimatedSwipeable, {
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import type { Entry } from '@/src/db';
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = {
@@ -69,7 +69,7 @@ export function EntryRow({ entry, emoji, onPress, onDelete, isLast = false }: Pr
           ) : null}
         </View>
         {/* 긴 항목명이 말줄임될 때 금액에 붙지 않게 sp.sm 띄운다 */}
-        <Text style={[type.bodyStrong, numeric, { color: colors.text, marginLeft: sp.sm }]}>
+        <Text style={[type.bodyStrong, numeric, numFace.semibold, { color: colors.text, marginLeft: sp.sm }]}>
           {formatWon(entry.amount)}
         </Text>
       </Pressable>

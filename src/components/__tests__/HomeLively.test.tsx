@@ -164,7 +164,7 @@ describe('MonthGrass', () => {
     });
   });
 
-  it('기록 없는 날 divider, 기록한 날 농도 색, 미래는 grassFuture, 오늘은 primary 테두리', async () => {
+  it('기록 없는 날 divider, 기록한 날 농도 색, 미래는 grassFuture, 오늘은 todayRing 테두리', async () => {
     await renderGrass('2026-09', '2026-09-24', [
       { date: '2026-09-02', total: 1000 },
       { date: '2026-09-03', total: 8000 },
@@ -175,7 +175,7 @@ describe('MonthGrass', () => {
     expect(styleOf('2026-09-25').backgroundColor).toBe(lightColors.grassFuture);
     expect(styleOf('2026-09-24')).toMatchObject({
       borderWidth: size.todayRing,
-      borderColor: lightColors.primary,
+      borderColor: lightColors.todayRing,
     });
     expect(styleOf('2026-09-23').borderWidth).toBeUndefined();
     expect(screen.getByLabelText('이번 달 기록한 날 2일')).toBeOnTheScreen();

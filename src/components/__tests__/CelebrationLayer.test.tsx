@@ -47,7 +47,7 @@ describe('FloatingLabel', () => {
   it.each([
     ['heading', 20],
     ['title', 28],
-    ['display', 36],
+    ['display', typeScale.display.fontSize],
   ] as const)('등급별 크기: %s → %ipt', async (labelSize, fontSize) => {
     await render(<FloatingLabel text="+1원" size={labelSize} rect={RECT} />);
     expect(screen.getByTestId('floating-label')).toHaveStyle({ fontSize });
@@ -144,7 +144,7 @@ describe('CelebrationLayer (한 runId 로 조립)', () => {
     expect(within(layer).getAllByTestId('glow-ring')).toHaveLength(2);
     expect(within(layer).getAllByTestId('confetti-piece')).toHaveLength(72);
     expect(within(layer).getByTestId('floating-label')).toHaveTextContent('+55,000원 🔥');
-    expect(within(layer).getByTestId('floating-label')).toHaveStyle({ fontSize: 36 });
+    expect(within(layer).getByTestId('floating-label')).toHaveStyle({ fontSize: typeScale.display.fontSize });
   });
 
   it('base: 글로우 1겹 + heading 라벨만 (컨페티·플래시 없음)', async () => {

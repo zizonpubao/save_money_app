@@ -18,7 +18,7 @@ import { useEntryStore } from '@/src/store/entryStore';
 import type * as AudioMock from '@/__mocks__/expo-audio';
 import { SOUND_FILES } from '@/src/features/useCelebrationSound';
 import { useSettingsStore } from '@/src/store/settingsStore';
-import { motion } from '@/src/theme';
+import { motion, typeScale } from '@/src/theme';
 import { addDays, addMonths, monthRange, thisMonth, today } from '@/src/utils/date';
 import { setHapticsEnabled } from '@/src/utils/haptics';
 
@@ -261,7 +261,7 @@ describe('홈 화면 — 저장 축하 연출 (M4, DESIGN 저장 축하 연출)'
     expect(screen.getAllByTestId('confetti-piece')).toHaveLength(72);
     expect(screen.getByTestId('screen-flash')).toBeOnTheScreen();
     expect(screen.getByTestId('floating-label')).toHaveTextContent('+20,000원 🔥');
-    expect(screen.getByTestId('floating-label')).toHaveStyle({ fontSize: 36 });
+    expect(screen.getByTestId('floating-label')).toHaveStyle({ fontSize: typeScale.display.fontSize });
     expect(shakes()).toBe(1);
     await waitCelebration();
     expect(hapticsFired()).toEqual(['selection', 'heavy', 'heavy', 'heavy', 'success']);

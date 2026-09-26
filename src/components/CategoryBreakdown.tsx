@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { CategoryBar } from '@/src/features/monthlyStats';
-import { numeric, size, useTheme } from '@/src/theme';
+import { numFace, numeric, size, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = { rows: CategoryBar[] };
@@ -19,7 +19,7 @@ export function CategoryBreakdown({ rows }: Props) {
             <Text numberOfLines={1} style={[type.body, styles.name, { color: colors.text }]}>
               {row.name}
             </Text>
-            <Text style={[type.bodyStrong, numeric, { color: colors.text, marginLeft: sp.sm }]}>
+            <Text style={[type.bodyStrong, numeric, numFace.semibold, { color: colors.text, marginLeft: sp.sm }]}>
               {formatWon(row.total)}
             </Text>
             {/* % 칸 폭을 고정해 줄마다 금액의 오른쪽 끝이 맞는다 (5% · 100%) */}
@@ -27,6 +27,7 @@ export function CategoryBreakdown({ rows }: Props) {
               style={[
                 type.note,
                 numeric,
+                numFace.regular,
                 styles.percent,
                 { color: colors.textMuted, marginLeft: sp.xs },
               ]}>

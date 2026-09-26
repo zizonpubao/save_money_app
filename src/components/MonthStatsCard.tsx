@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { numeric, useTheme } from '@/src/theme';
+import { numFace, numeric, useTheme } from '@/src/theme';
 import { formatWon } from '@/src/utils/money';
 
 type Props = {
@@ -30,7 +30,7 @@ export function MonthStatsCard({
       <Text style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}>
         {formatWon(total)}
       </Text>
-      <Text style={[type.note, numeric, { color: colors.textMuted, marginTop: sp.sm }]}>
+      <Text style={[type.note, numeric, numFace.regular, { color: colors.textMuted, marginTop: sp.sm }]}>
         기록 {count}건 · {averageLabel} {formatWon(average)}
       </Text>
     </View>

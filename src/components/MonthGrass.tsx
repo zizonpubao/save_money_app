@@ -54,7 +54,7 @@ export function MonthGrass({ grass }: Props) {
       borderRadius: radius.xs,
       backgroundColor: cell.isFuture ? colors.grassFuture : levelColor(colors, cell.level),
     },
-    cell.isToday && { borderWidth: size.todayRing, borderColor: colors.primary },
+    cell.isToday && { borderWidth: size.todayRing, borderColor: colors.todayRing },
   ];
 
   return (
