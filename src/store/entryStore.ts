@@ -36,6 +36,8 @@ import { addDays, addMonths, monthRange, thisMonth, toMonth, today } from '@/src
 type EntryState = {
   /** 홈 목록에 로드한 가장 오래된 달 ('YYYY-MM'). 이번 달부터 한 달씩 뒤로 늘어난다. */
   oldestMonth: string;
+  /** oldestMonth 를 잡을 때의 "이번 달". 이번 달이 바뀌면(앱이 며칠 정지됐다 새 달에 열림) 목록을 이번 달로 되돌린다 */
+  homeMonth: string;
   entries: Entry[];
   todayTotal: number;
   monthTotal: number;
@@ -190,8 +192,20 @@ function safeOldestMonth(oldestMonth: string): string {
   return oldestMonth > thisMonth() ? thisMonth() : oldestMonth;
 }
 
+/**
+ * 홈 목록 시작 달. 이번 달이 그대로면 "더 보기"로 늘린 범위를 지키고,
+ * 이번 달이 바뀌었으면(iOS 가 앱을 정지 상태로 살려 두다 새 달에 다시 열림) 이번 달부터 다시 시작한다.
+ * 그러지 않으면 카드는 "이번 달 0원" 인데 목록엔 지난달 기록이 남는다.
+ */
+function resolveHomeRange(state: { oldestMonth: string; homeMonth: string }) {
+  const now = thisMonth();
+  if (state.homeMonth !== now) return { oldestMonth: now, homeMonth: now };
+  return { oldestMonth: safeOldestMonth(state.oldestMonth), homeMonth: now };
+}
+
 export const useEntryStore = create<EntryState>((set, get) => ({
   oldestMonth: thisMonth(),
+  homeMonth: thisMonth(),
   entries: [],
   todayTotal: 0,
   monthTotal: 0,
@@ -214,18 +228,18 @@ export const useEntryStore = create<EntryState>((set, get) => ({
   reviewDismissedMonth: null,
 
   reload: () => {
-    const safeOldest = safeOldestMonth(get().oldestMonth);
-    set({ oldestMonth: safeOldest, ...fetchSnapshot(safeOldest) });
+    const range = resolveHomeRange(get());
+    set({ ...range, ...fetchSnapshot(range.oldestMonth) });
   },
 
   openHome: () => {
-    const safeOldest = safeOldestMonth(get().oldestMonth);
-    const snapshot = fetchSnapshot(safeOldest);
+    const range = resolveHomeRange(get());
+    const snapshot = fetchSnapshot(range.oldestMonth);
     // 날짜 기록이 실패해도 홈은 떠야 하므로 카운트업만 건너뛴다
     const firstOpen = orFallback(markOpenedToday, false);
     const { firstOpenTick } = get();
     set({
-      oldestMonth: safeOldest,
+      ...range,
       ...snapshot,
       firstOpenTick: firstOpen ? firstOpenTick + 1 : firstOpenTick,
     });

@@ -541,6 +541,24 @@ describe('entryStore', () => {
       expect(getSetting(SETTING_KEYS.lastOpenDate)).toBe(today());
     });
 
+    it('지난달에 연 채 정지됐다가 새 달에 다시 열면 목록이 이번 달부터 다시 시작한다', () => {
+      addEntry(input({ date: firstOf(LAST_MONTH), title: '지난달' }));
+      addEntry(input({ date: today(), title: '이번달' }));
+      // 지난달에 홈을 열어 그달부터 목록을 잡아 둔 상태
+      useEntryStore.setState({ oldestMonth: LAST_MONTH, homeMonth: LAST_MONTH });
+      useEntryStore.getState().openHome();
+      expect(useEntryStore.getState()).toMatchObject({ oldestMonth: THIS_MONTH, homeMonth: THIS_MONTH });
+      expect(useEntryStore.getState().entries.map((e) => e.title)).toEqual(['이번달']);
+    });
+
+    it('같은 달 안에서는 "더 보기"로 늘린 범위를 다시 열어도 지킨다', () => {
+      addEntry(input({ date: firstOf(LAST_MONTH), title: '지난달' }));
+      useEntryStore.getState().reload();
+      useEntryStore.getState().loadMore();
+      useEntryStore.getState().openHome();
+      expect(useEntryStore.getState().oldestMonth).toBe(LAST_MONTH);
+    });
+
     it('오늘 이미 열었으면(앱 재시작) 카운트업 없이 합계만 읽는다', () => {
       setSetting(SETTING_KEYS.lastOpenDate, today());
       addEntry(input({ amount: 7000 }));

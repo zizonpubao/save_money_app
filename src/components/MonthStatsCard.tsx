@@ -27,7 +27,12 @@ export function MonthStatsCard({
     <View style={[styles.card, { backgroundColor: colors.card, borderRadius: radius.lg, padding: sp.lg }]}>
       {/* 홈 카드와 같은 모양: caption 회색 라벨 → display primary 숫자 → 회색 보조 한 줄 */}
       <Text style={[type.caption, { color: colors.textMuted }]}>{title}</Text>
-      <Text style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}>
+      {/* 년 합계는 9자리까지 갈 수 있어 한 줄에 맞춰 줄인다. 부모 카드가 폭을 정해 주므로(stretch) 홈 카드 같은 고착은 없다 */}
+      <Text
+        style={[type.display, numeric, { color: colors.primary, marginTop: sp.xs }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}>
         {formatWon(total)}
       </Text>
       <Text style={[type.note, numeric, numFace.regular, { color: colors.textMuted, marginTop: sp.sm }]}>

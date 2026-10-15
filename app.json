@@ -13,6 +13,11 @@
       "buildNumber": "5",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "ko",
+        "CFBundleLocalizations": ["ko"],
+        "NSMicrophoneUsageDescription": "SaveLog는 마이크로 녹음하지 않습니다. 효과음을 재생하는 오디오 모듈에 녹음 기능이 함께 들어 있어 표시되는 항목입니다."
       }
     },
     "android": {
@@ -39,7 +44,11 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#FAF6EF"
+          "backgroundColor": "#FAF6EF",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#131517"
+          }
         }
       ],
       "expo-sqlite",

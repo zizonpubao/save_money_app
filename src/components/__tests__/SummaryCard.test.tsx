@@ -220,4 +220,12 @@ describe('MonthStatsCard (월별 요약 카드)', () => {
     expect(screen.getByText('이 해 절약')).toBeOnTheScreen();
     expect(screen.getByText('기록 40건 · 월 평균 100,000원')).toBeOnTheScreen();
   });
+
+  it('9자리 년 합계도 "원" 이 다음 줄로 넘어가지 않게 한 줄에서 줄어든다 (최소 0.6배)', async () => {
+    await render(<MonthStatsCard total={123456789} count={300} average={10288066} />);
+    const big = screen.getByText('123,456,789원');
+    expect(big.props.numberOfLines).toBe(1);
+    expect(big.props.adjustsFontSizeToFit).toBe(true);
+    expect(big.props.minimumFontScale).toBe(0.6);
+  });
 });
