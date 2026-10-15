@@ -161,7 +161,7 @@ sequenceDiagram
 | 폰트 | Outfit (@expo-google-fonts) | 금액 숫자 전용, 한글은 시스템 |
 | 테스트 | jest-expo · @testing-library/react-native · sql.js | sql.js로 expo-sqlite를 대역해 DB 계층까지 PC에서 검증 |
 | 백업 | expo-file-system · expo-sharing · expo-document-picker | JSON · CSV, 공유 시트 |
-| 배포 | EAS Build (클라우드) | 안드로이드 APK, iOS는 Expo Go |
+| 배포 | EAS Build · EAS Submit (클라우드) | iOS TestFlight, 안드로이드 APK, 개발 중엔 Expo Go |
 | 개발 도구 | Claude Code 서브 에이전트 7개 | 아래 "개발 방식" 참고 |
 
 ## 🏗 아키텍처
@@ -286,12 +286,21 @@ npx expo-doctor    # 의존성 호환 점검
 
 > 💡 Expo Go에 로그인했다면 PC의 CLI도 같은 계정이어야 합니다. 구글 SSO 계정은 expo.dev에서 액세스 토큰을 만들어 `EXPO_TOKEN` 환경 변수에 넣습니다.
 
-## 📦 안드로이드 APK
+## 📦 배포
+
+### iOS · TestFlight
+
+`npx eas-cli build -p ios --profile production --auto-submit` 로 클라우드에서 빌드합니다.
+빌드가 끝나면 TestFlight에 자동으로 올라갑니다.
+아이폰에서는 TestFlight 앱으로 설치합니다.
+서명 인증서와 업로드 키는 EAS 서버에 있습니다. 첫 빌드 한 번만 애플 계정 로그인이 필요합니다.
+빌드 번호는 빌드할 때마다 `app.json` 에서 자동으로 올라갑니다.
+
+### 안드로이드 APK
 
 `npx eas-cli build -p android --profile preview` 로 클라우드에서 APK를 만듭니다.
 결과물 APK는 지인에게 파일로 전달합니다.
 설치할 때 "알 수 없는 출처" 설치를 허용해야 합니다.
-스토어 출시는 하지 않습니다.
 
 ## 🗺 로드맵
 
@@ -307,9 +316,11 @@ npx expo-doctor    # 의존성 호환 점검
 | M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | ✅ |
 | 폴리싱 · 안드로이드 · APK | 전체 폴리싱, 디자인 방향 B, 안드로이드 점검, EAS APK, 스크린샷 | ✅ |
 | 앱 아이콘 | 돼지 저금통 3D 아이콘, 안드로이드 적응형 · 테마 아이콘, 스플래시 | ✅ |
+| iOS TestFlight | EAS iOS 빌드, TestFlight 자동 업로드 | ✅ |
+| App Store 출시 | 스토어 문구, 개인정보 처리방침, 스크린샷, 심사 | 예정 |
 
 ## 👤 Author
 
 **zizonpubao** · Built with [Claude Code](https://claude.com/claude-code)
 
-개인용 앱이라 앱스토어 출시 계획은 없습니다. 안드로이드도 같은 코드로 동작합니다. EAS Build로 APK를 만들 수 있습니다.
+App Store 출시를 준비하고 있습니다. 지금은 TestFlight로 설치합니다. 안드로이드도 같은 코드로 동작하고, EAS Build로 APK를 만들 수 있습니다.
