@@ -64,7 +64,8 @@ async function press(text: string): Promise<void> {
 }
 
 function input(over: Partial<EntryInput> = {}): EntryInput {
-  return { date: '2026-09-15', title: '아메리카노', amount: 4500, categoryId: null, memo: null, ...over };
+  // 홈 스토어는 이번 달만 읽으므로 고정 날짜 대신 오늘을 쓴다 (달이 바뀌면 왕복 테스트가 깨지지 않게)
+  return { date: today(), title: '아메리카노', amount: 4500, categoryId: null, memo: null, ...over };
 }
 
 function seed() {
@@ -164,7 +165,7 @@ describe('백업 동작 (M5)', () => {
       );
       const csv = mockFiles.get(uri) ?? '';
       expect(csv.startsWith('\uFEFF날짜,항목,금액,카테고리,메모,생성시각\r\n')).toBe(true);
-      expect(csv).toContain('2026-09-15,삼각김밥,1500,편의점,점심,');
+      expect(csv).toContain(`${today()},삼각김밥,1500,편의점,점심,`);
     });
   });
 
