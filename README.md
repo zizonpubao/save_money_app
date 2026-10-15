@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/images/icon.png" width="120" alt="SaveLog 앱 아이콘: 초록 바탕 위 크림색 돼지 저금통과 주황 동전">
+
 # 💰 SaveLog
 
 ### "오늘 참은 소비"를 기록하는 절약 앱
@@ -227,7 +229,10 @@ savelog/
 │   ├── utils/              # 금액 · 날짜 포맷
 │   └── theme.ts            # 디자인 토큰
 ├── __mocks__/expo-sqlite.ts  # sql.js 기반 대역 (jest 전용)
+├── assets/images/          # 앱 아이콘 · 스플래시 · 파비콘 (생성 파일)
+├── assets/logo/            # 아이콘 원본(icon-source) · 시안 모음
 ├── assets/sounds/          # 저장 효과음 WAV (생성 파일)
+├── scripts/gen-icon.mjs    # 원본 한 장으로 아이콘 파일 전부 생성 (ffmpeg 필요)
 ├── scripts/gen-sounds.mjs  # 효과음 WAV 생성 스크립트
 ├── eas.json                # EAS Build 프로필 (안드로이드 preview)
 ├── metro.config.js         # Metro 번들러 설정
@@ -301,6 +306,7 @@ npx expo-doctor    # 의존성 호환 점검
 | M4.5 입력 마찰 줄이기 | 원탭 저장, 프리셋 칩, 자동 포커스 | ✅ |
 | M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | ✅ |
 | 폴리싱 · 안드로이드 · APK | 전체 폴리싱, 디자인 방향 B, 안드로이드 점검, EAS APK, 스크린샷 | ✅ |
+| 앱 아이콘 | 돼지 저금통 3D 아이콘, 안드로이드 적응형 · 테마 아이콘, 스플래시 | ✅ |
 
 ## 👤 Author
 

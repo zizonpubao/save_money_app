@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { margin: 0; font-family: "Malgun Gothic", sans-serif; background: #ddd; }
+  .bg { display: flex; gap: 0; }
+  .panel { flex: 1; padding: 28px 24px; }
+  .panel h2 { margin: 0 0 18px; font-size: 18px; font-weight: 600; }
+  .white { background: #FFFFFF; color: #131517; }
+  .cream { background: #FAF6EF; color: #131517; }
+  .dark  { background: #131517; color: #FAF6EF; }
+  .row { display: flex; align-items: flex-end; gap: 22px; margin-bottom: 26px; }
+  .row .name { width: 70px; font-size: 15px; }
+  .icon { display: block; border-radius: 22.37%; }
+  .s180 { width: 180px; height: 180px; }
+  .s120 { width: 120px; height: 120px; }
+  .s60  { width: 60px;  height: 60px; }
+</style></head><body>
+<div class="bg" id="root"></div>
+<script>
+  const items = [["돼지","C1-piggy-1.webp"],["복주머니","C4-pouch-1.webp"],["조약돌","B-chatgpt-1.webp"]];
+  const bgs = [["white","흰색"],["cream","크림 #FAF6EF"],["dark","차콜 #131517"]];
+  const root = document.getElementById("root");
+  for (const [cls, label] of bgs) {
+    const p = document.createElement("div"); p.className = "panel " + cls;
+    p.innerHTML = `<h2>${label}</h2>` + items.map(([n, f]) =>
+      `<div class="row"><span class="name">${n}</span>` +
+      ["s180","s120","s60"].map(s => `<img class="icon ${s}" src="${f}">`).join("") + `</div>`).join("");
+    root.appendChild(p);
+  }
+</script>
+</body></html>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { margin: 0; font-family: "Malgun Gothic", sans-serif; background: #fff; color: #131517; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 28px; padding: 24px; }
+  figure { margin: 0; text-align: center; font-size: 14px; }
+  figcaption { margin-top: 8px; }
+  .layer { position: relative; width: 240px; height: 240px; overflow: hidden; }
+  .layer img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .circle { border-radius: 50%; }
+  .squircle { border-radius: 22.37%; }
+  .checker { background: repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 24px 24px; }
+  .dark { background: #131517; }
+  .cream { background: #FAF6EF; width: 240px; height: 360px; display: flex; align-items: center; justify-content: center; }
+  .safe { position: absolute; inset: 0; margin: auto; width: 61.1%; height: 61.1%; border: 1px dashed #f00; border-radius: 50%; }
+  .row { display: flex; align-items: flex-end; gap: 14px; padding: 16px; }
+</style></head><body>
+<div class="wrap">
+  <figure><div class="layer checker"><img src="../../images/android-icon-foreground.png"><div class="safe"></div></div><figcaption>전경(투명) + 안전 영역</figcaption></figure>
+  <figure><div class="layer circle"><img src="../../images/android-icon-background.png"><img src="../../images/android-icon-foreground.png" style="inset:-25%;width:150%;height:150%"></div><figcaption>안드로이드 원형 마스크</figcaption></figure>
+  <figure><div class="layer squircle"><img src="../../images/android-icon-background.png"><img src="../../images/android-icon-foreground.png" style="inset:-25%;width:150%;height:150%"></div><figcaption>안드로이드 둥근 사각 마스크</figcaption></figure>
+  <figure><div class="layer dark circle"><img src="../../images/android-icon-monochrome.png" style="inset:-25%;width:150%;height:150%"></div><figcaption>모노크롬(테마 아이콘)</figcaption></figure>
+  <figure><div class="cream"><img src="../../images/splash-icon.png" style="width:200px"></div><figcaption>스플래시(크림 바탕)</figcaption></figure>
+  <figure><div class="layer checker"><img src="../../images/android-icon-foreground.png" style="inset:-100%;width:300%;height:300%;left:-160%;top:-60%"></div><figcaption>전경 가장자리 확대</figcaption></figure>
+</div>
+<div class="row" style="background:#fff"><img class="squircle" src="../../images/icon.png" width="180"><img class="squircle" src="../../images/icon.png" width="120"><img class="squircle" src="../../images/icon.png" width="60"><img src="../../images/favicon.png" width="48" style="image-rendering:pixelated"><span>icon.png 180·120·60 / favicon</span></div>
+<div class="row" style="background:#131517;color:#FAF6EF"><img class="squircle" src="../../images/icon.png" width="180"><img class="squircle" src="../../images/icon.png" width="120"><img class="squircle" src="../../images/icon.png" width="60"></div>
+</body></html>
