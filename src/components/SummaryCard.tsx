@@ -229,5 +229,7 @@ export function SummaryCard({
 
 const styles = StyleSheet.create({
   goalHint: { justifyContent: 'center', alignSelf: 'flex-start' },
-  bigNumber: { alignSelf: 'flex-start', transformOrigin: 'left center' },
+  // 폭은 카드 전체(stretch)로 고정한다. 내용 폭(flex-start)으로 두면 첫 오픈 카운트업이 "0원" 폭으로 상자를 잡고,
+  // adjustsFontSizeToFit 이 그 좁은 폭에 맞추느라 큰 숫자가 아주 작게 굳는다 (iOS 릴리스 빌드에서 재현)
+  bigNumber: { alignSelf: 'stretch', transformOrigin: 'left center' },
 });

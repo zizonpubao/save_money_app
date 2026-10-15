@@ -37,6 +37,16 @@ describe('SummaryCard (홈 상단 카드)', () => {
     expect(big.props.minimumFontScale).toBe(0.6);
   });
 
+  it('큰 숫자 상자는 카드 폭을 꽉 채워서, 카운트업 중에도 글자가 좁은 폭에 맞춰 줄어들지 않는다', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={2000} firstOpenTick={1} />);
+    const big = screen.getByText(/원$/, { exact: false });
+    // 숫자에서 위로 올라가며 transformOrigin 을 가진 상자(큰 숫자 래퍼)를 찾는다
+    const flatten = (s: unknown) => Object.assign({}, ...[s].flat(Infinity).filter(Boolean));
+    let node = big.parent;
+    while (node && flatten(node.props.style).transformOrigin === undefined) node = node.parent;
+    expect(flatten(node?.props.style).alignSelf).toBe('stretch');
+  });
+
   it('이번 달 절약액이 0이면 "0원" 으로 보인다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={0} />);
     // 큰 숫자 0원, 오늘 줄도 0원
