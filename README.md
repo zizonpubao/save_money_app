@@ -13,7 +13,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-839%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-840%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
