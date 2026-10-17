@@ -19,9 +19,10 @@ import { CategoryChips } from '@/src/components/CategoryChips';
 import { QuickEntryChips } from '@/src/components/QuickEntryChips';
 import type { Category, RecentTitle } from '@/src/db';
 import type { useEntryForm } from '@/src/features/useEntryForm';
+import { useTapSound } from '@/src/features/useTapSound';
 import { numeric, size, useTheme } from '@/src/theme';
 import { entryDateBounds, formatKoDate, fromDate, toDate } from '@/src/utils/date';
-import { chipTapHaptic } from '@/src/utils/haptics';
+import { amountChipHaptic, categoryHaptic, recentChipHaptic, toggleHaptic } from '@/src/utils/haptics';
 
 type Props = PropsWithChildren<{
   form: ReturnType<typeof useEntryForm>;
@@ -50,6 +51,8 @@ export function EntryForm({
   const [pickerOpen, setPickerOpen] = useState(false);
   const { values } = form;
   const amountRef = useRef<TextInput>(null);
+  // (입력 버튼 타격감) 누른 즉시 소리 + 햅틱. 무음 스위치가 켜져 있으면 소리는 안 나고 햅틱만 남는다
+  const playTap = useTapSound();
 
   // (M4.5) iOS pageSheet 모달에서는 autoFocus 가 키패드를 못 띄울 때가 있어, 잠깐 뒤 한 번 더 포커스한다.
   // 이미 포커스돼 있으면 아무 일도 없다. 수정 화면(autoFocusAmount 없음)은 기존 값 확인이 먼저라 건너뛴다
@@ -112,7 +115,15 @@ export function EntryForm({
         {recent.length > 0 ? (
           <View>
             <Text style={labelStyle}>최근 항목</Text>
-            <QuickEntryChips items={recent} categories={categories} onPress={form.applyRecent} />
+            <QuickEntryChips
+              items={recent}
+              categories={categories}
+              onPress={(item) => {
+                playTap('coin');
+                recentChipHaptic();
+                form.applyRecent(item);
+              }}
+            />
           </View>
         ) : null}
 
@@ -152,11 +163,14 @@ export function EntryForm({
             <AmountPresetChips
               sign={form.presetSign}
               onToggleSign={() => {
-                chipTapHaptic();
+                playTap('toggle');
+                toggleHaptic();
                 form.togglePresetSign();
               }}
               onPress={(preset) => {
-                chipTapHaptic();
+                // 누른 순간의 모드: + 는 동전 "짤랑", − 는 낮은 "툭"
+                playTap(form.presetSign === '+' ? 'coin' : 'coinLow');
+                amountChipHaptic(form.presetSign);
                 form.applyPreset(preset);
               }}
             />
@@ -181,7 +195,11 @@ export function EntryForm({
           <CategoryChips
             categories={categories}
             selectedId={values.categoryId}
-            onSelect={form.selectCategory}
+            onSelect={(category) => {
+              playTap('pop');
+              categoryHaptic();
+              form.selectCategory(category);
+            }}
           />
         </View>
 

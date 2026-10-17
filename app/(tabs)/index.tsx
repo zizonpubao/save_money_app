@@ -38,6 +38,7 @@ import { useHomeCard } from '@/src/features/useHomeCard';
 import { useMonthReview } from '@/src/features/useMonthReview';
 import { QUICK_SAVE_LIMIT, readRecentTitles } from '@/src/features/useRecentTitles';
 import { useReduceMotion } from '@/src/features/useReduceMotion';
+import { preloadTapSounds } from '@/src/features/useTapSound';
 import { entryEmoji, useCategoryStore } from '@/src/store/categoryStore';
 import { useEntryStore } from '@/src/store/entryStore';
 import { motion, useTheme } from '@/src/theme';
@@ -57,6 +58,10 @@ export default function HomeScreen() {
   const addDeferred = useEntryStore((s) => s.addDeferred);
   const reduceMotion = useReduceMotion();
   const playSound = useCelebrationSound();
+  // 입력 시트 버튼 타격음을 홈이 뜰 때 미리 불러 둔다 — 시트를 연 직후 첫 탭부터 소리가 나게
+  useEffect(() => {
+    preloadTapSounds();
+  }, []);
   const [formVisible, setFormVisible] = useState(false);
   // (M4.5) + 길게 누르기 원탭 저장 메뉴. null 이면 닫힘
   const [quickItems, setQuickItems] = useState<RecentTitle[] | null>(null);

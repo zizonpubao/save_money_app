@@ -4,15 +4,50 @@ import { readFileSync, statSync } from 'fs';
 import { join } from 'path';
 
 /**
- * scripts/gen-sounds.mjs 가 만든 assets/sounds/*.wav 규격 확인 (22.05kHz · 40KB 이하 · 피크 -1 dBFS, big 의 hit 만 -0.5 dBFS).
+ * scripts/gen-sounds.mjs 가 만든 assets/sounds/*.wav 규격 확인 (22.05kHz · 40KB 이하 · 피크 -1 dBFS, big 의 hit 만 -0.5 dBFS,
+ * 입력 버튼 타격음 4개는 -6 dBFS · 150ms 이하).
  * 파일을 다시 만들려면: node scripts/gen-sounds.mjs
  */
 const DIR = join(__dirname, '..', '..', 'assets', 'sounds');
 
 const RATE = 22050;
-const LENGTH_MS = { tap: 90, ding: 320, tada: 380, hit: 520, fanfare: 450 } as const;
-/** 파일별 피크(dBFS). hit(big)만 한 단계 크게 */
-const PEAK_DB: Record<keyof typeof LENGTH_MS, number> = { tap: -1, ding: -1, tada: -1, hit: -0.5, fanfare: -1 };
+const LENGTH_MS = {
+  tap: 90,
+  ding: 320,
+  tada: 380,
+  hit: 520,
+  fanfare: 450,
+  coin: 120,
+  'coin-low': 110,
+  toggle: 60,
+  pop: 70,
+} as const;
+/** 파일별 피크(dBFS). hit(big)만 한 단계 크게, 입력 버튼 타격음은 연타해도 덜 피곤하게 작게 */
+const PEAK_DB: Record<keyof typeof LENGTH_MS, number> = {
+  tap: -1,
+  ding: -1,
+  tada: -1,
+  hit: -0.5,
+  fanfare: -1,
+  coin: -6,
+  'coin-low': -6,
+  toggle: -6,
+  pop: -6,
+};
+const TAP_SOUNDS = ['coin', 'coin-low', 'toggle', 'pop'] as const;
+
+function samples(name: string): number[] {
+  const buf = readFileSync(join(DIR, `${name}.wav`));
+  const out: number[] = [];
+  for (let i = 44; i < buf.length; i += 2) out.push(buf.readInt16LE(i));
+  return out;
+}
+
+function peakIn(data: number[], fromMs: number, toMs: number): number {
+  const from = Math.round((RATE * fromMs) / 1000);
+  const to = Math.round((RATE * toMs) / 1000);
+  return data.slice(from, to).reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+}
 
 describe('효과음 파일 (gen-sounds)', () => {
   it.each(Object.entries(LENGTH_MS))('%s.wav: 22.05kHz mono PCM16 · %ims · 40KB 이하', (name, ms) => {
@@ -28,7 +63,7 @@ describe('효과음 파일 (gen-sounds)', () => {
     expect(buf.readUInt32LE(40)).toBe(Math.round((RATE * ms) / 1000) * 2);
   });
 
-  it.each(Object.entries(PEAK_DB))('%s.wav: 피크 %s dBFS 로 정규화, 첫·끝 샘플은 0 (5ms 페이드로 클릭 제거)', (name, db) => {
+  it.each(Object.entries(PEAK_DB))('%s.wav: 피크 %s dBFS 로 정규화, 첫·끝 샘플은 0 (앞뒤 페이드로 클릭 제거)', (name, db) => {
     const buf = readFileSync(join(DIR, `${name}.wav`));
     const target = Math.round(10 ** (db / 20) * 32767);
     let peak = 0;
@@ -52,5 +87,26 @@ describe('효과음 파일 (gen-sounds)', () => {
     // 두 번째 화음(200ms~)이 또렷이 들린다: 쿵의 절반 이상
     expect(peakIn(200, 260)).toBeGreaterThan(thump * 0.5);
     expect(peakIn(300, 400)).toBeGreaterThan(0);
+  });
+
+  it.each(TAP_SOUNDS)('%s.wav (입력 버튼): 150ms 이하', (name) => {
+    expect(LENGTH_MS[name]).toBeLessThanOrEqual(150);
+  });
+
+  it.each(['coin', 'toggle', 'pop'] as const)('%s.wav: attack 이 즉각적이다 (첫 3ms 안에 피크의 절반 이상)', (name) => {
+    const data = samples(name);
+    const peak = peakIn(data, 0, LENGTH_MS[name]);
+    expect(peakIn(data, 0, 3)).toBeGreaterThanOrEqual(peak * 0.5);
+  });
+
+  it('coin.wav: 38ms 뒤 두 번째 타격이 다시 커진다 ("짤랑")', () => {
+    const data = samples('coin');
+    // 첫 타격이 잦아든 30~37ms 보다 두 번째 타격 38~45ms 가 크다
+    expect(peakIn(data, 38, 45)).toBeGreaterThan(peakIn(data, 30, 37));
+  });
+
+  it('toggle.wav: 25ms 뒤 두 번째 클릭이 다시 커진다 ("딸깍")', () => {
+    const data = samples('toggle');
+    expect(peakIn(data, 25, 30)).toBeGreaterThan(peakIn(data, 18, 24) * 2);
   });
 });

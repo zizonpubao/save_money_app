@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 
+import type { PresetSign } from '@/src/features/amountPresets';
 import type { HapticPattern } from '@/src/features/celebration';
 import { motion } from '@/src/theme';
 
@@ -17,7 +18,26 @@ export function isHapticsEnabled(): boolean {
   return hapticsEnabled;
 }
 
-export type HapticKind = 'selection' | 'medium' | 'heavy' | 'success';
+export type HapticKind = 'selection' | 'light' | 'soft' | 'rigid' | 'medium' | 'heavy' | 'success';
+
+type ImpactKind = Exclude<HapticKind, 'selection' | 'success'>;
+
+/** 누르는 순간에 enum 을 읽는다 (모듈을 불러올 때 읽으면 enum 이 없는 테스트 대역에서 import 가 깨진다) */
+function impactStyle(kind: ImpactKind): Haptics.ImpactFeedbackStyle {
+  const style = Haptics.ImpactFeedbackStyle;
+  switch (kind) {
+    case 'light':
+      return style.Light;
+    case 'soft':
+      return style.Soft;
+    case 'rigid':
+      return style.Rigid;
+    case 'heavy':
+      return style.Heavy;
+    case 'medium':
+      return style.Medium;
+  }
+}
 
 /** 햅틱 한 번. 꺼져 있으면 아무것도 안 한다. 실패해도(시뮬레이터 등) 앱 흐름을 막지 않는다. */
 function fire(kind: HapticKind): void {
@@ -27,9 +47,7 @@ function fire(kind: HapticKind): void {
       ? Haptics.selectionAsync()
       : kind === 'success'
         ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        : Haptics.impactAsync(
-            kind === 'heavy' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium,
-          );
+        : Haptics.impactAsync(impactStyle(kind));
   done.catch(() => {});
 }
 
@@ -79,9 +97,32 @@ export function scrubTick(): void {
   fire('selection');
 }
 
-/** (M4.5) 금액 프리셋 칩을 누를 때 가벼운 틱 */
+/** 설정 탭 테마 칩을 누를 때 가벼운 틱. 금액 입력 화면 버튼은 아래 입력 버튼 햅틱을 쓴다 */
 export function chipTapHaptic(): void {
   fire('selection');
+}
+
+/**
+ * (입력 버튼 타격감) 금액 프리셋 칩. + 는 단단한 Rigid(동전 "짤랑"), − 는 부드러운 Soft(낮은 "툭").
+ * selection 은 손끝에 거의 안 느껴져 impact 로 바꿨다
+ */
+export function amountChipHaptic(sign: PresetSign): void {
+  fire(sign === '+' ? 'rigid' : 'soft');
+}
+
+/** (입력 버튼 타격감) +/− 전환 버튼. 스위치 "딸깍" 과 같이 Light */
+export function toggleHaptic(): void {
+  fire('light');
+}
+
+/** (입력 버튼 타격감) 카테고리 칩. 가벼운 "톡" 과 같이 Light */
+export function categoryHaptic(): void {
+  fire('light');
+}
+
+/** (입력 버튼 타격감) 최근 항목 칩. 금액이 채워지는 동작이라 금액 + 칩과 같은 Rigid */
+export function recentChipHaptic(): void {
+  fire('rigid');
 }
 
 /** (M4.5) + 버튼 길게 누르기가 인식된 순간 */

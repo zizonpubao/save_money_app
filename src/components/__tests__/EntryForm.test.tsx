@@ -8,7 +8,11 @@ import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
 import { useEntryForm } from '@/src/features/useEntryForm';
 import { useSettingsStore } from '@/src/store/settingsStore';
 
-jest.mock('expo-haptics', () => ({ selectionAsync: jest.fn(() => Promise.resolve()) }));
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(() => Promise.resolve()),
+  selectionAsync: jest.fn(() => Promise.resolve()),
+  ImpactFeedbackStyle: { Light: 'light', Soft: 'soft', Rigid: 'rigid', Medium: 'medium', Heavy: 'heavy' },
+}));
 
 const 커피: Category = { id: 1, name: '커피', emoji: '☕', sortOrder: 0, isDefault: true };
 const 택시: Category = { id: 2, name: '택시', emoji: '🚕', sortOrder: 1, isDefault: true };
@@ -110,6 +114,7 @@ describe('EntryForm (입력 시트)', () => {
   describe('(M4.5) 금액 프리셋 칩', () => {
     beforeEach(() => {
       jest.mocked(Haptics.selectionAsync).mockClear();
+      jest.mocked(Haptics.impactAsync).mockClear();
       useSettingsStore.setState({ amountPresets: [...AMOUNT_PRESETS] });
     });
 
@@ -121,7 +126,7 @@ describe('EntryForm (입력 시트)', () => {
       expect(screen.queryByText('+1천')).toBeNull();
     });
 
-    it('칩은 누를 때마다 금액에 더하고(콤마) 매번 selection 햅틱을 낸다: 1천 → 5백 → 1만 ×2 = 21,500', async () => {
+    it('칩은 누를 때마다 금액에 더하고(콤마) 매번 Rigid 햅틱을 낸다: 1천 → 5백 → 1만 ×2 = 21,500', async () => {
       await render(<Harness />);
       await fireEvent.press(screen.getByLabelText('금액에 1,000원 더하기'));
       expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,000');
@@ -130,7 +135,9 @@ describe('EntryForm (입력 시트)', () => {
       await fireEvent.press(screen.getByText('1만'));
       await fireEvent.press(screen.getByText('1만'));
       expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('21,500');
-      expect(Haptics.selectionAsync).toHaveBeenCalledTimes(4);
+      expect(Haptics.impactAsync).toHaveBeenCalledTimes(4);
+      expect(jest.mocked(Haptics.impactAsync).mock.calls.every(([style]) => style === 'rigid')).toBe(true);
+      expect(Haptics.selectionAsync).not.toHaveBeenCalled();
     });
 
     it('직접 친 금액에도 이어서 더한다 (9,500 + 1천 = 10,500)', async () => {
@@ -149,7 +156,7 @@ describe('EntryForm (입력 시트)', () => {
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ title: '간식', amount: 4000 }));
     });
 
-    it('맨 앞 부호 칩은 + 로 시작하고, 누르면 − 로 바뀌며 selection 햅틱을 낸다', async () => {
+    it('맨 앞 부호 칩은 + 로 시작하고, 누르면 − 로 바뀌며 Light 햅틱을 낸다', async () => {
       await render(<Harness />);
       const sign = screen.getByTestId('preset-sign-chip');
       expect(sign).toHaveTextContent('+');
@@ -159,7 +166,8 @@ describe('EntryForm (입력 시트)', () => {
       expect(screen.getByTestId('preset-sign-chip')).toBeSelected();
       expect(screen.getByLabelText('금액에 1,000원 빼기')).toBeOnTheScreen();
       expect(screen.queryByLabelText('금액에 1,000원 더하기')).toBeNull();
-      expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+      expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+      expect(Haptics.impactAsync).toHaveBeenCalledWith('light');
       // 다시 누르면 + 로 돌아온다
       await fireEvent.press(screen.getByTestId('preset-sign-chip'));
       expect(screen.getByTestId('preset-sign-chip')).toHaveTextContent('+');

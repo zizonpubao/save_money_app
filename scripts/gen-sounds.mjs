@@ -1,7 +1,8 @@
-// 저장 축하 효과음 5개를 합성한다 (DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영).
+// 저장 축하 효과음 5개(DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영)와
+// 입력 버튼 타격음 4개(DESIGN "입력 버튼 타격감")를 합성한다.
 // Node 기본 모듈만 쓴다. 실행: node scripts/gen-sounds.mjs → assets/sounds/*.wav
 // 형식: WAV PCM16 mono 22.05kHz, 각 40KB 이하. 음을 겹쳐 합성 → 전체 앞뒤 5ms 페이드(클릭 제거) → 마지막에 피크 -1 dBFS
-// (hit 만 -0.5 dBFS) 로 정규화.
+// (hit 만 -0.5 dBFS) 로 정규화. 타격음은 앞 페이드 1ms(즉각 attack, 둥근 coin-low 만 5ms) · 피크 -6 dBFS(연타해도 귀가 덜 피곤하게).
 // 노이즈는 시드 고정 난수라 다시 돌려도 같은 파일이 나온다.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -11,7 +12,9 @@ const RATE = 22050;
 const NYQUIST = RATE / 2;
 const PEAK = 10 ** (-1 / 20); // -1 dBFS ≈ 0.891
 const PEAK_HIT = 10 ** (-0.5 / 20); // -0.5 dBFS ≈ 0.944 — big 은 한 단계 크게
+const PEAK_TAP = 10 ** (-6 / 20); // -6 dBFS ≈ 0.501 — 입력 버튼 타격음은 저장 효과음보다 작게
 const FADE_S = 0.005;
+const FADE_IN_TAP_S = 0.001;
 
 const C5 = 523.25;
 const E5 = 659.25;
@@ -88,15 +91,16 @@ function mixPart(buf, part, gain) {
   for (let i = 0; i < buf.length; i += 1) buf[i] += (part[i] / max) * gain;
 }
 
-/** 앞뒤 5ms 페이드(첫·끝 샘플 0) 후 피크를 peak(기본 -1 dBFS)로. 페이드를 먼저 해야 정규화 뒤 피크가 정확하다 */
-function finish(buf, peak = PEAK) {
-  const fade = Math.round(FADE_S * RATE);
+/**
+ * 앞 fadeIn(기본 5ms)·뒤 5ms 페이드(첫·끝 샘플 0) 후 피크를 peak(기본 -1 dBFS)로.
+ * 페이드를 먼저 해야 정규화 뒤 피크가 정확하다
+ */
+function finish(buf, peak = PEAK, fadeIn = FADE_S) {
   const last = buf.length - 1;
-  for (let i = 0; i <= fade; i += 1) {
-    const g = i / fade;
-    buf[i] *= g;
-    buf[last - i] *= g;
-  }
+  const fadeHead = Math.round(fadeIn * RATE);
+  for (let i = 0; i <= fadeHead; i += 1) buf[i] *= i / fadeHead;
+  const fadeTail = Math.round(FADE_S * RATE);
+  for (let i = 0; i <= fadeTail; i += 1) buf[last - i] *= i / fadeTail;
   const max = buf.reduce((m, v) => Math.max(m, Math.abs(v)), 0) || 1;
   for (let i = 0; i < buf.length; i += 1) buf[i] = (buf[i] / max) * peak;
   return buf;
@@ -228,7 +232,63 @@ function hit() {
   return finish(buf, PEAK_HIT);
 }
 
-const SOUNDS = { tap, ding, tada, hit, fanfare };
+/**
+ * 동전 "짤랑" 120ms: 2.5k·3.8k·5.3kHz 비정수배 배음을 빠르게 감쇠시킨 타격 두 번.
+ * 38ms 뒤 두 번째 타격은 0.55 크기에 음높이를 6% 올려 같은 동전이 한 번 더 튄 소리가 된다
+ */
+function coin() {
+  const buf = buffer(120);
+  const strike = (at, amp, shift) => {
+    const ring = { at, dur: 0.12 - at, attack: 0.0005, release: 0.01 };
+    tone(buf, { ...ring, freq: 2500 * shift, amp, tau: 0.03 });
+    tone(buf, { ...ring, freq: 3800 * shift, amp: amp * 0.7, tau: 0.02 });
+    tone(buf, { ...ring, freq: 5300 * shift, amp: amp * 0.45, tau: 0.012 });
+  };
+  strike(0, 1, 1);
+  strike(0.038, 0.55, 1.06);
+  // 1ms 노이즈로 금속이 부딪는 순간을 또렷하게
+  noise(buf, { at: 0, dur: 0.002, amp: 0.6, tau: 0.0006, seed: 21 });
+  return finish(buf, PEAK_TAP, FADE_IN_TAP_S);
+}
+
+/**
+ * 낮은 "툭" 110ms: 220 → 180Hz 로 살짝 내려가는 사인. attack 6ms 로 둥글게.
+ * 폰 스피커는 200Hz 대가 약해 2·3배 배음(작게)을 얹어 들리게 한다
+ */
+function coinLow() {
+  const buf = buffer(110);
+  const pitch = (t) => 180 + 40 * Math.exp(-t / 0.03);
+  const soft = { at: 0, dur: 0.11, attack: 0.006, release: 0.02 };
+  tone(buf, { ...soft, freq: pitch, amp: 1, tau: 0.04 });
+  tone(buf, { ...soft, freq: (t) => 2 * pitch(t), amp: 0.35, tau: 0.03 });
+  tone(buf, { ...soft, freq: (t) => 3 * pitch(t), amp: 0.15, tau: 0.02 });
+  return finish(buf, PEAK_TAP);
+}
+
+/** 스위치 "딸깍" 60ms: 아주 짧은 클릭 2개(25ms 간격). 첫 클릭은 높고 크게, 둘째는 낮고 작게 */
+function toggle() {
+  const buf = buffer(60);
+  const click = (at, freq, amp, seed) => {
+    tone(buf, { at, dur: 0.02, freq, amp, tau: 0.004, attack: 0.0003, release: 0.004 });
+    noise(buf, { at, dur: 0.002, amp: amp * 0.8, tau: 0.0005, seed });
+  };
+  click(0, 2200, 1, 31);
+  click(0.025, 1600, 0.7, 37);
+  return finish(buf, PEAK_TAP, FADE_IN_TAP_S);
+}
+
+/** 가벼운 "톡" 70ms: 600 → 900Hz 로 빠르게 올라가는 사인 + 옥타브 위 배음(작게). 동전 소리보다 낮고 둥글다 */
+function pop() {
+  const buf = buffer(70);
+  const pitch = (t) => 900 - 300 * Math.exp(-t / 0.012);
+  const body = { at: 0, dur: 0.07, attack: 0.001, release: 0.015 };
+  tone(buf, { ...body, freq: pitch, amp: 1, tau: 0.022 });
+  tone(buf, { ...body, freq: (t) => 2 * pitch(t), amp: 0.25, tau: 0.012 });
+  return finish(buf, PEAK_TAP, FADE_IN_TAP_S);
+}
+
+/** 파일 이름 → 합성 함수 */
+const SOUNDS = { tap, ding, tada, hit, fanfare, coin, 'coin-low': coinLow, toggle, pop };
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'sounds');
 mkdirSync(outDir, { recursive: true });
