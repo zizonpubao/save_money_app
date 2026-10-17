@@ -90,6 +90,7 @@ function GoalModalBody({ current, onSave, onClear, onClose }: Omit<Props, 'visib
               placeholderTextColor={colors.textMuted}
               autoFocus
               returnKeyType="done"
+              inputAccessoryViewButtonLabel="완료"
               maxLength={13}
               accessibilityLabel="월 목표 금액"
               style={[

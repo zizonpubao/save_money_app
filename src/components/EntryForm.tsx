@@ -149,6 +149,7 @@ export function EntryForm({
               placeholderTextColor={colors.textMuted}
               autoFocus={autoFocusAmount}
               returnKeyType="done"
+              inputAccessoryViewButtonLabel="완료"
               maxLength={13}
               style={[
                 styles.amountInput,

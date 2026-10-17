@@ -65,6 +65,8 @@ describe('설정 화면 — 입력 · 빠른 금액 버튼', () => {
       '10,000',
     ]);
     expect(input(0).props.keyboardType).toBe('number-pad');
+    // RN 은 숫자 키패드 위 버튼을 영어 "Done" 으로 고정해 두므로 한국어로 지정한다
+    expect(input(0).props.inputAccessoryViewButtonLabel).toBe('완료');
     await fireEvent.changeText(input(4), '25000');
     expect(input(4).props.value).toBe('25,000');
     // 칩에 어떻게 보일지 바로 옆에

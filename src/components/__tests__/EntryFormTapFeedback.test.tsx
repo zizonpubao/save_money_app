@@ -155,3 +155,10 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     expect(Haptics.selectionAsync).not.toHaveBeenCalled();
   });
 });
+
+describe('금액 숫자 키패드', () => {
+  it('키패드 위 버튼은 RN 기본값 영어 "Done" 대신 "완료" 다 (TestFlight 빌드 6에서 발견)', async () => {
+    await render(<Harness />);
+    expect(screen.getByPlaceholderText('0').props.inputAccessoryViewButtonLabel).toBe('완료');
+  });
+});

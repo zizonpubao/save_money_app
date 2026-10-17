@@ -111,6 +111,7 @@ function Body({ current, onSave, onReset, onClose }: Omit<Props, 'visible'>) {
                 placeholder="0"
                 placeholderTextColor={colors.textMuted}
                 returnKeyType="done"
+                inputAccessoryViewButtonLabel="완료"
                 maxLength={9}
                 accessibilityLabel={`빠른 금액 ${index + 1}번째`}
                 style={[
