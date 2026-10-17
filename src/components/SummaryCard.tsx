@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -16,6 +16,7 @@ import { GoalProgressBar } from '@/src/components/GoalProgressBar';
 import { goalProgress } from '@/src/features/goal';
 import { numFace, numeric, useTheme } from '@/src/theme';
 import { formatKoDate, formatKoMonth, thisMonth, today } from '@/src/utils/date';
+import { fitFontSize } from '@/src/utils/fitText';
 import { formatWon } from '@/src/utils/money';
 
 /** (M3.6) 하루 첫 오픈 카운트업 0 → 월 합계 시간 */
@@ -142,7 +143,15 @@ export function SummaryCard({
   const tintStyle = useAnimatedStyle(() => ({ opacity: tint.value }));
   const numberStyle = useAnimatedStyle(() => ({ transform: [{ scale: numberScale.value }] }));
   const progress = useMemo(() => goalProgress(monthTotal, goal), [monthTotal, goal]);
-  const bigNumberStyle = [type.display, numeric, { color: colors.primary, marginTop: sp.xs }];
+  // 큰 숫자 상자 폭(카드 안쪽 폭). 재기 전(0)에는 원래 크기로 그린다
+  const [numberWidth, setNumberWidth] = useState(0);
+  const onNumberLayout = (e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w !== numberWidth) setNumberWidth(w);
+  };
+  // 카운트업 도중 크기가 바뀌지 않게 최종 값 기준으로 한 번 정한다
+  const fontSize = fitFontSize(formatWon(monthTotal), numberWidth, type.display.fontSize ?? 40);
+  const bigNumberStyle = [type.display, numeric, { fontSize, color: colors.primary, marginTop: sp.xs }];
 
   return (
     <Animated.View
@@ -168,7 +177,7 @@ export function SummaryCard({
         이번 달 절약 · {formatKoMonth(thisMonth())}
       </Text>
       {/* (M4) 큰 숫자 스케일은 왼쪽 끝을 기준으로 커져서 라벨과 세로 줄이 흔들리지 않는다 */}
-      <Animated.View style={[styles.bigNumber, numberStyle]}>
+      <Animated.View style={[styles.bigNumber, numberStyle]} onLayout={onNumberLayout}>
         {ready ? (
           // key 가 바뀌면 새로 마운트돼 from(0) 부터 다시 굴러간다 (자정 넘겨 다시 포커스된 경우 포함)
           <AnimatedWon
@@ -182,7 +191,7 @@ export function SummaryCard({
             style={bigNumberStyle}
           />
         ) : (
-          <Text style={bigNumberStyle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+          <Text style={bigNumberStyle} numberOfLines={1}>
             {formatWon(monthTotal)}
           </Text>
         )}
@@ -229,7 +238,6 @@ export function SummaryCard({
 
 const styles = StyleSheet.create({
   goalHint: { justifyContent: 'center', alignSelf: 'flex-start' },
-  // 폭은 카드 전체(stretch)로 고정한다. 내용 폭(flex-start)으로 두면 첫 오픈 카운트업이 "0원" 폭으로 상자를 잡고,
-  // adjustsFontSizeToFit 이 그 좁은 폭에 맞추느라 큰 숫자가 아주 작게 굳는다 (iOS 릴리스 빌드에서 재현)
+  // 폭은 카드 안쪽 전체(stretch). onLayout 으로 잰 이 폭이 fitFontSize 의 기준이다
   bigNumber: { alignSelf: 'stretch', transformOrigin: 'left center' },
 });

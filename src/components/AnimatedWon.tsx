@@ -53,9 +53,10 @@ export function AnimatedWon({ value, duration = 600, from, fromDuration, delay =
     },
   );
 
-  // 9자리 금액도 한 줄에 들어가게 폭에 맞춰 줄인다. 줄 높이는 lineHeight 로 고정돼 카운트업 중에도 카드가 튀지 않는다
+  // 글자 크기는 부르는 쪽이 fitFontSize 로 정해 style 에 넣는다. adjustsFontSizeToFit 은 쓰지 않는다:
+  // iOS 정식 빌드에서 minimumFontScale 이 무시되고 4pt 까지 줄어 굳었다 (TestFlight 빌드 5·6, 자세한 근거는 src/utils/fitText.ts)
   return (
-    <Text style={style} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+    <Text style={style} numberOfLines={1}>
       {formatWon(display)}
     </Text>
   );

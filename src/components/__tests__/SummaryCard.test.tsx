@@ -17,6 +17,16 @@ jest.mock('@/src/components/GoalProgressBar', () => {
   return { GoalProgressBar: jest.fn(actual.GoalProgressBar) };
 });
 
+/** 스타일 배열을 한 객체로 */
+const flatten = (s: unknown) => Object.assign({}, ...[s].flat(Infinity).filter(Boolean));
+type Node = { props: { style?: unknown }; parent: Node | null } | null;
+/** 큰 숫자 텍스트에서 위로 올라가 transformOrigin 을 가진 래퍼(onLayout 이 달린 상자)를 찾는다 */
+function bigNumberBox(text: Node) {
+  let node = text?.parent ?? null;
+  while (node && flatten(node.props.style).transformOrigin === undefined) node = node.parent;
+  return node as unknown as Parameters<typeof fireEvent>[0] & Node;
+}
+
 describe('SummaryCard (홈 상단 카드)', () => {
   it('이번 달 절약액을 콤마·원 형식으로 크게 보여준다', async () => {
     await render(<SummaryCard todayTotal={0} monthTotal={1234567} />);
@@ -29,22 +39,33 @@ describe('SummaryCard (홈 상단 카드)', () => {
     expect(screen.getByLabelText(/^오늘 4,500원 · \d{4}년/)).toBeOnTheScreen();
   });
 
-  it('9자리 금액은 한 줄에서 폭에 맞춰 줄어든다 (최소 0.6배)', async () => {
-    await render(<SummaryCard todayTotal={0} monthTotal={123456789} />);
-    const big = screen.getByText('123,456,789원');
-    expect(big.props.numberOfLines).toBe(1);
-    expect(big.props.adjustsFontSizeToFit).toBe(true);
-    expect(big.props.minimumFontScale).toBe(0.6);
+  it('큰 숫자 상자는 카드 폭을 꽉 채운다 (그 폭이 글자 크기 계산의 기준)', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={2000} firstOpenTick={1} />);
+    const box = bigNumberBox(screen.getByText(/원$/, { exact: false }));
+    expect(flatten(box?.props.style).alignSelf).toBe('stretch');
   });
 
-  it('큰 숫자 상자는 카드 폭을 꽉 채워서, 카운트업 중에도 글자가 좁은 폭에 맞춰 줄어들지 않는다', async () => {
-    await render(<SummaryCard todayTotal={0} monthTotal={2000} firstOpenTick={1} />);
-    const big = screen.getByText(/원$/, { exact: false });
-    // 숫자에서 위로 올라가며 transformOrigin 을 가진 상자(큰 숫자 래퍼)를 찾는다
-    const flatten = (s: unknown) => Object.assign({}, ...[s].flat(Infinity).filter(Boolean));
-    let node = big.parent;
-    while (node && flatten(node.props.style).transformOrigin === undefined) node = node.parent;
-    expect(flatten(node?.props.style).alignSelf).toBe('stretch');
+  it('큰 숫자는 iOS 자동 줄임(adjustsFontSizeToFit)을 쓰지 않는다 — 정식 빌드에서 4pt 로 굳던 버그', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={0} />);
+    const big = screen.getByText('0원');
+    expect(big.props.numberOfLines).toBe(1);
+    expect(big.props.adjustsFontSizeToFit).toBeFalsy();
+  });
+
+  it('폭을 재면 보통 금액은 원래 크기(40) 그대로다', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={2000} />);
+    const big = screen.getByText('2,000원');
+    await fireEvent(bigNumberBox(big)!, 'layout', { nativeEvent: { layout: { width: 310, height: 52 } } });
+    expect(flatten(screen.getByText('2,000원').props.style).fontSize).toBe(40);
+  });
+
+  it('9자리 금액이 좁은 폭을 넘으면 글자 크기를 직접 줄이고, 0.6배(24) 아래로는 안 내려간다', async () => {
+    await render(<SummaryCard todayTotal={0} monthTotal={123456789} />);
+    const big = screen.getByText('123,456,789원');
+    await fireEvent(bigNumberBox(big)!, 'layout', { nativeEvent: { layout: { width: 250, height: 52 } } });
+    const size = flatten(screen.getByText('123,456,789원').props.style).fontSize;
+    expect(size).toBeLessThan(40);
+    expect(size).toBeGreaterThanOrEqual(24);
   });
 
   it('이번 달 절약액이 0이면 "0원" 으로 보인다', async () => {
@@ -221,11 +242,14 @@ describe('MonthStatsCard (월별 요약 카드)', () => {
     expect(screen.getByText('기록 40건 · 월 평균 100,000원')).toBeOnTheScreen();
   });
 
-  it('9자리 년 합계도 "원" 이 다음 줄로 넘어가지 않게 한 줄에서 줄어든다 (최소 0.6배)', async () => {
+  it('9자리 년 합계도 한 줄로, 좁은 폭에서는 글자 크기를 직접 줄인다 (iOS 자동 줄임은 쓰지 않음)', async () => {
     await render(<MonthStatsCard total={123456789} count={300} average={10288066} />);
     const big = screen.getByText('123,456,789원');
     expect(big.props.numberOfLines).toBe(1);
-    expect(big.props.adjustsFontSizeToFit).toBe(true);
-    expect(big.props.minimumFontScale).toBe(0.6);
+    expect(big.props.adjustsFontSizeToFit).toBeFalsy();
+    await fireEvent(big, 'layout', { nativeEvent: { layout: { width: 250, height: 52 } } });
+    const size = flatten(screen.getByText('123,456,789원').props.style).fontSize;
+    expect(size).toBeLessThan(40);
+    expect(size).toBeGreaterThanOrEqual(24);
   });
 });
