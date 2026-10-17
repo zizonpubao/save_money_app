@@ -316,7 +316,7 @@ npx expo-doctor    # 의존성 호환 점검
 | M5 백업 | JSON 내보내기 · 복원, CSV, 카테고리 관리 | ✅ |
 | 폴리싱 · 안드로이드 · APK | 전체 폴리싱, 디자인 방향 B, 안드로이드 점검, EAS APK, 스크린샷 | ✅ |
 | 앱 아이콘 | 돼지 저금통 3D 아이콘, 안드로이드 적응형 · 테마 아이콘, 스플래시 | ✅ |
-| iOS TestFlight | EAS iOS 빌드, TestFlight 자동 업로드 | ✅ |
+| iOS TestFlight | EAS iOS 빌드, TestFlight 자동 업로드 (최신 빌드 6) | ✅ |
 | App Store 출시 | 스토어 문구, 개인정보 처리방침, 스크린샷, 심사 | 예정 |
 
 ## 👤 Author

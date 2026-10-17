@@ -10,13 +10,15 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.zizonpubao.savelog",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
         "CFBundleDevelopmentRegion": "ko",
-        "CFBundleLocalizations": ["ko"],
+        "CFBundleLocalizations": [
+          "ko"
+        ],
         "NSMicrophoneUsageDescription": "SaveLog는 마이크로 녹음하지 않습니다. 효과음을 재생하는 오디오 모듈에 녹음 기능이 함께 들어 있어 표시되는 항목입니다."
       }
     },
