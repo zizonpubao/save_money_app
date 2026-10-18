@@ -92,7 +92,7 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,000');
   });
 
-  it('+/− 전환: "딸깍"(toggle) + Light. − 모드 금액 칩은 낮은 "툭"(coinLow) + Soft', async () => {
+  it('+/− 전환: "딸깍"(toggle) + Light. − 모드 금액 칩은 "띵-동"(coinLow) + Soft', async () => {
     await render(<Harness />);
     await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '5000');
     await fireEvent.press(screen.getByTestId('preset-sign-chip'));
@@ -150,7 +150,7 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     expect(soundsPlayed()).toEqual(['coinClassic', 'toggle', 'coinLow', 'pop', 'coinClassic']);
   });
 
-  it('설정에서 동전 소리를 "빙글"(spin)로 고르면 + 금액 칩·최근 항목 칩이 그 녹음을 쓴다. − 모드 툭은 그대로', async () => {
+  it('설정에서 동전 소리를 "빙글"(spin)로 고르면 + 금액 칩·최근 항목 칩이 그 녹음을 쓴다. − 모드 띵-동은 그대로', async () => {
     useSettingsStore.setState({ coinSound: 'spin' });
     await render(<Harness />);
     await pressAllFive();

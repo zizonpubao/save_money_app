@@ -172,7 +172,7 @@ export function EntryForm({
                 form.togglePresetSign();
               }}
               onPress={(preset) => {
-                // 누른 순간의 모드: + 는 동전 "짤랑", − 는 낮은 "툭"
+                // 누른 순간의 모드: + 는 동전 "짤랑", − 는 내려가는 "띵-동"
                 playTap(form.presetSign === '+' ? 'coin' : 'coinLow');
                 amountChipHaptic(form.presetSign);
                 form.applyPreset(preset);

@@ -5,7 +5,7 @@ import { join } from 'path';
 
 /**
  * scripts/gen-sounds.mjs 가 만든 assets/sounds/*.wav 규격 확인 (22.05kHz · 40KB 이하 · 피크 -1 dBFS, big 의 hit 만 -0.5 dBFS,
- * 입력 버튼 타격음 3개는 -6 dBFS · 150ms 이하).
+ * 입력 버튼 타격음 딸깍·톡은 -6 dBFS · 150ms 이하, 빼기 띵-동은 -10 dBFS · 300ms 이하).
  * 금액 칩 동전 녹음(coin-classic · coin-spin)은 이 스크립트가 만들지 않는다. 맨 아래 블록에서 형식만 본다.
  * 파일을 다시 만들려면: node scripts/gen-sounds.mjs
  */
@@ -18,7 +18,7 @@ const LENGTH_MS = {
   tada: 380,
   hit: 520,
   fanfare: 450,
-  'coin-low': 120,
+  'coin-low': 260,
   toggle: 60,
   pop: 70,
 } as const;
@@ -29,7 +29,7 @@ const PEAK_DB: Record<keyof typeof LENGTH_MS, number> = {
   tada: -1,
   hit: -0.5,
   fanfare: -1,
-  'coin-low': -2,
+  'coin-low': -10,
   toggle: -6,
   pop: -6,
 };
@@ -87,8 +87,15 @@ describe('효과음 파일 (gen-sounds)', () => {
     expect(peakIn(300, 400)).toBeGreaterThan(0);
   });
 
-  it.each(['coin-low', 'toggle', 'pop'] as const)('%s.wav (입력 버튼): 150ms 이하', (name) => {
+  it.each(['toggle', 'pop'] as const)('%s.wav (입력 버튼): 150ms 이하', (name) => {
     expect(LENGTH_MS[name]).toBeLessThanOrEqual(150);
+  });
+
+  it('coin-low.wav (빼기 "띵-동"): 두 음이라 조금 길지만 300ms 이하, 둘째 음(70ms~)이 첫 음보다 늦게 다시 커진다', () => {
+    expect(LENGTH_MS['coin-low']).toBeLessThanOrEqual(300);
+    const data = samples('coin-low');
+    // 첫 음 솔이 잦아든 60~69ms 보다 둘째 음 레가 들어온 75~90ms 가 크다 → 내려가는 두 음
+    expect(peakIn(data, 75, 90)).toBeGreaterThan(peakIn(data, 60, 69));
   });
 
   it.each(['toggle', 'pop'] as const)('%s.wav: attack 이 즉각적이다 (첫 3ms 안에 피크의 절반 이상)', (name) => {
@@ -167,7 +174,7 @@ describe('입력 버튼 소리 크기 균형 (스피커 기준)', () => {
     return 20 * Math.log10(best);
   }
 
-  it.each(['coin-classic', 'coin-spin'] as const)('+ 동전(%s)과 − "툭"의 크기 차이가 3dB 이내다', (coin) => {
+  it.each(['coin-classic', 'coin-spin'] as const)('+ 동전(%s)과 − "띵-동"의 크기 차이가 3dB 이내다', (coin) => {
     expect(Math.abs(speakerDb(coin) - speakerDb('coin-low'))).toBeLessThanOrEqual(3);
   });
 

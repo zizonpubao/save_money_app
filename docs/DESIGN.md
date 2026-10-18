@@ -202,7 +202,7 @@
 | 버튼 | 효과음 | 햅틱 |
 | --- | --- | --- |
 | 금액 프리셋 칩, + 모드 | 실제 동전 녹음 2종 중 설정 선택(기본 짤랑) `coin-classic.wav` · `coin-spin.wav` | Rigid impact |
-| 금액 프리셋 칩, − 모드 | 낮고 부드러운 "툭" `coin-low.wav` | Soft impact |
+| 금액 프리셋 칩, − 모드 | 내려가는 두 음 "띵-동"(솔 → 레) `coin-low.wav` | Soft impact |
 | +/− 전환 칩 | 스위치 "딸깍" `toggle.wav` | Light impact |
 | 카테고리 칩 | 가볍고 높은 "톡" `pop.wav` | Light impact |
 | 최근 항목 칩 | 실제 동전 녹음 2종 중 설정 선택(기본 짤랑) `coin-classic.wav` · `coin-spin.wav` | Rigid impact |

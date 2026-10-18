@@ -103,7 +103,7 @@ export function chipTapHaptic(): void {
 }
 
 /**
- * (입력 버튼 타격감) 금액 프리셋 칩. + 는 단단한 Rigid(동전 "짤랑"), − 는 부드러운 Soft(낮은 "툭").
+ * (입력 버튼 타격감) 금액 프리셋 칩. + 는 단단한 Rigid(동전 "짤랑"), − 는 부드러운 Soft(내려가는 "띵-동").
  * selection 은 손끝에 거의 안 느껴져 impact 로 바꿨다
  */
 export function amountChipHaptic(sign: PresetSign): void {

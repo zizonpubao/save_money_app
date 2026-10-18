@@ -11,7 +11,7 @@ import { AUDIO_MODE, PLAYER_OPTIONS, playFromStart, TAP_VOLUME, warnDev } from '
 import { useSettingsStore } from '@/src/store/settingsStore';
 
 /**
- * 입력 버튼 타격음 (DESIGN "입력 버튼 타격감"). coin 동전(설정에서 고른 녹음) · coinLow 툭 · toggle 딸깍 · pop 톡
+ * 입력 버튼 타격음 (DESIGN "입력 버튼 타격감"). coin 동전(설정에서 고른 녹음) · coinLow 띵-동 · toggle 딸깍 · pop 톡
  */
 export type TapSound = 'coin' | 'coinLow' | 'toggle' | 'pop';
 

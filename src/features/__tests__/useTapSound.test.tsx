@@ -49,7 +49,7 @@ describe('useTapSound (입력 버튼 타격음)', () => {
     useSettingsStore.setState({ soundEnabled: true, coinSound: 'classic' });
   });
 
-  it('파일마다 다른 에셋이다 (동전 녹음 2개 + 툭·딸깍·톡)', () => {
+  it('파일마다 다른 에셋이다 (동전 녹음 2개 + 띵-동·딸깍·톡)', () => {
     expect(FILES).toEqual(['coinClassic', 'coinSpin', 'coinLow', 'toggle', 'pop']);
     expect(new Set(Object.values(TAP_SOUND_FILES)).size).toBe(5);
   });
@@ -168,7 +168,7 @@ describe('useTapSound (입력 버튼 타격음)', () => {
     expect(playsOf('coinClassic')).toEqual([1, 1, 0]);
   });
 
-  it('동전 설정은 − 모드 툭·딸깍·톡에는 영향이 없다', async () => {
+  it('동전 설정은 − 모드 띵-동·딸깍·톡에는 영향이 없다', async () => {
     useSettingsStore.setState({ coinSound: 'spin' });
     const { result } = await renderHook(() => useTapSound());
     result.current('coinLow');
