@@ -26,6 +26,8 @@ import { setHapticsEnabled } from '@/src/utils/haptics';
 jest.mock('react-native-reanimated', () => ({
   ...jest.requireActual('react-native-reanimated/mock'),
   withSequence: jest.fn(() => 0),
+  // jest.setup 과 같은 이유: 떠 있는 저장 버튼이 height.value 를 읽는다
+  useAnimatedKeyboard: () => ({ height: { value: 0 }, state: { value: 0 } }),
 }));
 
 /** 홈 영역 흔들림(+3 → −3 → +3 → 0)이 걸린 횟수 */
@@ -143,7 +145,7 @@ async function saveViaSheet(amount: string, title: string) {
   sheetOnDismiss = screen.getByTestId('entry-form-modal').props.onDismiss;
   await fireEvent.changeText(screen.getByPlaceholderText('0'), amount);
   await fireEvent.changeText(screen.getByPlaceholderText('예: 아메리카노'), title);
-  await fireEvent.press(screen.getByText('저장'));
+  await fireEvent.press(screen.getByTestId('floating-save'));
 }
 
 /** 실제 시간으로 ms 만큼 기다린다 (화면 렌더가 멈추지 않게 진짜 타이머) */

@@ -20,7 +20,13 @@ beforeAll(async () => {
 // worklets 버전을 올리면 파일이 옮겨지거나 사라져 모든 컴포넌트 테스트가 import 단계에서 깨질 수 있다.
 // 그때는 node_modules/react-native-worklets 에서 mock 파일 위치를 다시 찾아 이 경로를 고친다.
 jest.mock('react-native-worklets', () => jest.requireActual('react-native-worklets/src/mock'));
-jest.mock('react-native-reanimated', () => jest.requireActual('react-native-reanimated/mock'));
+// 공식 mock 의 useAnimatedKeyboard 는 height·state 를 숫자로 줘서 `.value` 가 undefined 다 (실제는 shared value).
+// 떠 있는 저장 버튼이 worklet 에서 height.value 를 읽으므로 shared value 모양으로 바꾼다 (키보드 내려감 = 0).
+// 파일에서 reanimated mock 을 다시 덮어쓰는 테스트(HomeM4 등)도 이 줄을 같이 넣는다
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual('react-native-reanimated/mock'),
+  useAnimatedKeyboard: () => ({ height: { value: 0 }, state: { value: 0 } }),
+}));
 
 /** expo-audio 는 네이티브 모듈이라 jest 에서는 __mocks__/expo-audio.ts 대역으로 바꾼다 (홈 화면이 효과음 훅을 쓴다) */
 jest.mock('expo-audio');

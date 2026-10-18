@@ -31,7 +31,10 @@ type Props = PropsWithChildren<{
   autoFocusAmount?: boolean;
   /** (M4) 빠른 입력 칩. 비어 있으면 줄째로 숨긴다 (수정 화면은 넘기지 않는다) */
   recent?: RecentTitle[];
-  /** 스크롤 끝에 더 비워 둘 여백. Android 에서 내비게이션 바(제스처 바)에 마지막 필드가 가리지 않게 (iOS 는 0) */
+  /**
+   * 스크롤 끝에 더 비워 둘 여백. 입력 시트·기록 수정은 떠 있는 저장 버튼 높이 + 아래 여백(safe area 포함,
+   * `useFloatingSaveClearance`)을 넘겨 마지막 필드·삭제 버튼이 버튼과 Android 내비게이션 바에 가리지 않게 한다
+   */
   bottomInset?: number;
 }>;
 

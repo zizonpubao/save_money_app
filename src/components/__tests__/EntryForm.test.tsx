@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
 
 import { EntryForm } from '@/src/components/EntryForm';
@@ -21,7 +21,7 @@ const CATEGORIES = [커피, 택시];
 const AMOUNT = '0'; // 금액 입력 placeholder
 const TITLE = '예: 아메리카노'; // 항목명 입력 placeholder
 
-/** 저장 버튼은 모달 헤더에 있으므로 모달째로 띄운다. */
+/** 저장 버튼은 시트 오른쪽 아래에 떠 있으므로 모달째로 띄운다. */
 async function renderModal(onSubmit = jest.fn()) {
   await render(
     <EntryFormModal visible categories={CATEGORIES} onSubmit={onSubmit} onClose={jest.fn()} />,
@@ -36,33 +36,59 @@ function Harness() {
 }
 
 describe('EntryForm (입력 시트)', () => {
+  describe('떠 있는 저장 버튼', () => {
+    it('시트에 "저장" 버튼이 하나 그려지고 헤더에는 취소·제목만 있다', async () => {
+      await renderModal();
+      const save = screen.getByTestId('floating-save');
+      expect(save).toBeOnTheScreen();
+      expect(save).toHaveTextContent('저장');
+      expect(screen.getByLabelText('저장')).toBe(save);
+      const header = screen.getByTestId('entry-form-header');
+      expect(within(header).queryByText('저장')).toBeNull();
+      expect(within(header).getByText('취소')).toBeOnTheScreen();
+      expect(within(header).getByText('기록 추가')).toBeOnTheScreen();
+    });
+
+    it('저장할 수 없으면 스크린리더에도 비활성으로 알린다 (accessibilityState.disabled)', async () => {
+      await renderModal();
+      expect(screen.getByTestId('floating-save').props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: true }),
+      );
+      await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '4500');
+      await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '아메리카노');
+      expect(screen.getByTestId('floating-save').props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: false }),
+      );
+    });
+  });
+
   describe('저장 버튼 비활성 조건', () => {
     it('빈 폼이면 저장 버튼이 비활성이다', async () => {
       await renderModal();
-      expect(screen.getByText('저장')).toBeDisabled();
+      expect(screen.getByTestId('floating-save')).toBeDisabled();
     });
 
     it('금액이 0이면 항목명이 있어도 저장 버튼이 비활성이다', async () => {
       await renderModal();
       await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '0');
       await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '아메리카노');
-      expect(screen.getByText('저장')).toBeDisabled();
+      expect(screen.getByTestId('floating-save')).toBeDisabled();
     });
 
     it('항목명이 공백뿐이면 금액이 있어도 저장 버튼이 비활성이다', async () => {
       await renderModal();
       await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '4500');
       await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '   ');
-      expect(screen.getByText('저장')).toBeDisabled();
+      expect(screen.getByTestId('floating-save')).toBeDisabled();
     });
 
     it('금액과 항목명이 모두 있으면 저장 버튼이 켜지고 누르면 입력값이 넘어간다', async () => {
       const onSubmit = await renderModal();
       await fireEvent.changeText(screen.getByPlaceholderText(AMOUNT), '4500');
       await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '아메리카노');
-      expect(screen.getByText('저장')).toBeEnabled();
+      expect(screen.getByTestId('floating-save')).toBeEnabled();
 
-      await fireEvent.press(screen.getByText('저장'));
+      await fireEvent.press(screen.getByTestId('floating-save'));
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({ title: '아메리카노', amount: 4500 }),
       );
@@ -70,7 +96,7 @@ describe('EntryForm (입력 시트)', () => {
 
     it('비활성 저장 버튼을 눌러도 onSubmit 이 불리지 않는다', async () => {
       const onSubmit = await renderModal();
-      await fireEvent.press(screen.getByText('저장'));
+      await fireEvent.press(screen.getByTestId('floating-save'));
       expect(onSubmit).not.toHaveBeenCalled();
     });
   });
@@ -152,7 +178,7 @@ describe('EntryForm (입력 시트)', () => {
       await fireEvent.press(screen.getByText('3천'));
       await fireEvent.press(screen.getByText('1천'));
       await fireEvent.changeText(screen.getByPlaceholderText(TITLE), '간식');
-      await fireEvent.press(screen.getByText('저장'));
+      await fireEvent.press(screen.getByTestId('floating-save'));
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ title: '간식', amount: 4000 }));
     });
 

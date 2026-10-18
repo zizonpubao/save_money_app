@@ -285,6 +285,8 @@ export const size = {
   chipMaxWidth: 200,
   /** (폴리싱) 카테고리별 합계의 % 칸 폭 ("100%" 가 들어가는 폭). 금액이 오른쪽 줄에 맞는다 */
   percentLabel: 40,
+  /** (떠 있는 저장 버튼) 입력 시트·기록 수정 오른쪽 아래 알약 버튼 높이. 44pt 터치보다 한 단계 크게 */
+  floatingSave: 52,
 } as const;
 
 /**
@@ -403,6 +405,8 @@ export const motion = {
   springQuickMenu: { dampingRatio: 0.7 },
   /** (M4.5) iOS pageSheet 에서 autoFocus 가 안 먹을 때 금액 칸에 다시 포커스를 주는 지연 */
   focusDelayMs: 100,
+  /** (떠 있는 저장 버튼) 누르는 동안 줄어드는 크기 */
+  savePress: 0.96,
 } as const;
 
 export type Theme = {

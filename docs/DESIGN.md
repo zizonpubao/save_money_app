@@ -29,7 +29,7 @@
 | 타이포 | `type.display` | 40 / 800 / 52 · **Outfit ExtraBold** — 이번 달 절약액 (숫자 전용) |
 | | `type.title` | 28 / 700 / 36 · **Outfit Bold** — 금액 입력값 (숫자 전용. 행간은 Outfit 글자 높이 1.26em 보다 크게) |
 | | `type.heading` | 20 / 700 / 26 — 기간 제목(`2026년 9월`)·플로팅 라벨. 카드 안 소제목("일별")은 `bodyStrong` |
-| | `type.action` | 16 / 700 / 22 — 헤더 "저장" |
+| | `type.action` | 16 / 700 / 22 — "저장" 버튼 글자(모달 헤더·떠 있는 저장 버튼) |
 | | `type.bodyStrong` / `type.body` | 16 / 600·400 / 22 — 금액·버튼 / 항목명 |
 | | `type.label` / `type.note` | 14 / 600·400 / 20 — 섹션 날짜 / 보조 문장 |
 | | `type.caption` | 12 / 400 / 16 — 필드 라벨, 메모 |
@@ -38,6 +38,7 @@
 | 그림자 | `shadow.fab` / `shadow.sheet` | 떠 있는 것에만. 색은 `shadowColor: colors.shadow` |
 | 크기 | `size.touch/fab/fabIcon` | 44 / 56 / 30 |
 | | `size.swipeAction/headerAction/memoMin/toggleMin` | 88 / 56 / 80 / 120 |
+| | `size.floatingSave` / `motion.savePress` | 52 / 0.96 (떠 있는 저장 버튼 높이, 누를 때 크기) |
 | | `size.barTrack` / `size.bar` / `size.axisLabel` | 120 / 10 / 28 (M3 그래프용) |
 | | `size.todayRing` / `size.emojiCell` / `size.grassCell` / `size.statChip` | 2 / 24 / 16 / 32 (잔디 오늘 테두리, 이모지 적립 칸, 잔디 칸 높이, 정보 칩 높이) |
 | | `size.confettiWidth` / `size.confettiHeight` / `size.confettiScaleBig` | 6 / 10 / 1.4 (M4 저장 컨페티 한 조각, big 은 1.4배 = 8.4 × 14) |
@@ -59,7 +60,9 @@
   - **글자 축약**: 100~999 `N백` · 1,000~9,999 `N천` · 10,000↑ `N만`, 소수 첫째 자리까지 버림(`.0` 없음). 스크린리더는 원 단위 전체 "금액에 1,500원 더하기/빼기".
   - 값 5개는 설정 "입력 → 빠른 금액 버튼" 이 출처(`settingsStore.amountPresets`).
 - **헤더·탭바**: 배경 `card`, 그림자 숨김(`headerShadowVisible: false`), 활성 탭 `primary` + 채운 아이콘 / 비활성 `textMuted` + `-outline` 아이콘(색만으로 구분하지 않음), 탭바 윗선 `divider`, 본문 영역은 `bg`. 내비게이션 테마 색도 토큰으로 덮는다(전환 중 바탕).
-- **모달 헤더**(입력·목표·빠른 금액·카테고리): `card` 바탕, 선 없음, 좌 "취소"(`body` 회색) · 가운데 제목(`bodyStrong`) · 우 "저장"(`action` primary, 못 누르면 `textMuted`). 좌우 칸 `size.headerAction` × `size.touch`.
+- **모달 헤더**(입력·목표·빠른 금액·카테고리): `card` 바탕, 선 없음, 좌 "취소"(`body` 회색) · 가운데 제목(`bodyStrong`) · 우 "저장"(`action` primary, 못 누르면 `textMuted`). 좌우 칸 `size.headerAction` × `size.touch`. 입력 시트는 예외로 오른쪽 칸을 같은 폭으로 비워 둡니다. 저장은 아래 떠 있는 저장 버튼이 맡습니다.
+- **떠 있는 저장 버튼**(입력 시트·기록 수정): 오른쪽 아래 `primary` 알약 + "저장"(`action` `onPrimary`), 높이 `size.floatingSave`, 좌우 `sp.xl`, `shadow.fab`. 자리는 오른쪽 `sp.md`, 키패드가 내려가 있으면 safe area 위 `sp.md` 입니다. 키패드가 올라오면 입력 액세서리 바를 포함한 키패드 윗변 `sp.sm` 위에 붙어 같이 움직입니다(`useAnimatedKeyboard`).
+  - 저장할 수 없으면 opacity 0.3 으로 흐리게 두고 눌러도 동작하지 않습니다(`accessibilityState.disabled`). 누르는 동안 `motion.savePress` 로 줄어듭니다. 폼 스크롤 끝은 버튼 높이 + 아래 여백만큼 더 비워 마지막 칸을 가리지 않습니다.
 - **입력 필드**: `card` 배경 + `border` 테두리 + `radius.md`, 라벨은 위에 `type.caption` `textMuted`, 필드 간 간격 `sp.md`. 금액 필드만 `type.title` 로 크게, 오른쪽에 "원".
 - **빈 상태**: 가운데 정렬, `type.bodyStrong` 한 줄 + `type.note` 한 줄. 일러스트·느낌표 없음, 문구는 다음 행동을 알려준다("오늘 참은 소비를 + 버튼으로 남겨보세요"). 목록 빈 상태는 `paddingVertical: sp.xl`. "찾을 수 없음"(기록 수정·없는 화면)은 두 번째 줄 대신 `label` primary 텍스트 버튼(44pt).
 - **빈 상태·안내·버튼 문구**: 짧은 해요체 허용("이 달엔 기록이 없어요", "목표를 정하면 진행률이 보여요"). 문서·README·커밋은 합니다체 (`docs/STYLE-KO.md` 톤 예외).

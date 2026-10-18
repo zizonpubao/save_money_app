@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EntryForm } from '@/src/components/EntryForm';
+import { FloatingSaveButton, useFloatingSaveClearance } from '@/src/components/FloatingSaveButton';
 import type { Category, EntryInput } from '@/src/db';
 import { useEntryForm } from '@/src/features/useEntryForm';
 import { useModalInsets } from '@/src/features/useModalInsets';
@@ -10,7 +11,7 @@ import { size, useTheme } from '@/src/theme';
 type Props = {
   visible: boolean;
   categories: Category[];
-  /** 저장 버튼. 부모가 실제 저장 + 닫기를 담당한다. */
+  /** 떠 있는 저장 버튼. 부모가 실제 저장 + 닫기를 담당한다. */
   onSubmit: (input: EntryInput) => void;
   onClose: () => void;
   /**
@@ -66,6 +67,7 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
   // 빠른 입력 칩은 새 기록에만. 열릴 때마다 새로 마운트되므로 방금 저장한 항목도 다음에 바로 보인다
   const recent = useRecentTitles(initial === null);
   const insets = useModalInsets();
+  const saveClearance = useFloatingSaveClearance();
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.bg }]}>
@@ -78,22 +80,23 @@ function ModalBody({ categories, onSubmit, onClose, initial, title }: BodyProps)
             paddingTop: sp.xs + insets.top,
             backgroundColor: colors.card,
           },
-        ]}>
+        ]}
+        testID="entry-form-header">
         <Pressable onPress={onClose} hitSlop={sp.sm} style={styles.headerSide}>
           <Text style={[type.body, { color: colors.textMuted }]}>취소</Text>
         </Pressable>
         <Text style={[styles.headerTitle, type.bodyStrong, { color: colors.text }]}>{title}</Text>
-        <Pressable
-          onPress={() => onSubmit(form.toInput())}
-          disabled={!form.canSave}
-          hitSlop={sp.sm}
-          style={[styles.headerSide, styles.headerRight]}>
-          <Text style={[type.action, { color: form.canSave ? colors.primary : colors.textMuted }]}>
-            저장
-          </Text>
-        </Pressable>
+        {/* 저장은 오른쪽 아래 떠 있는 버튼으로 옮겼다. 제목이 가운데에 오도록 취소와 같은 폭을 비워 둔다 */}
+        <View style={styles.headerSide} />
       </View>
-      <EntryForm form={form} categories={categories} recent={recent} autoFocusAmount bottomInset={insets.bottom} />
+      <EntryForm
+        form={form}
+        categories={categories}
+        recent={recent}
+        autoFocusAmount
+        bottomInset={saveClearance}
+      />
+      <FloatingSaveButton onPress={() => onSubmit(form.toInput())} disabled={!form.canSave} />
     </View>
   );
 }
@@ -102,8 +105,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   // 탭 화면 헤더(headerShadowVisible: false)처럼 선 없이 card 바탕으로만 본문(bg)과 나눈다
   header: { flexDirection: 'row', alignItems: 'center' },
-  // 취소·저장 터치 영역 44pt
+  // 취소 터치 영역 44pt. 오른쪽 빈 칸도 같은 폭이라 제목이 가운데
   headerSide: { width: size.headerAction, minHeight: size.touch, justifyContent: 'center' },
-  headerRight: { alignItems: 'flex-end' },
   headerTitle: { flex: 1, textAlign: 'center' },
 });

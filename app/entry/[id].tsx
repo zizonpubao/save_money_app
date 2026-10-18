@@ -2,10 +2,10 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { EntryForm } from '@/src/components/EntryForm';
+import { FloatingSaveButton, useFloatingSaveClearance } from '@/src/components/FloatingSaveButton';
 import { Screen } from '@/src/components/Screen';
 import { useEntryEditor } from '@/src/features/useEntryEditor';
 import { useEntryForm } from '@/src/features/useEntryForm';
-import { useModalInsets } from '@/src/features/useModalInsets';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useTheme } from '@/src/theme';
 import { saveTapHaptic } from '@/src/utils/haptics';
@@ -17,8 +17,8 @@ export default function EntryEditScreen() {
   const categories = useCategoryStore((s) => s.categories);
   const { entry, save, destroy } = useEntryEditor(id);
   const form = useEntryForm(entry);
-  // Android(edge-to-edge)는 화면이 내비게이션 바 밑까지 가서 삭제 버튼이 가리지 않게 아래를 더 비운다 (iOS 0)
-  const insets = useModalInsets();
+  // 삭제 버튼이 떠 있는 저장 버튼에 가리지 않게 아래를 비운다 (Android 내비게이션 바 여백 포함)
+  const saveClearance = useFloatingSaveClearance();
 
   const onSave = () => {
     if (!form.canSave) return;
@@ -76,21 +76,10 @@ export default function EntryEditScreen() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: '기록 수정',
-          headerRight: () => (
-            <Pressable onPress={onSave} disabled={!form.canSave} hitSlop={sp.smd}>
-              <Text
-                style={[type.action, { color: form.canSave ? colors.primary : colors.textMuted }]}>
-                저장
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+      {/* 저장은 헤더 대신 오른쪽 아래 떠 있는 버튼 (입력 시트와 같은 자리) */}
+      <Stack.Screen options={{ title: '기록 수정' }} />
       <Screen style={styles.noPadding}>
-        <EntryForm form={form} categories={categories} bottomInset={insets.bottom}>
+        <EntryForm form={form} categories={categories} bottomInset={saveClearance}>
           <View style={{ marginTop: sp.md }}>
             <Pressable
               onPress={onDelete}
@@ -111,6 +100,7 @@ export default function EntryEditScreen() {
             </Pressable>
           </View>
         </EntryForm>
+        <FloatingSaveButton onPress={onSave} disabled={!form.canSave} />
       </Screen>
     </>
   );

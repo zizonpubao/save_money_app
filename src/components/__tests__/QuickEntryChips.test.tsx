@@ -88,7 +88,7 @@ describe('입력 모달의 빠른 입력 (DB)', () => {
       <EntryFormModal visible categories={categories} onSubmit={onSubmit} onClose={jest.fn()} />,
     );
     await fireEvent.press(screen.getByText('☕ 아메리카노'));
-    await fireEvent.press(screen.getByText('저장'));
+    await fireEvent.press(screen.getByTestId('floating-save'));
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ title: '아메리카노', amount: 4500, categoryId: coffee?.id }),
     );
