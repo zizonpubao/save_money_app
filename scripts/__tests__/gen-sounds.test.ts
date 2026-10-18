@@ -18,7 +18,7 @@ const LENGTH_MS = {
   tada: 380,
   hit: 520,
   fanfare: 450,
-  'coin-low': 110,
+  'coin-low': 120,
   toggle: 60,
   pop: 70,
 } as const;
@@ -29,7 +29,7 @@ const PEAK_DB: Record<keyof typeof LENGTH_MS, number> = {
   tada: -1,
   hit: -0.5,
   fanfare: -1,
-  'coin-low': -6,
+  'coin-low': -2,
   toggle: -6,
   pop: -6,
 };
@@ -106,9 +106,11 @@ describe('효과음 파일 (gen-sounds)', () => {
 /** 금액 칩 동전 소리. Pixabay 녹음을 다듬어 넣은 파일이라(assets/sounds/CREDITS.md) 합성 규격과 다르다 */
 describe('동전 녹음 파일 (설정에서 고르는 2개)', () => {
   const RECORDINGS = { 'coin-classic': 600, 'coin-spin': 900 } as const;
+  /** 파일별 피크(dBFS). 짤랑은 에너지가 꽉 찬 녹음이라 스피커 기준 크기를 다른 소리와 맞추려고 3.5dB 낮췄다 */
+  const REC_PEAK_DB = { 'coin-classic': -7.5, 'coin-spin': -4 } as const;
   const REC_RATE = 44100;
 
-  it.each(Object.entries(RECORDINGS))('%s.wav: 44.1kHz mono PCM16 · %ims · 피크 -4 dBFS 근처', (name, ms) => {
+  it.each(Object.entries(RECORDINGS))('%s.wav: 44.1kHz mono PCM16 · %ims · 정한 피크 근처', (name, ms) => {
     const buf = readFileSync(join(DIR, `${name}.wav`));
     expect(buf.toString('ascii', 0, 4)).toBe('RIFF');
     expect(buf.toString('ascii', 8, 12)).toBe('WAVE');
@@ -121,11 +123,55 @@ describe('동전 녹음 파일 (설정에서 고르는 2개)', () => {
     let peak = 0;
     for (let i = 44; i < buf.length; i += 2) peak = Math.max(peak, Math.abs(buf.readInt16LE(i)));
     const db = 20 * Math.log10(peak / 32767);
-    expect(db).toBeLessThanOrEqual(-3.5);
-    expect(db).toBeGreaterThanOrEqual(-4.5);
+    const target = REC_PEAK_DB[name as keyof typeof REC_PEAK_DB];
+    expect(db).toBeLessThanOrEqual(target + 0.5);
+    expect(db).toBeGreaterThanOrEqual(target - 0.5);
   });
 
   it('합성 동전(coin.wav)은 더 없다', () => {
     expect(() => statSync(join(DIR, 'coin.wav'))).toThrow();
+  });
+});
+
+/**
+ * 아이폰 스피커로 들리는 크기 맞춤 (피드백 "−는 너무 작고 +는 너무 커").
+ * 폰 스피커는 300Hz 아래를 거의 못 내므로 350Hz 1차 고역 통과를 두 번 건 뒤 50ms 창 RMS 최고값(dB)으로 비교한다.
+ * (ffmpeg highpass=f=350 두 번 + astats RMS peak 로 잰 값과 같은 방식)
+ */
+describe('입력 버튼 소리 크기 균형 (스피커 기준)', () => {
+  function readWav(name: string): { rate: number; data: number[] } {
+    const buf = readFileSync(join(DIR, `${name}.wav`));
+    const rate = buf.readUInt32LE(24);
+    const data: number[] = [];
+    for (let i = 44; i < buf.length; i += 2) data.push(buf.readInt16LE(i) / 32768);
+    return { rate, data };
+  }
+
+  function speakerDb(name: string): number {
+    const { rate, data } = readWav(name);
+    let x = data;
+    for (let pass = 0; pass < 2; pass += 1) {
+      const rc = 1 / (2 * Math.PI * 350);
+      const a = rc / (rc + 1 / rate);
+      const out: number[] = new Array<number>(x.length).fill(0);
+      for (let i = 1; i < x.length; i += 1) out[i] = a * ((out[i - 1] ?? 0) + (x[i] ?? 0) - (x[i - 1] ?? 0));
+      x = out;
+    }
+    const win = Math.round(rate * 0.05);
+    let best = 0;
+    for (let start = 0; start + win <= x.length; start += Math.round(win / 4)) {
+      let sum = 0;
+      for (let i = start; i < start + win; i += 1) sum += (x[i] ?? 0) ** 2;
+      best = Math.max(best, Math.sqrt(sum / win));
+    }
+    return 20 * Math.log10(best);
+  }
+
+  it.each(['coin-classic', 'coin-spin'] as const)('+ 동전(%s)과 − "툭"의 크기 차이가 3dB 이내다', (coin) => {
+    expect(Math.abs(speakerDb(coin) - speakerDb('coin-low'))).toBeLessThanOrEqual(3);
+  });
+
+  it('두 동전 소리도 서로 3dB 이내다 (설정에서 바꿔도 크기가 비슷)', () => {
+    expect(Math.abs(speakerDb('coin-classic') - speakerDb('coin-spin'))).toBeLessThanOrEqual(3);
   });
 });

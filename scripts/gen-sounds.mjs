@@ -234,17 +234,21 @@ function hit() {
 }
 
 /**
- * 낮은 "툭" 110ms: 220 → 180Hz 로 살짝 내려가는 사인. attack 6ms 로 둥글게.
- * 폰 스피커는 200Hz 대가 약해 2·3배 배음(작게)을 얹어 들리게 한다
+ * 낮은 "툭" 120ms: 260 → 210Hz 로 살짝 내려가는 사인. attack 5ms 로 둥글게.
+ * 아이폰 피드백 "−는 너무 작고 +는 너무 커": 폰 스피커는 300Hz 아래를 거의 못 내서, 예전(피크 −6, 배음 작게)은
+ * 스피커 기준 크기가 동전 녹음보다 13dB 작았다. 2·3·4배 배음(520~1040Hz)을 키우고 피크를 −2 dBFS 로 올려
+ * 스피커 기준(350Hz 고역 통과 후 50ms RMS 최고값) 약 −19dB 로 동전 녹음과 맞춘다. 귀에 들리는 높이는 그대로 낮다
  */
+const PEAK_LOW = 10 ** (-2 / 20);
 function coinLow() {
-  const buf = buffer(110);
-  const pitch = (t) => 180 + 40 * Math.exp(-t / 0.03);
-  const soft = { at: 0, dur: 0.11, attack: 0.006, release: 0.02 };
-  tone(buf, { ...soft, freq: pitch, amp: 1, tau: 0.04 });
-  tone(buf, { ...soft, freq: (t) => 2 * pitch(t), amp: 0.35, tau: 0.03 });
-  tone(buf, { ...soft, freq: (t) => 3 * pitch(t), amp: 0.15, tau: 0.02 });
-  return finish(buf, PEAK_TAP);
+  const buf = buffer(120);
+  const pitch = (t) => 260 - 50 * (1 - Math.exp(-t / 0.03));
+  const soft = { at: 0, dur: 0.12, attack: 0.005, release: 0.025 };
+  tone(buf, { ...soft, freq: pitch, amp: 1, tau: 0.045 });
+  tone(buf, { ...soft, freq: (t) => 2 * pitch(t), amp: 1.0, tau: 0.035 });
+  tone(buf, { ...soft, freq: (t) => 3 * pitch(t), amp: 0.7, tau: 0.028 });
+  tone(buf, { ...soft, freq: (t) => 4 * pitch(t), amp: 0.35, tau: 0.02 });
+  return finish(buf, PEAK_LOW);
 }
 
 /** 스위치 "딸깍" 60ms: 아주 짧은 클릭 2개(25ms 간격). 첫 클릭은 높고 크게, 둘째는 낮고 작게 */
