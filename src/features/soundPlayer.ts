@@ -10,6 +10,12 @@ import type { AudioPlayer } from 'expo-audio';
  */
 export const SOUND_VOLUME = 1;
 
+/**
+ * 입력 버튼 타격음 볼륨. 아이폰 피드백 "전체적으로 소리가 커, 지금의 60% 수준으로" (빌드 7 전 Expo Go 확인).
+ * 파일 사이 크기 균형(스피커 기준 3dB 이내)은 그대로 두고 재생 볼륨만 낮춘다
+ */
+export const TAP_VOLUME = 0.6;
+
 /** 무음 스위치를 따르고(.ambient), 사용자가 듣던 음악을 끊지 않고 섞는다. 백그라운드 재생 없음 */
 export const AUDIO_MODE = {
   playsInSilentMode: false,
@@ -32,10 +38,10 @@ export function warnDev(message: string, error?: unknown): void {
  * 처음부터 재생. 끝까지 재생된 플레이어는 끝 위치에 멈춰 있어 play() 만 부르면 소리 없이 끝나므로,
  * 위치가 0 이 아니거나 재생 중이면 pause → seekTo(0) 가 끝난 뒤 play 한다 (seek 은 네이티브 비동기).
  */
-export function playFromStart(player: AudioPlayer, name: string): void {
+export function playFromStart(player: AudioPlayer, name: string, volume: number = SOUND_VOLUME): void {
   try {
     if (!player.isLoaded) warnDev(`${name} 가 아직 로드되지 않았다`);
-    player.volume = SOUND_VOLUME;
+    player.volume = volume;
     if (!player.playing && player.currentTime === 0) {
       player.play();
       return;

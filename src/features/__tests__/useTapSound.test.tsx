@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react-native';
 import { setAudioModeAsync } from 'expo-audio';
 
 import type * as AudioMock from '@/__mocks__/expo-audio';
-import { AUDIO_MODE } from '@/src/features/soundPlayer';
+import { AUDIO_MODE, TAP_VOLUME } from '@/src/features/soundPlayer';
 import {
   preloadTapSounds,
   resetTapSoundsForTest,
@@ -73,6 +73,14 @@ describe('useTapSound (입력 버튼 타격음)', () => {
     expect(playsOf(sound)).toEqual([1, 0, 0]);
     const others = mockPlayers.filter((p) => p.source !== TAP_SOUND_FILES[fileOf(sound)]);
     for (const p of others) expect(p.play).not.toHaveBeenCalled();
+  });
+
+  it.each(SOUNDS)('%s 는 저장 효과음(1)보다 작은 0.6 볼륨으로 재생한다 (피드백 "전체적으로 커, 60%")', async (sound) => {
+    const { result } = await renderHook(() => useTapSound());
+    result.current(sound);
+    const played = poolOf(sound).find((p) => p.play.mock.calls.length > 0);
+    expect(TAP_VOLUME).toBe(0.6);
+    expect(played?.volume).toBe(TAP_VOLUME);
   });
 
   it('연타하면 플레이어를 번갈아 쓴다 (0 → 1 → 2 → 다시 0). 앞 소리를 멈추지 않는다', async () => {

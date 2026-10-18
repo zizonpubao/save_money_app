@@ -7,7 +7,7 @@ import coinSpinWav from '@/assets/sounds/coin-spin.wav';
 import popWav from '@/assets/sounds/pop.wav';
 import toggleWav from '@/assets/sounds/toggle.wav';
 import type { CoinSound } from '@/src/features/coinSound';
-import { AUDIO_MODE, PLAYER_OPTIONS, playFromStart, warnDev } from '@/src/features/soundPlayer';
+import { AUDIO_MODE, PLAYER_OPTIONS, playFromStart, TAP_VOLUME, warnDev } from '@/src/features/soundPlayer';
 import { useSettingsStore } from '@/src/store/settingsStore';
 
 /**
@@ -100,7 +100,7 @@ function playTap(sound: TapSound): void {
   const index = nextIndex[file];
   nextIndex[file] = (index + 1) % pool.length;
   const player = pool[index];
-  if (player) playFromStart(player, file);
+  if (player) playFromStart(player, file, TAP_VOLUME);
 }
 
 /**
