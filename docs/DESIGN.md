@@ -201,25 +201,29 @@
 
 | 버튼 | 효과음 | 햅틱 |
 | --- | --- | --- |
-| 금액 프리셋 칩, + 모드 | 동전 "짤랑" `coin.wav` | Rigid impact |
+| 금액 프리셋 칩, + 모드 | 실제 동전 녹음 2종 중 설정 선택(기본 짤랑) `coin-classic.wav` · `coin-spin.wav` | Rigid impact |
 | 금액 프리셋 칩, − 모드 | 낮고 부드러운 "툭" `coin-low.wav` | Soft impact |
 | +/− 전환 칩 | 스위치 "딸깍" `toggle.wav` | Light impact |
 | 카테고리 칩 | 가볍고 높은 "톡" `pop.wav` | Light impact |
-| 최근 항목 칩 | 동전 "짤랑" `coin.wav` | Rigid impact |
+| 최근 항목 칩 | 실제 동전 녹음 2종 중 설정 선택(기본 짤랑) `coin-classic.wav` · `coin-spin.wav` | Rigid impact |
 
 - 소리와 햅틱은 누른 즉시(`onPress` 시작) 같이 냅니다. 예전 selection 햅틱은 너무 약해 impact 로 바꿨습니다.
 - 저장 버튼과 저장 축하 연출은 그대로입니다. 설정 탭 테마 칩은 selection 햅틱을 계속 씁니다.
 - 설정 탭 `효과음` · `햅틱` 스위치를 그대로 따릅니다.
+- 동전 소리는 설정 탭 "효과" 구획 `동전 소리` 행에서 고릅니다. 칩은 "짤랑"(classic, 기본) · "빙글"(spin)입니다. 누르면 저장하고 한 번 들려줍니다. 효과음이 꺼져 있으면 칩이 비활성입니다.
+- settings 키 `coin_sound` = `'classic'|'spin'`, 없거나 다른 값이면 classic. 기기 설정이라 백업 JSON 에는 넣지 않습니다(`sound_enabled` · `theme_mode` 와 같음).
 
 | 파일 | 소리 | 길이 |
 | --- | --- | --- |
-| `coin.wav` | 2.5k·3.8k·5.3kHz 배음 빠른 감쇠 + 38ms 뒤 두 번째 타격(0.55, 음높이 6%↑) | 120ms |
+| `coin-classic.wav` | 실제 녹음 "짤랑" (Pixabay "coin", chieuk) | 600ms |
+| `coin-spin.wav` | 실제 녹음 "빙글" (Pixabay "spinning coin on table", universfield) | 900ms |
 | `coin-low.wav` | 220 → 180 Hz 사인 하강 + 2·3배 배음(작게), attack 6ms | 110ms |
 | `toggle.wav` | 2.2kHz · 1.6kHz 짧은 클릭 2개, 25ms 간격 | 60ms |
 | `pop.wav` | 600 → 900 Hz 상승 사인 + 옥타브 배음(작게) | 70ms |
 
-- 규격: 저장 효과음과 같은 WAV 형식, 피크 −6 dBFS(연타해도 귀가 덜 피곤하게), 앞 페이드 1ms(`coin-low` 만 5ms).
-- 재생: `useTapSound` 훅. 저장 효과음과 같은 `AUDIO_MODE` · `downloadFirst` · 처음부터 재생 방식을 씁니다. 연타 때 앞 소리가 끊기지 않게 소리마다 플레이어 3개를 미리 만들어 번갈아 씁니다.
+- 규격(합성 3개): 저장 효과음과 같은 WAV 형식, 피크 −6 dBFS(연타해도 귀가 덜 피곤하게), 앞 페이드 1ms(`coin-low` 만 5ms).
+- 규격(동전 녹음 2개): 44.1kHz mono PCM16, 앞 무음 제거, 피크 −4 dBFS. 출처·라이선스는 `assets/sounds/CREDITS.md` 에 있습니다.
+- 재생: `useTapSound` 훅. 저장 효과음과 같은 `AUDIO_MODE` · `downloadFirst` · 처음부터 재생 방식을 씁니다. 연타 때 앞 소리가 끊기지 않게 파일마다 플레이어 3개를 미리 만들어 번갈아 씁니다. 동전 녹음은 두 개 다 미리 만들고, 누르는 순간의 설정 값으로 고릅니다.
 
 ## 하지 말 것
 - `theme.ts` 밖에서 색·폰트 크기·radius 숫자 하드코딩 (`fs`/`sp` 조합 즉석 계산 포함 — 필요하면 토큰을 추가한다).

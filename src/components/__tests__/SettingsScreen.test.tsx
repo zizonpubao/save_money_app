@@ -12,6 +12,7 @@ import {
   SETTING_KEYS,
 } from '@/src/db';
 import { SOUND_FILES } from '@/src/features/useCelebrationSound';
+import { resetTapSoundsForTest, TAP_SOUND_FILES } from '@/src/features/useTapSound';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { setHapticsEnabled } from '@/src/utils/haptics';
 
@@ -29,6 +30,8 @@ jest.mock('../../../assets/sounds/ding.wav', () => 102);
 jest.mock('../../../assets/sounds/tada.wav', () => 103);
 jest.mock('../../../assets/sounds/fanfare.wav', () => 104);
 jest.mock('../../../assets/sounds/hit.wav', () => 105);
+jest.mock('../../../assets/sounds/coin-classic.wav', () => 201);
+jest.mock('../../../assets/sounds/coin-spin.wav', () => 205);
 
 const { mockPlayers } = jest.requireMock<typeof AudioMock>('expo-audio');
 
@@ -187,6 +190,88 @@ describe('설정 화면 — 효과 (M4)', () => {
     expect(screen.getByLabelText('진동 느껴 보기')).toBeDisabled();
     await fireEvent.press(screen.getByLabelText('진동 느껴 보기'));
     expect(Haptics.impactAsync).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** 재생된 입력 버튼 타격음 파일 이름들 (누른 순서) */
+function tapSoundsPlayed(): string[] {
+  const names = Object.entries(TAP_SOUND_FILES);
+  return mockPlayers
+    .flatMap((p) =>
+      p.play.mock.invocationCallOrder.map((order) => ({
+        order,
+        name: names.find(([, id]) => id === p.source)?.[0],
+      })),
+    )
+    .filter((c): c is { order: number; name: string } => c.name !== undefined)
+    .sort((a, b) => a.order - b.order)
+    .map((c) => c.name);
+}
+
+describe('설정 화면 — 동전 소리', () => {
+  beforeEach(() => {
+    resetDatabaseConnection();
+    initDatabase();
+    resetTapSoundsForTest();
+    mockPlayers.length = 0;
+    useSettingsStore.setState({ soundEnabled: true, coinSound: 'classic', loaded: false });
+    jest.mocked(Haptics.selectionAsync).mockClear();
+  });
+
+  afterAll(() => {
+    resetDatabaseConnection();
+    useSettingsStore.setState({ coinSound: 'classic' });
+  });
+
+  it('"효과" 구획에 "동전 소리" 행과 짤랑·빙글 칩이 있고 기본은 짤랑 선택', async () => {
+    await render(<SettingsScreen />);
+    expect(screen.getByText('동전 소리')).toBeOnTheScreen();
+    expect(screen.getByLabelText('동전 소리 짤랑')).toBeSelected();
+    expect(screen.getByLabelText('동전 소리 빙글')).not.toBeSelected();
+  });
+
+  it('빙글을 누르면 DB 에 spin 저장 · 선택이 옮겨가고 빙글 녹음을 한 번 들려준다', async () => {
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByLabelText('동전 소리 빙글'));
+    expect(getSetting(SETTING_KEYS.coinSound)).toBe('spin');
+    expect(useSettingsStore.getState().coinSound).toBe('spin');
+    expect(screen.getByLabelText('동전 소리 빙글')).toBeSelected();
+    expect(screen.getByLabelText('동전 소리 짤랑')).not.toBeSelected();
+    expect(tapSoundsPlayed()).toEqual(['coinSpin']);
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+
+    // 다시 짤랑으로 돌리면 짤랑 녹음
+    await fireEvent.press(screen.getByLabelText('동전 소리 짤랑'));
+    expect(getSetting(SETTING_KEYS.coinSound)).toBe('classic');
+    expect(tapSoundsPlayed()).toEqual(['coinSpin', 'coinClassic']);
+  });
+
+  it('이미 고른 칩을 다시 눌러도 그 소리를 한 번 더 들려준다 (미리 듣기)', async () => {
+    await render(<SettingsScreen />);
+    await fireEvent.press(screen.getByLabelText('동전 소리 짤랑'));
+    expect(tapSoundsPlayed()).toEqual(['coinClassic']);
+    expect(getSetting(SETTING_KEYS.coinSound)).toBe('classic');
+  });
+
+  it('저장해 둔 값이 있으면 열 때 그 칩이 선택돼 있다', async () => {
+    setSetting(SETTING_KEYS.coinSound, 'spin');
+    await render(<SettingsScreen />);
+    expect(screen.getByLabelText('동전 소리 빙글')).toBeSelected();
+  });
+
+  it('효과음을 끄면 동전 소리 칩이 비활성이 되고 눌러도 저장·소리가 없다', async () => {
+    setSetting(SETTING_KEYS.soundEnabled, '0');
+    await render(<SettingsScreen />);
+    const chip = screen.getByLabelText('동전 소리 빙글');
+    expect(chip).toBeDisabled();
+    expect(screen.getByLabelText('동전 소리 짤랑')).toBeDisabled();
+    await fireEvent.press(chip);
+    expect(getSetting(SETTING_KEYS.coinSound)).toBeNull();
+    expect(tapSoundsPlayed()).toEqual([]);
+
+    // 스위치를 켜면 바로 다시 누를 수 있다
+    await fireEvent(screen.getByLabelText('효과음'), 'valueChange', true);
+    expect(screen.getByLabelText('동전 소리 빙글')).not.toBeDisabled();
   });
 });
 

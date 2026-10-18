@@ -18,8 +18,10 @@ import type { Category } from '@/src/db';
 import { presetsPreview, type AmountPreset } from '@/src/features/amountPresets';
 import { confirmDeleteAll, exportCsv, exportJson, startRestore } from '@/src/features/backupActions';
 import { moveCategory } from '@/src/features/categoryActions';
+import { COIN_SOUND_LABELS, COIN_SOUNDS, type CoinSound } from '@/src/features/coinSound';
 import { THEME_MODE_LABELS, THEME_MODES, type ThemeMode } from '@/src/features/themeMode';
 import { SOUND_LABELS, useCelebrationSound } from '@/src/features/useCelebrationSound';
+import { useTapSound } from '@/src/features/useTapSound';
 import { useCategoryStore } from '@/src/store/categoryStore';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import { useTheme } from '@/src/theme';
@@ -51,6 +53,8 @@ export default function SettingsScreen() {
   const [presetsModalVisible, setPresetsModalVisible] = useState(false);
   const themeMode = useSettingsStore((s) => s.themeMode);
   const setThemeMode = useSettingsStore((s) => s.setThemeMode);
+  const coinSound = useSettingsStore((s) => s.coinSound);
+  const setCoinSound = useSettingsStore((s) => s.setCoinSound);
   const categories = useCategoryStore((s) => s.categories);
   const categoriesLoaded = useCategoryStore((s) => s.loaded);
   const reloadCategories = useCategoryStore((s) => s.reload);
@@ -61,6 +65,25 @@ export default function SettingsScreen() {
     label: SOUND_LABELS[sound],
     accessibilityLabel: `${SOUND_LABELS[sound]} 미리 듣기`,
     onPress: () => playSound(sound),
+  }));
+
+  // 동전 소리 칩: 저장한 뒤 입력 화면과 같은 재생 경로로 한 번 들려준다 (저장이 동기라 방금 고른 소리가 난다)
+  const playTap = useTapSound();
+  const chooseCoinSound = (sound: CoinSound) => {
+    chipTapHaptic();
+    try {
+      setCoinSound(sound);
+    } catch {
+      Alert.alert('저장 실패', '잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    playTap('coin');
+  };
+  const coinChips = COIN_SOUNDS.map((sound) => ({
+    label: COIN_SOUND_LABELS[sound],
+    accessibilityLabel: `동전 소리 ${COIN_SOUND_LABELS[sound]}`,
+    onPress: () => chooseCoinSound(sound),
+    selected: sound === coinSound,
   }));
 
   // 테마 칩: 누르면 바로 저장·적용. 실패하면 스토어 값이 그대로라 선택 칩도 원래 자리에 남는다
@@ -160,7 +183,7 @@ export default function SettingsScreen() {
         <SettingsSection title="화면">
           <SettingsChipsRow testID="theme-mode" label="테마" chips={themeChips} isLast />
         </SettingsSection>
-        {/* (M4) 저장 축하 효과음·햅틱 + 미리 듣기/느껴 보기 */}
+        {/* (M4) 저장 축하 효과음·햅틱 + 미리 듣기/느껴 보기, 금액 칩 동전 소리 고르기 */}
         <SettingsSection title="효과">
           {/* 스위치와 그 아래 칩 줄은 한 덩어리라 스위치 행에는 구분선을 긋지 않는다 (isLast) */}
           <SettingsSwitchRow
@@ -174,6 +197,14 @@ export default function SettingsScreen() {
             chips={soundChips}
             disabled={!soundEnabled}
             note="무음 스위치가 켜져 있으면 나지 않습니다"
+          />
+          {/* 금액 칩(+)·최근 항목 칩 소리. 누르면 저장하고 한 번 들려준다 */}
+          <SettingsChipsRow
+            testID="coin-sound"
+            label="동전 소리"
+            chips={coinChips}
+            disabled={!soundEnabled}
+            note="금액 버튼을 누를 때 나요"
           />
           <SettingsSwitchRow
             label="햅틱"

@@ -5,7 +5,8 @@ import { join } from 'path';
 
 /**
  * scripts/gen-sounds.mjs 가 만든 assets/sounds/*.wav 규격 확인 (22.05kHz · 40KB 이하 · 피크 -1 dBFS, big 의 hit 만 -0.5 dBFS,
- * 입력 버튼 타격음 4개는 -6 dBFS · 150ms 이하, 찰랑거리는 coin 만 300ms 이하).
+ * 입력 버튼 타격음 3개는 -6 dBFS · 150ms 이하).
+ * 금액 칩 동전 녹음(coin-classic · coin-spin)은 이 스크립트가 만들지 않는다. 맨 아래 블록에서 형식만 본다.
  * 파일을 다시 만들려면: node scripts/gen-sounds.mjs
  */
 const DIR = join(__dirname, '..', '..', 'assets', 'sounds');
@@ -17,7 +18,6 @@ const LENGTH_MS = {
   tada: 380,
   hit: 520,
   fanfare: 450,
-  coin: 260,
   'coin-low': 110,
   toggle: 60,
   pop: 70,
@@ -29,12 +29,10 @@ const PEAK_DB: Record<keyof typeof LENGTH_MS, number> = {
   tada: -1,
   hit: -0.5,
   fanfare: -1,
-  coin: -6,
   'coin-low': -6,
   toggle: -6,
   pop: -6,
 };
-const TAP_SOUNDS = ['coin', 'coin-low', 'toggle', 'pop'] as const;
 
 function samples(name: string): number[] {
   const buf = readFileSync(join(DIR, `${name}.wav`));
@@ -93,38 +91,41 @@ describe('효과음 파일 (gen-sounds)', () => {
     expect(LENGTH_MS[name]).toBeLessThanOrEqual(150);
   });
 
-  it('coin.wav: 찰랑거리는 여운 때문에 조금 길지만 300ms 이하 (연타해도 겹침이 과하지 않게)', () => {
-    expect(LENGTH_MS.coin).toBeLessThanOrEqual(300);
-  });
-
-  it.each(['coin', 'toggle', 'pop'] as const)('%s.wav: attack 이 즉각적이다 (첫 3ms 안에 피크의 절반 이상)', (name) => {
+  it.each(['toggle', 'pop'] as const)('%s.wav: attack 이 즉각적이다 (첫 3ms 안에 피크의 절반 이상)', (name) => {
     const data = samples(name);
     const peak = peakIn(data, 0, LENGTH_MS[name]);
     expect(peakIn(data, 0, 3)).toBeGreaterThanOrEqual(peak * 0.5);
   });
 
-  it('coin.wav: 낮은 음이다 — 기본음이 1.2kHz 아래 (예전 2.5kHz 는 "얇고 높아 스트레스" 피드백)', () => {
-    const data = samples('coin');
-    // 5~30ms 구간 0 교차 수로 주 주파수를 어림한다 (f ≈ 교차 수 / 2 / 구간 길이)
-    const from = Math.round((RATE * 5) / 1000);
-    const to = Math.round((RATE * 30) / 1000);
-    let crossings = 0;
-    for (let i = from + 1; i < to; i += 1) {
-      if (Math.sign(data[i] ?? 0) !== Math.sign(data[i - 1] ?? 0)) crossings += 1;
-    }
-    const hz = crossings / 2 / 0.025;
-    expect(hz).toBeLessThan(1200);
-    expect(hz).toBeGreaterThan(500);
-  });
-
-  it('coin.wav: 동전 여러 개가 이어져 160ms 뒤에도 마지막 동전이 들린다 ("찰랑찰랑")', () => {
-    const data = samples('coin');
-    const peak = peakIn(data, 0, LENGTH_MS.coin);
-    expect(peakIn(data, 160, 200)).toBeGreaterThan(peak * 0.1);
-  });
-
   it('toggle.wav: 25ms 뒤 두 번째 클릭이 다시 커진다 ("딸깍")', () => {
     const data = samples('toggle');
     expect(peakIn(data, 25, 30)).toBeGreaterThan(peakIn(data, 18, 24) * 2);
+  });
+});
+
+/** 금액 칩 동전 소리. Pixabay 녹음을 다듬어 넣은 파일이라(assets/sounds/CREDITS.md) 합성 규격과 다르다 */
+describe('동전 녹음 파일 (설정에서 고르는 2개)', () => {
+  const RECORDINGS = { 'coin-classic': 600, 'coin-spin': 900 } as const;
+  const REC_RATE = 44100;
+
+  it.each(Object.entries(RECORDINGS))('%s.wav: 44.1kHz mono PCM16 · %ims · 피크 -4 dBFS 근처', (name, ms) => {
+    const buf = readFileSync(join(DIR, `${name}.wav`));
+    expect(buf.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(buf.toString('ascii', 8, 12)).toBe('WAVE');
+    expect(buf.readUInt16LE(20)).toBe(1); // PCM
+    expect(buf.readUInt16LE(22)).toBe(1); // mono
+    expect(buf.readUInt32LE(24)).toBe(REC_RATE);
+    expect(buf.readUInt16LE(34)).toBe(16);
+    expect(buf.toString('ascii', 36, 40)).toBe('data');
+    expect(buf.readUInt32LE(40)).toBe(Math.round((REC_RATE * ms) / 1000) * 2);
+    let peak = 0;
+    for (let i = 44; i < buf.length; i += 2) peak = Math.max(peak, Math.abs(buf.readInt16LE(i)));
+    const db = 20 * Math.log10(peak / 32767);
+    expect(db).toBeLessThanOrEqual(-3.5);
+    expect(db).toBeGreaterThanOrEqual(-4.5);
+  });
+
+  it('합성 동전(coin.wav)은 더 없다', () => {
+    expect(() => statSync(join(DIR, 'coin.wav'))).toThrow();
   });
 });

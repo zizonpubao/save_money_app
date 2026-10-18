@@ -1,5 +1,6 @@
 // 저장 축하 효과음 5개(DESIGN "저장 축하 연출" 효과음 · 아이폰 피드백 "밋밋·안 들림" 반영)와
-// 입력 버튼 타격음 4개(DESIGN "입력 버튼 타격감")를 합성한다.
+// 입력 버튼 타격음 3개(DESIGN "입력 버튼 타격감")를 합성한다. 금액 칩 동전 소리는 실제 녹음이라 여기서 만들지 않는다
+// (assets/sounds/coin-classic.wav · coin-spin.wav, CREDITS.md).
 // Node 기본 모듈만 쓴다. 실행: node scripts/gen-sounds.mjs → assets/sounds/*.wav
 // 형식: WAV PCM16 mono 22.05kHz, 각 40KB 이하. 음을 겹쳐 합성 → 전체 앞뒤 5ms 페이드(클릭 제거) → 마지막에 피크 -1 dBFS
 // (hit 만 -0.5 dBFS) 로 정규화. 타격음은 앞 페이드 1ms(즉각 attack, 둥근 coin-low 만 5ms) · 피크 -6 dBFS(연타해도 귀가 덜 피곤하게).
@@ -233,36 +234,6 @@ function hit() {
 }
 
 /**
- * 동전 "찰랑찰랑" 260ms. 아이폰 피드백 "너무 얇고 높아 스트레스, 더 낮게, 두 배 길게, 더 찰랑거리게" 반영.
- * 기본음 850Hz 대(예전 2.5kHz) 동전 5개가 160ms 동안 차례로 부딪히며 작아진다.
- * 타격마다 1.2% 어긋난 두 음을 겹쳐 맥놀이(찰랑이는 떨림)를 만들고, 높은 배음(1.62·2.43배)은 작게만 얹는다
- */
-const COIN_BASE_HZ = 850;
-function coin() {
-  const ms = 260;
-  const buf = buffer(ms);
-  const strike = (at, f0, amp) => {
-    const ring = { at, dur: ms / 1000 - at, attack: 0.001, release: 0.04 };
-    tone(buf, { ...ring, freq: f0, amp, tau: 0.085 });
-    tone(buf, { ...ring, freq: f0 * 1.012, amp: amp * 0.7, tau: 0.08 });
-    tone(buf, { ...ring, freq: f0 * 1.62, amp: amp * 0.22, tau: 0.04 });
-    tone(buf, { ...ring, freq: f0 * 2.43, amp: amp * 0.06, tau: 0.022 });
-  };
-  // [시작(s), 음높이 배수, 크기] — 동전마다 크기가 달라 음이 조금씩 다르다
-  const coins = [
-    [0, 1.0, 1],
-    [0.035, 1.13, 0.75],
-    [0.075, 0.94, 0.6],
-    [0.115, 1.08, 0.45],
-    [0.16, 0.98, 0.3],
-  ];
-  for (const [at, ratio, amp] of coins) strike(at, COIN_BASE_HZ * ratio, amp);
-  // 2ms 노이즈로 금속이 부딪는 순간을 살짝만
-  noise(buf, { at: 0, dur: 0.002, amp: 0.15, tau: 0.0006, seed: 5 });
-  return finish(buf, PEAK_TAP, FADE_IN_TAP_S);
-}
-
-/**
  * 낮은 "툭" 110ms: 220 → 180Hz 로 살짝 내려가는 사인. attack 6ms 로 둥글게.
  * 폰 스피커는 200Hz 대가 약해 2·3배 배음(작게)을 얹어 들리게 한다
  */
@@ -299,7 +270,7 @@ function pop() {
 }
 
 /** 파일 이름 → 합성 함수 */
-const SOUNDS = { tap, ding, tada, hit, fanfare, coin, 'coin-low': coinLow, toggle, pop };
+const SOUNDS = { tap, ding, tada, hit, fanfare, 'coin-low': coinLow, toggle, pop };
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'sounds');
 mkdirSync(outDir, { recursive: true });

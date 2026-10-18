@@ -1,6 +1,7 @@
 import { Appearance } from 'react-native';
 
 import {
+  deleteAllData,
   getSetting,
   initDatabase,
   resetDatabaseConnection,
@@ -8,6 +9,8 @@ import {
   SETTING_KEYS,
 } from '@/src/db';
 import { AMOUNT_PRESETS } from '@/src/features/amountPresets';
+import { snapshotBackup } from '@/src/features/backupActions';
+import { parseCoinSound } from '@/src/features/coinSound';
 import { parseThemeMode } from '@/src/features/themeMode';
 import { parseFlag, useSettingsStore } from '@/src/store/settingsStore';
 import { isHapticsEnabled, setHapticsEnabled } from '@/src/utils/haptics';
@@ -219,5 +222,63 @@ describe('settingsStore — 테마 (theme_mode)', () => {
     expect(parseThemeMode('system')).toBe('system');
     expect(parseThemeMode(null)).toBe('system');
     expect(parseThemeMode('DARK')).toBe('system');
+  });
+});
+
+describe('settingsStore — 동전 소리 (coin_sound)', () => {
+  beforeEach(() => {
+    resetDatabaseConnection();
+    initDatabase();
+    useSettingsStore.setState({ coinSound: 'classic', loaded: false });
+  });
+
+  afterAll(() => {
+    resetDatabaseConnection();
+    useSettingsStore.setState({ coinSound: 'classic' });
+  });
+
+  it('키가 없으면(첫 설치) classic(짤랑)', () => {
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().coinSound).toBe('classic');
+    expect(getSetting(SETTING_KEYS.coinSound)).toBeNull();
+  });
+
+  it('spin 으로 바꾸면 DB 에 저장되고, 앱을 다시 열어(load) 도 spin 이다', () => {
+    useSettingsStore.getState().setCoinSound('spin');
+    expect(useSettingsStore.getState().coinSound).toBe('spin');
+    expect(getSetting(SETTING_KEYS.coinSound)).toBe('spin');
+    useSettingsStore.setState({ coinSound: 'classic', loaded: false });
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().coinSound).toBe('spin');
+    useSettingsStore.getState().setCoinSound('classic');
+    expect(getSetting(SETTING_KEYS.coinSound)).toBe('classic');
+  });
+
+  it('DB 값이 망가져 있으면 classic 으로 읽는다', () => {
+    setSetting(SETTING_KEYS.coinSound, 'gold');
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().coinSound).toBe('classic');
+  });
+
+  it('parseCoinSound: spin 만 spin, 나머지(없음·대소문자 다름·다른 값)는 classic', () => {
+    expect(parseCoinSound(null)).toBe('classic');
+    expect(parseCoinSound('classic')).toBe('classic');
+    expect(parseCoinSound('spin')).toBe('spin');
+    expect(parseCoinSound('SPIN')).toBe('classic');
+    expect(parseCoinSound('')).toBe('classic');
+  });
+
+  it('데이터 전체 삭제 뒤에는 classic 으로 돌아간다', () => {
+    useSettingsStore.getState().setCoinSound('spin');
+    deleteAllData();
+    useSettingsStore.getState().load();
+    expect(useSettingsStore.getState().coinSound).toBe('classic');
+  });
+
+  it('효과음 켬/끔·테마처럼 기기 설정이라 백업 JSON 에는 들어가지 않는다 (settings 는 월 목표만)', () => {
+    useSettingsStore.getState().setCoinSound('spin');
+    const backup = snapshotBackup();
+    expect(backup.settings).toEqual({ monthlyGoal: null });
+    expect(JSON.stringify(backup)).not.toContain('spin');
   });
 });

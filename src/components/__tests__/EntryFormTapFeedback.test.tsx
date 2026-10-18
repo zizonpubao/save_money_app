@@ -19,7 +19,8 @@ jest.mock('expo-haptics', () => ({
 }));
 
 // jest 는 모든 에셋을 같은 값(1)으로 바꾸므로, 어느 파일을 재생했는지 가리려고 파일마다 다른 id 를 준다
-jest.mock('../../../assets/sounds/coin.wav', () => 201);
+jest.mock('../../../assets/sounds/coin-classic.wav', () => 201);
+jest.mock('../../../assets/sounds/coin-spin.wav', () => 205);
 jest.mock('../../../assets/sounds/coin-low.wav', () => 202);
 jest.mock('../../../assets/sounds/toggle.wav', () => 203);
 jest.mock('../../../assets/sounds/pop.wav', () => 204);
@@ -37,7 +38,7 @@ function Harness() {
   return <EntryForm form={form} categories={[커피, 택시]} recent={RECENT} />;
 }
 
-/** 재생한 타격음 이름들 (누른 순서) */
+/** 재생한 타격음 파일 이름들 (누른 순서). 동전은 설정에 따라 coinClassic / coinSpin */
 function soundsPlayed(): string[] {
   const names = Object.entries(TAP_SOUND_FILES);
   return mockPlayers
@@ -78,15 +79,15 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     mockPlayers.length = 0;
     jest.mocked(Haptics.impactAsync).mockClear();
     jest.mocked(Haptics.selectionAsync).mockClear();
-    useSettingsStore.setState({ soundEnabled: true, amountPresets: [...AMOUNT_PRESETS] });
+    useSettingsStore.setState({ soundEnabled: true, coinSound: 'classic', amountPresets: [...AMOUNT_PRESETS] });
     setHapticsEnabled(true);
   });
   afterAll(() => setHapticsEnabled(true));
 
-  it('+ 모드 금액 칩: 동전 "짤랑"(coin) + Rigid', async () => {
+  it('+ 모드 금액 칩: 동전 "짤랑"(기본 coinClassic) + Rigid', async () => {
     await render(<Harness />);
     await fireEvent.press(screen.getByText('1천'));
-    expect(soundsPlayed()).toEqual(['coin']);
+    expect(soundsPlayed()).toEqual(['coinClassic']);
     expect(hapticsFired()).toEqual(['rigid']);
     expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('1,000');
   });
@@ -101,10 +102,10 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     expect(soundsPlayed()).toEqual(['toggle', 'coinLow']);
     expect(hapticsFired()).toEqual(['light', 'soft']);
     expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('4,000');
-    // 다시 + 로 돌리면 금액 칩은 coin · Rigid
+    // 다시 + 로 돌리면 금액 칩은 동전 · Rigid
     await fireEvent.press(screen.getByTestId('preset-sign-chip'));
     await fireEvent.press(screen.getByText('5백'));
-    expect(soundsPlayed()).toEqual(['toggle', 'coinLow', 'toggle', 'coin']);
+    expect(soundsPlayed()).toEqual(['toggle', 'coinLow', 'toggle', 'coinClassic']);
     expect(hapticsFired()).toEqual(['light', 'soft', 'light', 'rigid']);
   });
 
@@ -113,21 +114,21 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     await fireEvent.press(screen.getByText('🚕 택시'));
     expect(soundsPlayed()).toEqual(['pop']);
     expect(hapticsFired()).toEqual(['light']);
-    expect(TAP_SOUND_FILES.pop).not.toBe(TAP_SOUND_FILES.coin);
+    expect(TAP_SOUND_FILES.pop).not.toBe(TAP_SOUND_FILES.coinClassic);
   });
 
-  it('최근 항목 칩: 동전 "짤랑"(coin) + Rigid, 금액이 채워진다', async () => {
+  it('최근 항목 칩: 동전 "짤랑"(기본 coinClassic) + Rigid, 금액이 채워진다', async () => {
     await render(<Harness />);
     await fireEvent.press(screen.getByLabelText('아메리카노 4,500원 채우기'));
-    expect(soundsPlayed()).toEqual(['coin']);
+    expect(soundsPlayed()).toEqual(['coinClassic']);
     expect(hapticsFired()).toEqual(['rigid']);
     expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('4,500');
   });
 
-  it('금액 칩 연타: coin 플레이어 3개를 번갈아 쓰고, 누를 때마다 Rigid', async () => {
+  it('금액 칩 연타: 동전 플레이어 3개를 번갈아 쓰고, 누를 때마다 Rigid', async () => {
     await render(<Harness />);
     for (let i = 0; i < 4; i += 1) await fireEvent.press(screen.getByText('5백'));
-    const coins = mockPlayers.filter((p) => p.source === TAP_SOUND_FILES.coin);
+    const coins = mockPlayers.filter((p) => p.source === TAP_SOUND_FILES.coinClassic);
     expect(coins.map((p) => p.play.mock.calls.length)).toEqual([2, 1, 1]);
     expect(hapticsFired()).toEqual(['rigid', 'rigid', 'rigid', 'rigid']);
     expect(screen.getByPlaceholderText(AMOUNT)).toHaveDisplayValue('2,000');
@@ -146,7 +147,15 @@ describe('입력 버튼 타격감 (소리 + 햅틱)', () => {
     await render(<Harness />);
     await pressAllFive();
     expect(hapticsFired()).toEqual([]);
-    expect(soundsPlayed()).toEqual(['coin', 'toggle', 'coinLow', 'pop', 'coin']);
+    expect(soundsPlayed()).toEqual(['coinClassic', 'toggle', 'coinLow', 'pop', 'coinClassic']);
+  });
+
+  it('설정에서 동전 소리를 "빙글"(spin)로 고르면 + 금액 칩·최근 항목 칩이 그 녹음을 쓴다. − 모드 툭은 그대로', async () => {
+    useSettingsStore.setState({ coinSound: 'spin' });
+    await render(<Harness />);
+    await pressAllFive();
+    expect(soundsPlayed()).toEqual(['coinSpin', 'toggle', 'coinLow', 'pop', 'coinSpin']);
+    expect(hapticsFired()).toEqual(['rigid', 'light', 'soft', 'light', 'rigid']);
   });
 
   it('입력 버튼은 예전 selection 햅틱을 더 쓰지 않는다', async () => {

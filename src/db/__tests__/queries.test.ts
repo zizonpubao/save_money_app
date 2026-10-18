@@ -507,6 +507,7 @@ describe('queries', () => {
         hapticsEnabled: 'haptics_enabled',
         amountPresets: 'amount_presets',
         themeMode: 'theme_mode',
+        coinSound: 'coin_sound',
       });
     });
   });

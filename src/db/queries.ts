@@ -251,6 +251,8 @@ export const SETTING_KEYS = {
   amountPresets: 'amount_presets',
   /** 앱 테마 ('system' | 'light' | 'dark'). 없거나 다른 값이면 system. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
   themeMode: 'theme_mode',
+  /** 금액 칩 동전 소리 ('classic' | 'spin'). 없거나 다른 값이면 classic. 효과음 켬/끔처럼 기기 설정이라 백업 JSON 에는 넣지 않는다 */
+  coinSound: 'coin_sound',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

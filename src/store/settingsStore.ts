@@ -8,6 +8,7 @@ import {
   validatePresets,
   type AmountPreset,
 } from '@/src/features/amountPresets';
+import { parseCoinSound, type CoinSound } from '@/src/features/coinSound';
 import { isValidGoal, parseGoal } from '@/src/features/goal';
 import { applyThemeMode, parseThemeMode, type ThemeMode } from '@/src/features/themeMode';
 import { setHapticsEnabled } from '@/src/utils/haptics';
@@ -23,6 +24,8 @@ type SettingsState = {
   amountPresets: AmountPreset[];
   /** 앱 테마. 기본 system */
   themeMode: ThemeMode;
+  /** 금액 칩·최근 항목 칩 동전 소리. 기본 classic(짤랑) */
+  coinSound: CoinSound;
   loaded: boolean;
   load: () => void;
   /** 목표를 저장한다. 1원 이상 정수가 아니면 던진다 (화면이 저장 버튼으로 먼저 막는다). */
@@ -36,6 +39,7 @@ type SettingsState = {
   resetAmountPresets: () => void;
   /** 테마를 저장하고 바로 적용한다 */
   setThemeMode: (mode: ThemeMode) => void;
+  setCoinSound: (sound: CoinSound) => void;
 };
 
 /** 켬/끔 설정 값. '0' 만 끔이고, 없거나 다른 값이면 기본값(켬)으로 본다 */
@@ -60,6 +64,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   hapticsEnabled: true,
   amountPresets: [...AMOUNT_PRESETS],
   themeMode: 'system',
+  coinSound: 'classic',
   loaded: false,
 
   load: () => {
@@ -73,6 +78,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       hapticsEnabled,
       amountPresets: parseAmountPresets(getSetting(SETTING_KEYS.amountPresets)),
       themeMode,
+      coinSound: parseCoinSound(getSetting(SETTING_KEYS.coinSound)),
       loaded: true,
     });
   },
@@ -119,5 +125,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     setSetting(SETTING_KEYS.themeMode, mode);
     applyThemeMode(mode);
     set({ themeMode: mode });
+  },
+
+  setCoinSound: (sound) => {
+    setSetting(SETTING_KEYS.coinSound, sound);
+    set({ coinSound: sound });
   },
 }));
