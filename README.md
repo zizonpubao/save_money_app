@@ -13,7 +13,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-894%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-895%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
@@ -139,7 +139,7 @@ sequenceDiagram
 
 입력 시트의 저장 버튼은 오른쪽 아래에 떠 있고, 키패드가 올라오면 키패드 바로 위로 같이 올라갑니다.
 입력 시트의 버튼에도 타격감이 있습니다.
-금액 칩은 동전 "짤랑"(빼기 모드는 낮은 "툭"), +/− 전환은 "딸깍", 카테고리는 "톡"입니다.
+금액 칩은 낮고 찰랑거리는 동전 소리(빼기 모드는 낮은 "툭"), +/− 전환은 "딸깍", 카테고리는 "톡"입니다.
 무음 모드에서는 진동만, 벨소리 모드에서는 소리와 진동이 함께 납니다.
 소리는 홈이 뜰 때 미리 불러 두고, 빠르게 연타해도 끊기지 않게 소리마다 플레이어 3개를 번갈아 씁니다.
 

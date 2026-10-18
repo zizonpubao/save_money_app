@@ -233,21 +233,32 @@ function hit() {
 }
 
 /**
- * 동전 "짤랑" 120ms: 2.5k·3.8k·5.3kHz 비정수배 배음을 빠르게 감쇠시킨 타격 두 번.
- * 38ms 뒤 두 번째 타격은 0.55 크기에 음높이를 6% 올려 같은 동전이 한 번 더 튄 소리가 된다
+ * 동전 "찰랑찰랑" 260ms. 아이폰 피드백 "너무 얇고 높아 스트레스, 더 낮게, 두 배 길게, 더 찰랑거리게" 반영.
+ * 기본음 850Hz 대(예전 2.5kHz) 동전 5개가 160ms 동안 차례로 부딪히며 작아진다.
+ * 타격마다 1.2% 어긋난 두 음을 겹쳐 맥놀이(찰랑이는 떨림)를 만들고, 높은 배음(1.62·2.43배)은 작게만 얹는다
  */
+const COIN_BASE_HZ = 850;
 function coin() {
-  const buf = buffer(120);
-  const strike = (at, amp, shift) => {
-    const ring = { at, dur: 0.12 - at, attack: 0.0005, release: 0.01 };
-    tone(buf, { ...ring, freq: 2500 * shift, amp, tau: 0.03 });
-    tone(buf, { ...ring, freq: 3800 * shift, amp: amp * 0.7, tau: 0.02 });
-    tone(buf, { ...ring, freq: 5300 * shift, amp: amp * 0.45, tau: 0.012 });
+  const ms = 260;
+  const buf = buffer(ms);
+  const strike = (at, f0, amp) => {
+    const ring = { at, dur: ms / 1000 - at, attack: 0.001, release: 0.04 };
+    tone(buf, { ...ring, freq: f0, amp, tau: 0.085 });
+    tone(buf, { ...ring, freq: f0 * 1.012, amp: amp * 0.7, tau: 0.08 });
+    tone(buf, { ...ring, freq: f0 * 1.62, amp: amp * 0.22, tau: 0.04 });
+    tone(buf, { ...ring, freq: f0 * 2.43, amp: amp * 0.06, tau: 0.022 });
   };
-  strike(0, 1, 1);
-  strike(0.038, 0.55, 1.06);
-  // 1ms 노이즈로 금속이 부딪는 순간을 또렷하게
-  noise(buf, { at: 0, dur: 0.002, amp: 0.6, tau: 0.0006, seed: 21 });
+  // [시작(s), 음높이 배수, 크기] — 동전마다 크기가 달라 음이 조금씩 다르다
+  const coins = [
+    [0, 1.0, 1],
+    [0.035, 1.13, 0.75],
+    [0.075, 0.94, 0.6],
+    [0.115, 1.08, 0.45],
+    [0.16, 0.98, 0.3],
+  ];
+  for (const [at, ratio, amp] of coins) strike(at, COIN_BASE_HZ * ratio, amp);
+  // 2ms 노이즈로 금속이 부딪는 순간을 살짝만
+  noise(buf, { at: 0, dur: 0.002, amp: 0.15, tau: 0.0006, seed: 5 });
   return finish(buf, PEAK_TAP, FADE_IN_TAP_S);
 }
 
