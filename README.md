@@ -303,6 +303,12 @@ npx expo-doctor    # 의존성 호환 점검
 서명 인증서와 업로드 키는 EAS 서버에 있습니다. 첫 빌드 한 번만 애플 계정 로그인이 필요합니다.
 빌드 번호는 빌드할 때마다 `app.json` 에서 자동으로 올라갑니다.
 
+### App Store 출시 준비
+
+- [개인정보 처리방침](docs/PRIVACY.md): 데이터를 수집하지 않습니다. 기록은 아이폰에만 저장합니다
+- [지원 페이지](docs/SUPPORT.md): 문의 방법과 자주 묻는 질문
+- [App Store 입력 가이드](docs/APP-STORE.md): App Store Connect 화면별 입력값, 스크린샷 계획, 심사 메모
+
 ### 안드로이드 APK
 
 `npx eas-cli build -p android --profile preview` 로 클라우드에서 APK를 만듭니다.
