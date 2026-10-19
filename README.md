@@ -13,7 +13,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-914%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-915%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 
 </div>
@@ -142,7 +142,7 @@ sequenceDiagram
 금액 칩은 실제 동전 녹음 소리(설정에서 "짤랑"과 "빙글" 중 선택, 빼기 모드는 내려가는 두 음 "띵-동"), +/− 전환은 "딸깍", 카테고리는 "톡"입니다.
 무음 모드에서는 진동만, 벨소리 모드에서는 소리와 진동이 함께 납니다.
 소리는 홈이 뜰 때 미리 불러 두고, 빠르게 연타해도 끊기지 않게 소리마다 플레이어 3개를 번갈아 씁니다.
-버튼 소리 크기는 아이폰 스피커로 들리는 크기 기준으로 맞췄고, 저장 효과음보다 작은 0.6 볼륨으로 재생합니다.
+버튼 소리 크기는 아이폰에서 직접 들으며 소리마다 맞췄고, 저장 효과음보다 작은 0.6 볼륨으로 재생합니다.
 
 ### 📊 막대 그래프는 View로 직접
 

@@ -29,7 +29,7 @@ const PEAK_DB: Record<keyof typeof LENGTH_MS, number> = {
   tada: -1,
   hit: -0.5,
   fanfare: -1,
-  'coin-low': -10,
+  'coin-low': -10 + 20 * Math.log10(1.2), // −10 dBFS 의 120% (아이폰 피드백)
   toggle: -6,
   pop: -6,
 };
@@ -113,8 +113,8 @@ describe('효과음 파일 (gen-sounds)', () => {
 /** 금액 칩 동전 소리. Pixabay 녹음을 다듬어 넣은 파일이라(assets/sounds/CREDITS.md) 합성 규격과 다르다 */
 describe('동전 녹음 파일 (설정에서 고르는 2개)', () => {
   const RECORDINGS = { 'coin-classic': 600, 'coin-spin': 900 } as const;
-  /** 파일별 피크(dBFS). 짤랑은 에너지가 꽉 찬 녹음이라 스피커 기준 크기를 다른 소리와 맞추려고 3.5dB 낮췄다 */
-  const REC_PEAK_DB = { 'coin-classic': -7.5, 'coin-spin': -4 } as const;
+  /** 파일별 피크(dBFS). 짤랑은 에너지가 꽉 찬 녹음이라 3.5dB 낮췄고, 이후 아이폰 피드백 "여전히 너무 커"로 짤랑만 70% 로 낮췄다 (빙글은 "딱 적당해") */
+  const REC_PEAK_DB = { 'coin-classic': -10.6, 'coin-spin': -4 } as const;
   const REC_RATE = 44100;
 
   it.each(Object.entries(RECORDINGS))('%s.wav: 44.1kHz mono PCM16 · %ims · 정한 피크 근처', (name, ms) => {
@@ -174,11 +174,17 @@ describe('입력 버튼 소리 크기 균형 (스피커 기준)', () => {
     return 20 * Math.log10(best);
   }
 
-  it.each(['coin-classic', 'coin-spin'] as const)('+ 동전(%s)과 − "띵-동"의 크기 차이가 3dB 이내다', (coin) => {
-    expect(Math.abs(speakerDb(coin) - speakerDb('coin-low'))).toBeLessThanOrEqual(3);
+  // 처음엔 스피커 기준 같은 크기(3dB 이내)로 맞췄지만, 아이폰에서 귀로 들어 보니 녹음마다 크게 들리는 정도가 달랐다.
+  // 피드백 "마이너스 20% 키우고, 짤랑 30% 줄여줘, 빙글은 딱 적당해" 를 반영한 스피커 기준 크기를 지킨다 (±1dB)
+  // 값은 이 파일의 speakerDb(JS 1차 필터)로 잰 것 — ffmpeg 측정과 0.5~1dB 다를 수 있다
+  const EAR_TUNED_DB = { 'coin-classic': -23.5, 'coin-spin': -19.5, 'coin-low': -18.8 } as const;
+
+  it.each(Object.entries(EAR_TUNED_DB))('%s.wav: 아이폰에서 귀로 맞춘 스피커 기준 크기 %sdB 근처', (name, db) => {
+    expect(Math.abs(speakerDb(name) - db)).toBeLessThanOrEqual(1);
   });
 
-  it('두 동전 소리도 서로 3dB 이내다 (설정에서 바꿔도 크기가 비슷)', () => {
-    expect(Math.abs(speakerDb('coin-classic') - speakerDb('coin-spin'))).toBeLessThanOrEqual(3);
+  it('− "띵-동"이 두 + 동전보다 크다 (예전 "−는 너무 작고 +는 너무 커" 가 다시 생기지 않게)', () => {
+    expect(speakerDb('coin-low')).toBeGreaterThan(speakerDb('coin-classic'));
+    expect(speakerDb('coin-low')).toBeGreaterThan(speakerDb('coin-spin'));
   });
 });

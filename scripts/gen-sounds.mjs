@@ -238,7 +238,7 @@ function hit() {
  * 아이폰 피드백 이력: 낮은 사인 "툭" 은 스피커에서 너무 작았고, 배음을 키운 "툭" 은 "방귀 소리 같다" → 후보 4개 중 사용자가 고름.
  * 피크 −10 dBFS 로 스피커 기준(350Hz 고역 통과 후 50ms RMS 최고값) 약 −19.5dB — 동전 녹음과 같은 크기
  */
-const PEAK_LOW = 10 ** (-10 / 20);
+const PEAK_LOW = 10 ** (-10 / 20) * 1.2; // 아이폰 피드백 "마이너스 소리 20% 키워줘"
 function coinLow() {
   const buf = buffer(260);
   const soft = { attack: 0.003, release: 0.04 };
