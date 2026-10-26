@@ -337,4 +337,6 @@ npx expo-doctor    # 의존성 호환 점검
 
 **zizonpubao** · Built with [Claude Code](https://claude.com/claude-code)
 
+문의: [hejeje97@naver.com](mailto:hejeje97@naver.com) · [GitHub Issues](https://github.com/zizonpubao/save_money_app/issues)
+
 App Store 출시를 준비하고 있습니다. 지금은 TestFlight로 설치합니다. 안드로이드도 같은 코드로 동작하고, EAS Build로 APK를 만들 수 있습니다.

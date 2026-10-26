@@ -5,7 +5,8 @@ SaveLog는 "오늘 참은 소비"를 기록하는 절약 앱입니다.
 
 ## 문의하기
 
-- [GitHub Issues](https://github.com/zizonpubao/save_money_app/issues)에 새 이슈를 남겨 주세요.
+- 이메일: [hejeje97@naver.com](mailto:hejeje97@naver.com)
+- [GitHub Issues](https://github.com/zizonpubao/save_money_app/issues)에 새 이슈를 남겨도 됩니다.
 - 문제를 알려 주실 때는 아이폰 모델, iOS 버전, 어떤 화면에서 무엇을 눌렀는지 적어 주시면 빨리 확인할 수 있습니다.
 
 ## 자주 묻는 질문
