@@ -96,8 +96,8 @@ App Store Connect(appstoreconnect.apple.com → 나의 앱 → SaveLog)에 넣�
 
 ## 5. 스크린샷
 
-아이폰 17 Pro 캡처(1206×2622)를 6.9인치 규격 1320×2868 로 키워서 올립니다. 만든 파일은 `docs/appstore/` 에 순서대로 있습니다 (1-home · 2-entry · 3-records · 4-settings-effects · 5-settings-categories).
-6.9인치 한 벌만 올리면 작은 화면 크기는 App Store 가 자동으로 줄여서 씁니다.
+아이폰 17 Pro 캡처 원본(1206×2622)을 그대로 올립니다. 2026년 App Store Connect 의 "Dynamic Island 지원 iPhone (중형 디스플레이)" 칸이 1206×2622 · 1179×2556 을 받습니다 (키운 1320×2868 은 "파일 크기가 유효하지 않습니다" 로 거절됨). 파일은 `docs/appstore/` 에 순서대로 있습니다 (1-home · 2-entry · 3-records · 4-settings-effects · 5-settings-categories).
+iPad 는 지원하지 않으므로(supportsTablet false) iPad · Apple Watch 칸은 비웁니다.
 
 | 순서 | 화면 | 보여 줄 것 |
 |---|---|---|
