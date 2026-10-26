@@ -96,7 +96,7 @@ App Store Connect(appstoreconnect.apple.com → 나의 앱 → SaveLog)에 넣�
 
 ## 5. 스크린샷
 
-아이폰 17 Pro 캡처(1206×2622)를 6.9인치 규격 1320×2868 로 키워서 올립니다.
+아이폰 17 Pro 캡처(1206×2622)를 6.9인치 규격 1320×2868 로 키워서 올립니다. 만든 파일은 `docs/appstore/` 에 순서대로 있습니다 (1-home · 2-entry · 3-records · 4-settings-effects · 5-settings-categories).
 6.9인치 한 벌만 올리면 작은 화면 크기는 App Store 가 자동으로 줄여서 씁니다.
 
 | 순서 | 화면 | 보여 줄 것 |
