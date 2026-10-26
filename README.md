@@ -15,6 +15,7 @@
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
 ![Jest](https://img.shields.io/badge/Tests-915%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
+![License](https://img.shields.io/badge/License-All%20rights%20reserved-lightgrey)
 
 </div>
 
@@ -338,5 +339,11 @@ npx expo-doctor    # 의존성 호환 점검
 **zizonpubao** · Built with [Claude Code](https://claude.com/claude-code)
 
 문의: [hejeje97@naver.com](mailto:hejeje97@naver.com) · [GitHub Issues](https://github.com/zizonpubao/save_money_app/issues)
+
+## 📄 라이선스
+
+**All rights reserved.** 이 저장소는 열람용으로만 공개합니다.
+허락 없이 코드를 복제·수정·배포하거나 앱 스토어에 제출할 수 없습니다.
+효과음(Pixabay)과 Outfit 폰트(SIL OFL) 같은 제3자 자산은 각자의 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE)에 있습니다.
 
 App Store 출시를 준비하고 있습니다. 지금은 TestFlight로 설치합니다. 안드로이드도 같은 코드로 동작하고, EAS Build로 APK를 만들 수 있습니다.
