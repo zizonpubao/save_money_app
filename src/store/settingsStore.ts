@@ -32,9 +32,9 @@ type SettingsState = {
   themeMode: ThemeMode;
   /** 금액 칩·최근 항목 칩 동전 소리. 기본 classic(짤랑) */
   coinSound: CoinSound;
-  /** (1.0.1) 저녁 기록 알림. 기본 끔 */
+  /** (1.0.1) 매일 기록 알림. 기본 끔 */
   reminderEnabled: boolean;
-  /** (1.0.1) 저녁 기록 알림 시각 'HH:mm'. 기본 21:00 */
+  /** (1.0.1) 매일 기록 알림 시각 'HH:mm'. 기본 21:00 */
   reminderTime: string;
   loaded: boolean;
   load: () => void;

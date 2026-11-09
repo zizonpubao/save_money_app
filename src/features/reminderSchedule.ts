@@ -8,8 +8,12 @@ import {
   parseReminderEnabled,
   parseReminderTime,
   REMINDER_BODY,
+  REMINDER_LABEL,
+  REMINDER_PLAN_OFF,
+  REMINDER_TEST_DELAY_S,
   REMINDER_TITLE,
   reminderDates,
+  type ReminderPlan,
 } from './reminder';
 
 /**
@@ -19,18 +23,21 @@ import {
 
 const ANDROID_CHANNEL_ID = 'evening-reminder';
 
-async function syncOnce(): Promise<void> {
+const PLAN_FAILED: ReminderPlan = { status: 'failed', next: null, skippedToday: false };
+
+async function syncOnce(): Promise<ReminderPlan> {
   await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!parseReminderEnabled(getSetting(SETTING_KEYS.reminderEnabled))) return;
+  if (!parseReminderEnabled(getSetting(SETTING_KEYS.reminderEnabled))) return REMINDER_PLAN_OFF;
   // 아이폰 설정에서 권한을 끈 경우. 스위치 값은 두고 예약만 건너뛰어, 권한을 다시 켜면 다음 동기화에서 살아난다
   const { granted } = await Notifications.getPermissionsAsync();
-  if (!granted) return;
+  if (!granted) return { status: 'denied', next: null, skippedToday: false };
 
   const now = new Date();
+  const hasEntryToday = getSumByDate(fromDate(now)) > 0;
   const dates = reminderDates({
     now,
     time: parseReminderTime(getSetting(SETTING_KEYS.reminderTime)),
-    hasEntryToday: getSumByDate(fromDate(now)) > 0,
+    hasEntryToday,
   });
   for (const date of dates) {
     await Notifications.scheduleNotificationAsync({
@@ -42,31 +49,40 @@ async function syncOnce(): Promise<void> {
       },
     });
   }
+  // 예약 호출이 조용히 무시됐을 수도 있으니, 실제로 남은 예약이 있는지 되읽어 확인한다
+  const pending = await Notifications.getAllScheduledNotificationsAsync();
+  const next = dates[0];
+  if (!next || pending.length === 0) return PLAN_FAILED;
+  return { status: 'scheduled', next, skippedToday: hasEntryToday };
 }
 
-let running: Promise<void> | null = null;
+let running: Promise<ReminderPlan> | null = null;
 let rerun = false;
 
 /**
- * 예약을 전부 취소하고 지금 상태로 다시 만든다. 실패해도 던지지 않는다 (알림 때문에 저장·화면이 막히면 안 된다).
+ * 예약을 전부 취소하고 지금 상태로 다시 만든 뒤, 실제 예약 상태를 돌려준다.
+ * 실패해도 던지지 않는다 (알림 때문에 저장·화면이 막히면 안 된다). 실패는 status 'failed' 로 알린다.
  * 취소·예약이 비동기라 겹치면 같은 날이 두 번 예약되므로, 진행 중이면 끝난 뒤 한 번만 더 돈다.
  */
-export function syncReminders(): Promise<void> {
+export function syncReminders(): Promise<ReminderPlan> {
   if (running) {
     rerun = true;
     return running;
   }
   running = (async () => {
+    let plan = PLAN_FAILED;
     try {
       do {
         rerun = false;
-        await syncOnce();
+        plan = await syncOnce();
       } while (rerun);
     } catch {
       // 다음 앱 열기·저장 때 다시 맞춰진다
+      plan = PLAN_FAILED;
     } finally {
       running = null;
     }
+    return plan;
   })();
   return running;
 }
@@ -77,7 +93,9 @@ export async function requestReminderPermission(): Promise<boolean> {
     // Android 13+ 는 채널이 하나도 없으면 권한 창이 뜨지 않는다
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-        name: '저녁 기록 알림',
+        name: REMINDER_LABEL,
+        // 런타임에는 있는 export 인데(NotificationChannelManager.types.js) 린트의 네임스페이스 검사가 SDK 58 빌드 파일에서 못 찾는다
+        // eslint-disable-next-line import/namespace
         importance: Notifications.AndroidImportance.DEFAULT,
       });
     }
@@ -88,6 +106,27 @@ export async function requestReminderPermission(): Promise<boolean> {
       ios: { allowAlert: true, allowSound: true },
     });
     return asked.granted;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 설정의 "알림 미리 보기": 몇 초 뒤 같은 문구의 알림을 한 번 보낸다. 예약에 성공했는지 돌려준다.
+ * 그 사이 syncReminders 가 돌면(저장·시간 변경) 전체 취소에 같이 지워진다.
+ */
+export async function sendTestReminder(): Promise<boolean> {
+  try {
+    if (!(await requestReminderPermission())) return false;
+    await Notifications.scheduleNotificationAsync({
+      content: { title: REMINDER_TITLE, body: REMINDER_BODY, sound: true },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: REMINDER_TEST_DELAY_S,
+        channelId: ANDROID_CHANNEL_ID,
+      },
+    });
+    return true;
   } catch {
     return false;
   }

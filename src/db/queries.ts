@@ -261,9 +261,9 @@ export const SETTING_KEYS = {
   coinSound: 'coin_sound',
   /** (1.0.1) 별점 창을 마지막으로 요청한 날 ('YYYY-MM-DD'). 120일 안에는 다시 요청하지 않는다 */
   reviewRequestedAt: 'review_requested_at',
-  /** (1.0.1) 저녁 기록 알림 켬/끔 ('1' | '0'). 없으면 끔. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
+  /** (1.0.1) 매일 기록 알림 켬/끔 ('1' | '0'). 없으면 끔. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
   reminderEnabled: 'reminder_enabled',
-  /** (1.0.1) 저녁 기록 알림 시각 ('HH:mm'). 없거나 망가졌으면 21:00. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
+  /** (1.0.1) 매일 기록 알림 시각 ('HH:mm'). 없거나 망가졌으면 21:00. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
   reminderTime: 'reminder_time',
 } as const;
 

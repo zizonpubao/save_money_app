@@ -13,7 +13,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-997%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-1012%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 ![License](https://img.shields.io/badge/License-All%20rights%20reserved-lightgrey)
 
@@ -123,8 +123,8 @@ sequenceDiagram
 | 5 | 월 목표 | 목표 금액 설정(프리셋 · 직접 입력), 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 |
 | 6 | 홈 활기 | 오늘의 한 줄(명언 39개 · 속담·유명인 · 환산 · 어제 대비), 하루 첫 오픈 카운트업, 이번 달 잔디, 이모지 적립 |
 | 7 | 백업 | JSON 내보내기 · 복원(병합/덮어쓰기, 자동 백업), CSV(엑셀 호환), 카테고리 관리(추가·이름·이모지·순서·삭제), 데이터 전체 삭제 |
-| 8 | 설정 | 테마(시스템·라이트·다크), 효과음·햅틱, 동전 소리, 저녁 기록 알림, 빠른 금액 버튼, 만든 사람 |
-| 9 | 저녁 기록 알림 | 켠 사람만 원하는 시간에 알림(기기 내 예약). 그날 이미 기록했으면 울리지 않음 |
+| 8 | 설정 | 테마(시스템·라이트·다크), 효과음·햅틱, 동전 소리, 매일 기록 알림, 빠른 금액 버튼, 만든 사람 |
+| 9 | 매일 기록 알림 | 켠 사람만 원하는 시간에 알림(기기 내 예약). 그날 이미 기록했으면 울리지 않음. 켜면 확인 창, 다음 알림 시각 표시, 미리 보기 |
 | 10 | 자랑하기 | 기록 탭에서 기간 절약액을 4:5 이미지 카드로 만들어 공유 시트로 전달 |
 | 11 | 별점 요청 | 목표 달성·누적 이정표 순간에 연출이 끝난 뒤 iOS 기본 창, 120일에 한 번까지 |
 
@@ -337,7 +337,7 @@ npx expo-doctor    # 의존성 호환 점검
 | 앱 아이콘 | 돼지 저금통 3D 아이콘, 안드로이드 적응형 · 테마 아이콘, 스플래시 | ✅ |
 | iOS TestFlight | EAS iOS 빌드, TestFlight 자동 업로드 (최신 빌드 7) | ✅ |
 | App Store 출시 | 스토어 문구, 개인정보 처리방침, 스크린샷, 심사 | ✅ |
-| 1.0.1 | 별점 요청, 저녁 기록 알림, 자랑 이미지, 스토어 이름 · 소개 이미지 개선 | 🔨 |
+| 1.0.1 | 별점 요청, 매일 기록 알림, 자랑 이미지, 스토어 이름 · 소개 이미지 개선 | 🔨 |
 
 ## 👤 Author
 

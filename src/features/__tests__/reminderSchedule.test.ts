@@ -53,7 +53,7 @@ async function settle() {
   cancelAll.mockClear();
 }
 
-describe('저녁 기록 알림 예약', () => {
+describe('매일 기록 알림 예약', () => {
   beforeEach(() => {
     jest.useFakeTimers({
       now: dateAtTime('2026-11-09', '18:00'),
@@ -135,7 +135,7 @@ describe('저녁 기록 알림 예약', () => {
   it('네이티브가 실패해도 던지지 않는다', async () => {
     turnOn();
     cancelAll.mockRejectedValue(new Error('no'));
-    await expect(syncReminders()).resolves.toBeUndefined();
+    await expect(syncReminders()).resolves.toMatchObject({ status: 'failed' });
   });
 
   it('겹쳐 불러도 같은 날을 두 번 예약하지 않고, 마지막 상태로 끝난다', async () => {

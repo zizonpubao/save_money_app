@@ -39,7 +39,7 @@ jest.mock('expo-file-system');
 jest.mock('expo-sharing');
 jest.mock('expo-document-picker');
 
-/** (1.0.1) 별점 요청 · 저녁 알림 · 자랑 이미지도 네이티브라 __mocks__ 대역으로 바꾼다 (홈·설정·기록 탭이 import 한다) */
+/** (1.0.1) 별점 요청 · 기록 알림 · 자랑 이미지도 네이티브라 __mocks__ 대역으로 바꾼다 (홈·설정·기록 탭이 import 한다) */
 jest.mock('expo-store-review');
 jest.mock('expo-notifications');
 jest.mock('react-native-view-shot');
