@@ -208,6 +208,12 @@ export function getTotalSum(): number {
   return row?.total ?? 0;
 }
 
+/** 전체 기록 건수. 별점 요청 판정에 쓴다. */
+export function getEntryCount(): number {
+  const row = getDb().getFirstSync<{ count: number }>('SELECT COUNT(*) AS count FROM entries');
+  return row?.count ?? 0;
+}
+
 // ---------- 빠른 입력 (M4) ----------
 
 /**
@@ -253,6 +259,12 @@ export const SETTING_KEYS = {
   themeMode: 'theme_mode',
   /** 금액 칩 동전 소리 ('classic' | 'spin'). 없거나 다른 값이면 classic. 효과음 켬/끔처럼 기기 설정이라 백업 JSON 에는 넣지 않는다 */
   coinSound: 'coin_sound',
+  /** (1.0.1) 별점 창을 마지막으로 요청한 날 ('YYYY-MM-DD'). 120일 안에는 다시 요청하지 않는다 */
+  reviewRequestedAt: 'review_requested_at',
+  /** (1.0.1) 저녁 기록 알림 켬/끔 ('1' | '0'). 없으면 끔. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
+  reminderEnabled: 'reminder_enabled',
+  /** (1.0.1) 저녁 기록 알림 시각 ('HH:mm'). 없거나 망가졌으면 21:00. 기기 설정이라 백업 JSON 에는 넣지 않는다 */
+  reminderTime: 'reminder_time',
 } as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS];

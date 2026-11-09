@@ -10,6 +10,12 @@ import {
 } from '@/src/features/amountPresets';
 import { parseCoinSound, type CoinSound } from '@/src/features/coinSound';
 import { isValidGoal, parseGoal } from '@/src/features/goal';
+import {
+  DEFAULT_REMINDER_TIME,
+  parseReminderEnabled,
+  parseReminderTime,
+} from '@/src/features/reminder';
+import { syncReminders } from '@/src/features/reminderSchedule';
 import { applyThemeMode, parseThemeMode, type ThemeMode } from '@/src/features/themeMode';
 import { setHapticsEnabled } from '@/src/utils/haptics';
 
@@ -26,6 +32,10 @@ type SettingsState = {
   themeMode: ThemeMode;
   /** 금액 칩·최근 항목 칩 동전 소리. 기본 classic(짤랑) */
   coinSound: CoinSound;
+  /** (1.0.1) 저녁 기록 알림. 기본 끔 */
+  reminderEnabled: boolean;
+  /** (1.0.1) 저녁 기록 알림 시각 'HH:mm'. 기본 21:00 */
+  reminderTime: string;
   loaded: boolean;
   load: () => void;
   /** 목표를 저장한다. 1원 이상 정수가 아니면 던진다 (화면이 저장 버튼으로 먼저 막는다). */
@@ -40,6 +50,9 @@ type SettingsState = {
   /** 테마를 저장하고 바로 적용한다 */
   setThemeMode: (mode: ThemeMode) => void;
   setCoinSound: (sound: CoinSound) => void;
+  /** 저장하고 예약을 다시 맞춘다. 권한 요청은 화면이 켜기 전에 끝낸다 */
+  setReminderEnabled: (enabled: boolean) => void;
+  setReminderTime: (time: string) => void;
 };
 
 /** 켬/끔 설정 값. '0' 만 끔이고, 없거나 다른 값이면 기본값(켬)으로 본다 */
@@ -65,6 +78,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   amountPresets: [...AMOUNT_PRESETS],
   themeMode: 'system',
   coinSound: 'classic',
+  reminderEnabled: false,
+  reminderTime: DEFAULT_REMINDER_TIME,
   loaded: false,
 
   load: () => {
@@ -79,6 +94,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       amountPresets: parseAmountPresets(getSetting(SETTING_KEYS.amountPresets)),
       themeMode,
       coinSound: parseCoinSound(getSetting(SETTING_KEYS.coinSound)),
+      reminderEnabled: parseReminderEnabled(getSetting(SETTING_KEYS.reminderEnabled)),
+      reminderTime: parseReminderTime(getSetting(SETTING_KEYS.reminderTime)),
       loaded: true,
     });
   },
@@ -130,5 +147,17 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setCoinSound: (sound) => {
     setSetting(SETTING_KEYS.coinSound, sound);
     set({ coinSound: sound });
+  },
+
+  setReminderEnabled: (enabled) => {
+    setSetting(SETTING_KEYS.reminderEnabled, flagValue(enabled));
+    set({ reminderEnabled: enabled });
+    void syncReminders();
+  },
+
+  setReminderTime: (time) => {
+    setSetting(SETTING_KEYS.reminderTime, time);
+    set({ reminderTime: time });
+    void syncReminders();
   },
 }));

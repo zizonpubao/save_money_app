@@ -13,7 +13,7 @@
 ![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-915%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-996%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 ![License](https://img.shields.io/badge/License-All%20rights%20reserved-lightgrey)
 
@@ -123,7 +123,10 @@ sequenceDiagram
 | 5 | 월 목표 | 목표 금액 설정(프리셋 · 직접 입력), 진행 바, 달성 후에도 초과액 계속 표시, 달성 이펙트 |
 | 6 | 홈 활기 | 오늘의 한 줄(명언 39개 · 속담·유명인 · 환산 · 어제 대비), 하루 첫 오픈 카운트업, 이번 달 잔디, 이모지 적립 |
 | 7 | 백업 | JSON 내보내기 · 복원(병합/덮어쓰기, 자동 백업), CSV(엑셀 호환), 카테고리 관리(추가·이름·이모지·순서·삭제), 데이터 전체 삭제 |
-| 8 | 설정 | 테마(시스템·라이트·다크), 효과음·햅틱, 빠른 금액 버튼, 만든 사람 |
+| 8 | 설정 | 테마(시스템·라이트·다크), 효과음·햅틱, 동전 소리, 저녁 기록 알림, 빠른 금액 버튼, 만든 사람 |
+| 9 | 저녁 기록 알림 | 켠 사람만 원하는 시간에 알림(기기 내 예약). 그날 이미 기록했으면 울리지 않음 |
+| 10 | 자랑하기 | 기록 탭에서 기간 절약액을 4:5 이미지 카드로 만들어 공유 시트로 전달 |
+| 11 | 별점 요청 | 목표 달성·누적 이정표 순간에 연출이 끝난 뒤 iOS 기본 창, 120일에 한 번까지 |
 
 ### 🎨 따뜻한 저금통
 
@@ -165,6 +168,7 @@ sequenceDiagram
 | 상태 | Zustand | 화면 로컬 상태는 `useState` |
 | 애니메이션 | react-native-reanimated 4 · gesture-handler | 카운트업, 펄스, 스와이프 |
 | 효과음 | expo-audio · 생성 WAV | 무음 스위치 준수 |
+| 알림 · 공유 · 별점 | expo-notifications · react-native-view-shot · expo-store-review | 기기 내 로컬 알림, 카드 이미지 캡처, iOS 기본 별점 창 |
 | 날짜 | dayjs (locale ko) | `2026년 9월 23일 (수)` |
 | 폰트 | Outfit (@expo-google-fonts) | 금액 숫자 전용, 한글은 시스템 |
 | 테스트 | jest-expo · @testing-library/react-native · sql.js | sql.js로 expo-sqlite를 대역해 DB 계층까지 PC에서 검증 |
@@ -304,7 +308,7 @@ npx expo-doctor    # 의존성 호환 점검
 서명 인증서와 업로드 키는 EAS 서버에 있습니다. 첫 빌드 한 번만 애플 계정 로그인이 필요합니다.
 빌드 번호는 빌드할 때마다 `app.json` 에서 자동으로 올라갑니다.
 
-### App Store 출시 준비
+### App Store
 
 - [개인정보 처리방침](docs/PRIVACY.md): 데이터를 수집하지 않습니다. 기록은 아이폰에만 저장합니다
 - [지원 페이지](docs/SUPPORT.md): 문의 방법과 자주 묻는 질문
@@ -332,7 +336,8 @@ npx expo-doctor    # 의존성 호환 점검
 | 폴리싱 · 안드로이드 · APK | 전체 폴리싱, 디자인 방향 B, 안드로이드 점검, EAS APK, 스크린샷 | ✅ |
 | 앱 아이콘 | 돼지 저금통 3D 아이콘, 안드로이드 적응형 · 테마 아이콘, 스플래시 | ✅ |
 | iOS TestFlight | EAS iOS 빌드, TestFlight 자동 업로드 (최신 빌드 7) | ✅ |
-| App Store 출시 | 스토어 문구, 개인정보 처리방침, 스크린샷, 심사 | 예정 |
+| App Store 출시 | 스토어 문구, 개인정보 처리방침, 스크린샷, 심사 | ✅ |
+| 1.0.1 | 별점 요청, 저녁 기록 알림, 자랑 이미지, 스토어 이름 · 소개 이미지 개선 | 🔨 |
 
 ## 👤 Author
 
@@ -346,4 +351,4 @@ npx expo-doctor    # 의존성 호환 점검
 허락 없이 코드를 복제·수정·배포하거나 앱 스토어에 제출할 수 없습니다.
 효과음(Pixabay)과 Outfit 폰트(SIL OFL) 같은 제3자 자산은 각자의 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE)에 있습니다.
 
-App Store 출시를 준비하고 있습니다. 지금은 TestFlight로 설치합니다. 안드로이드도 같은 코드로 동작하고, EAS Build로 APK를 만들 수 있습니다.
+App Store에 출시했습니다. 안드로이드도 같은 코드로 동작하고, EAS Build로 APK를 만들 수 있습니다.

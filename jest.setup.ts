@@ -39,6 +39,11 @@ jest.mock('expo-file-system');
 jest.mock('expo-sharing');
 jest.mock('expo-document-picker');
 
+/** (1.0.1) 별점 요청 · 저녁 알림 · 자랑 이미지도 네이티브라 __mocks__ 대역으로 바꾼다 (홈·설정·기록 탭이 import 한다) */
+jest.mock('expo-store-review');
+jest.mock('expo-notifications');
+jest.mock('react-native-view-shot');
+
 /**
  * (Android 대응) 모달·기록 수정 화면이 useSafeAreaInsets 를 쓴다. 테스트는 SafeAreaProvider 없이 화면을 그리므로
  * 라이브러리 공식 대역으로 바꾼다 (inset 0, useSafeAreaInsets 는 jest.fn 이라 테스트가 값을 정할 수 있다).

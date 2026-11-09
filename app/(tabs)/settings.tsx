@@ -6,6 +6,7 @@ import { AmountPresetsModal } from '@/src/components/AmountPresetsModal';
 import { CategoryModal } from '@/src/components/CategoryModal';
 import { CategoryRow } from '@/src/components/CategoryRow';
 import { GoalModal } from '@/src/components/GoalModal';
+import { ReminderSection } from '@/src/components/ReminderSection';
 import { Screen } from '@/src/components/Screen';
 import {
   SettingsChipsRow,
@@ -34,7 +35,7 @@ const APP_VERSION = Constants.expoConfig?.version ?? '-';
 /** 카테고리 모달 상태: 닫힘 / 새로 추가 / 이 카테고리 편집 */
 type CategoryEditing = { mode: 'closed' } | { mode: 'add' } | { mode: 'edit'; category: Category };
 
-/** 설정 탭. 목표 · 입력 · 화면 · (M4) 효과 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
+/** 설정 탭. 목표 · 입력 · 화면 · (M4) 효과 · (1.0.1) 알림 · (M5) 백업 · 카테고리 · 앱 정보 섹션 */
 export default function SettingsScreen() {
   const { sp } = useTheme();
   const monthlyGoal = useSettingsStore((s) => s.monthlyGoal);
@@ -219,6 +220,7 @@ export default function SettingsScreen() {
             isLast
           />
         </SettingsSection>
+        <ReminderSection />
         {/* (M5) 전체 데이터를 파일로 내보내고 되돌리기 */}
         <SettingsSection title="백업">
           <SettingsRow label="JSON 으로 내보내기" onPress={() => void exportJson()} />

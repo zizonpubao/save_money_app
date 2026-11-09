@@ -28,6 +28,12 @@ export const CSV_SHARE: ShareKind = {
   dialogTitle: 'SaveLog CSV 내보내기',
 };
 
+export const PNG_SHARE: ShareKind = {
+  mimeType: 'image/png',
+  UTI: 'public.png',
+  dialogTitle: 'SaveLog 자랑하기',
+};
+
 /**
  * 텍스트 파일을 (있으면 덮어써서) 쓰고 file:// 주소를 돌려준다.
  * cache: 공유 시트로 넘기고 끝나는 내보내기용 (OS 가 지워도 됨)

@@ -32,6 +32,7 @@ import {
   shakeSteps,
   type CardRect,
 } from '@/src/features/celebration';
+import { maybeRequestStoreReview } from '@/src/features/storeReviewActions';
 import { useCelebrationSound } from '@/src/features/useCelebrationSound';
 import { useEntryList } from '@/src/features/useEntryList';
 import { useHomeCard } from '@/src/features/useHomeCard';
@@ -78,6 +79,36 @@ export default function HomeScreen() {
   // (big) 타격 순간 홈 영역 좌우 흔들림. 오버레이(컨페티·라벨)는 흔들지 않아 화면이 "맞은" 느낌만 준다
   const shakeX = useSharedValue(0);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
+  // 별점 요청을 기다리는 사건. stopTimers 와 따로 둔다 — 바로 이어 저장해도 사건이 사라지지 않아야 한다
+  const reviewTrigger = useRef<{ goalReached: boolean; milestone: number | null } | null>(null);
+  const reviewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formOpen = useRef(false);
+  useEffect(() => {
+    formOpen.current = formVisible;
+  }, [formVisible]);
+
+  useEffect(
+    () => () => {
+      if (reviewTimer.current) clearTimeout(reviewTimer.current);
+    },
+    [],
+  );
+
+  // 연출이 끝난 뒤에 띄운다. 그새 입력 시트를 다시 열었으면 별점 창이 입력을 끊지 않게 닫힐 때까지 미룬다
+  const armReviewTimer = useCallback(() => {
+    const fire = () => {
+      if (formOpen.current) {
+        reviewTimer.current = setTimeout(fire, motion.reviewPromptMs);
+        return;
+      }
+      reviewTimer.current = null;
+      const trigger = reviewTrigger.current;
+      reviewTrigger.current = null;
+      if (trigger) void maybeRequestStoreReview(trigger);
+    };
+    if (reviewTimer.current) clearTimeout(reviewTimer.current);
+    reviewTimer.current = setTimeout(fire, motion.reviewPromptMs);
+  }, []);
 
   // 카드는 스크롤과 함께 움직이므로 배치가 바뀔 때와 t0 에 다시 잰다.
   // 시트가 떠 있는 동안에는 뒤 화면이 줄어들어 있어서, 시트가 다 내려간 뒤에 재야 글로우가 카드에 맞는다
@@ -135,6 +166,11 @@ export default function HomeScreen() {
       streak: s.streak > streakBefore,
     });
     setRun({ runId: s.celebrateTick, plan, amount: job.amount, seed: s.celebratedAt });
+    if (s.lastGoalReached || s.lastMilestone !== null) {
+      reviewTrigger.current = { goalReached: s.lastGoalReached, milestone: s.lastMilestone };
+    }
+    // 기다리는 별점 요청이 있으면 이번 연출 뒤로 다시 맞춘다
+    if (reviewTrigger.current) armReviewTimer();
     // 연속 저장이면 이전 흔들림을 끊고 제자리에서 다시
     // (콜백 안이라 React Compiler 규칙에 맞게 .value 대입 대신 set)
     cancelAnimation(shakeX);
@@ -152,7 +188,7 @@ export default function HomeScreen() {
       cancelHaptic.current = playCelebrationHaptic(plan.haptics);
       playSound(plan.sound);
     }, motion.hitAt);
-  }, [measureCardRect, playSound, stopTimers, reduceMotion, shakeX]);
+  }, [measureCardRect, playSound, stopTimers, reduceMotion, shakeX, armReviewTimer]);
 
   const cardHit = useMemo<CardHit | null>(
     () =>

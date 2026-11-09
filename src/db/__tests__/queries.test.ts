@@ -508,6 +508,9 @@ describe('queries', () => {
         amountPresets: 'amount_presets',
         themeMode: 'theme_mode',
         coinSound: 'coin_sound',
+        reviewRequestedAt: 'review_requested_at',
+        reminderEnabled: 'reminder_enabled',
+        reminderTime: 'reminder_time',
       });
     });
   });

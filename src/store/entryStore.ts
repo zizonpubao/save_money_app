@@ -29,6 +29,7 @@ import { isFirstOpenOfDay } from '@/src/features/firstOpen';
 import { detectGoalReached, parseGoal } from '@/src/features/goal';
 import { detectMilestone, parseMilestone } from '@/src/features/milestone';
 import { detectPersonalBest, type PersonalBest } from '@/src/features/personalBest';
+import { syncReminders } from '@/src/features/reminderSchedule';
 import { reviewMonthOf, type MonthReviewData } from '@/src/features/review';
 import { computeStreak } from '@/src/features/streak';
 import { addDays, addMonths, monthRange, thisMonth, toMonth, today } from '@/src/utils/date';
@@ -243,6 +244,7 @@ export const useEntryStore = create<EntryState>((set, get) => ({
       ...snapshot,
       firstOpenTick: firstOpen ? firstOpenTick + 1 : firstOpenTick,
     });
+    void syncReminders();
   },
 
   loadMore: () => {
@@ -271,6 +273,7 @@ export const useEntryStore = create<EntryState>((set, get) => ({
     const totalBefore = getTotalSum();
 
     const created = addEntry(input);
+    void syncReminders();
 
     // 기록은 이미 저장됐다. 축하 판정이 실패해도 화면에 "저장 실패" 가 뜨면 안 되므로 이펙트만 건너뛴다.
     const lastGoalReached = orFallback(
@@ -321,6 +324,8 @@ export const useEntryStore = create<EntryState>((set, get) => ({
       lastGoalReached: false,
       lastMilestone: null,
     });
+    // 날짜를 바꾸면 오늘 기록 유무가 달라질 수 있다
+    void syncReminders();
     return updated;
   },
 
@@ -332,6 +337,7 @@ export const useEntryStore = create<EntryState>((set, get) => ({
       lastGoalReached: false,
       lastMilestone: null,
     });
+    void syncReminders();
   },
 
   dismissReview: () => {

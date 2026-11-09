@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { useRef } from 'react';
-import { Alert, SectionList, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { BarChart } from '@/src/components/BarChart';
 import { CategoryBreakdown } from '@/src/components/CategoryBreakdown';
@@ -10,8 +10,10 @@ import { MonthNavigator } from '@/src/components/MonthNavigator';
 import { MonthStatsCard } from '@/src/components/MonthStatsCard';
 import { RangeToggle } from '@/src/components/RangeToggle';
 import { Screen } from '@/src/components/Screen';
+import { ShareCardModal } from '@/src/components/ShareCardModal';
 import type { Entry } from '@/src/db';
 import type { EntrySection } from '@/src/features/groupEntries';
+import { buildShareCardData } from '@/src/features/shareCard';
 import { useMonthlySummary } from '@/src/features/useMonthlySummary';
 import type { RangeMode } from '@/src/features/rangeMode';
 import { entryEmoji } from '@/src/store/categoryStore';
@@ -20,10 +22,12 @@ import { useTheme } from '@/src/theme';
 /** 기록 탭 (라우트 이름은 monthly 그대로). 월 / 년 단위 통계와 그 기간 전체 목록. */
 export default function RecordsScreen() {
   const router = useRouter();
-  const { colors, type, sp, radius } = useTheme();
+  const { colors, type, sp, radius, size } = useTheme();
   const monthly = useMonthlySummary();
   const listRef = useRef<SectionList<Entry, EntrySection>>(null);
   const isYear = monthly.mode === 'year';
+  const [shareVisible, setShareVisible] = useState(false);
+  const canShare = monthly.total > 0;
 
   // 모드를 바꾸면 요약 카드부터 다시 보이게 맨 위로 올린다
   const changeMode = (next: RangeMode) => {
@@ -72,6 +76,23 @@ export default function RecordsScreen() {
               title={isYear ? '이 해 절약' : '이 달 절약'}
               averageLabel={isYear ? '월 평균' : '하루 평균'}
             />
+            <Pressable
+              onPress={() => setShareVisible(true)}
+              disabled={!canShare}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canShare }}
+              style={({ pressed }) => [
+                styles.shareButton,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: radius.md,
+                  minHeight: size.touch,
+                  opacity: !canShare ? 0.4 : pressed ? 0.7 : 1,
+                },
+              ]}>
+              <Text style={[type.label, { color: colors.primary }]}>자랑하기</Text>
+            </Pressable>
             {monthly.isEmpty ? (
               <View style={[styles.empty, { paddingVertical: sp.xl }]}>
                 <Text style={[type.bodyStrong, { color: colors.text }]}>
@@ -123,6 +144,17 @@ export default function RecordsScreen() {
           </View>
         )}
       />
+      <ShareCardModal
+        visible={shareVisible}
+        data={buildShareCardData({
+          mode: monthly.mode,
+          period: monthly.period,
+          total: monthly.total,
+          count: monthly.count,
+          categoryRows: monthly.categoryRows,
+        })}
+        onClose={() => setShareVisible(false)}
+      />
     </Screen>
   );
 }
@@ -131,4 +163,5 @@ const styles = StyleSheet.create({
   noPadding: { padding: 0 },
   rowClip: { overflow: 'hidden' },
   empty: { alignItems: 'center' },
+  shareButton: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

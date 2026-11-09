@@ -139,6 +139,21 @@ export function dayNumber(date: string): number {
   return dayjs(date, DATE_FORMAT).diff(dayjs('1970-01-01', DATE_FORMAT), 'day');
 }
 
+/** from 에서 to 까지 며칠인지 (로컬 날짜 기준). to 가 더 이르면 음수 */
+export function daysBetween(from: string, to: string): number {
+  return dayNumber(to) - dayNumber(from);
+}
+
+/** ('2026-11-09', '21:00') → 그날 21:00 로컬 시각의 Date */
+export function dateAtTime(date: string, time: string): Date {
+  return dayjs(`${date} ${time}`, `${DATE_FORMAT} HH:mm`).toDate();
+}
+
+/** Date → 'HH:mm' (로컬 기준) */
+export function formatTime(d: Date): string {
+  return dayjs(d).format('HH:mm');
+}
+
 /** (M5) 'YYYY-MM-DD' 이면서 실제로 있는 날짜인지 (엄격 파싱: '2026-02-30' · '2026-9-1' 은 false). 백업 복원 검증용 */
 export function isValidDateString(value: string): boolean {
   return dayjs(value, DATE_FORMAT, true).isValid();

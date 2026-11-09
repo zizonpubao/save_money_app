@@ -33,6 +33,7 @@ import {
 } from './backupFile';
 import { buildCsv, csvFileName } from './csv';
 import { parseGoal } from './goal';
+import { syncReminders } from './reminderSchedule';
 import { mergeResultMessage, planMerge, planOverwrite } from './restore';
 
 /**
@@ -55,11 +56,15 @@ export function writeBackupFile(name: string, dir: 'cache' | 'document' = 'cache
   return writeTextFile(dir, name, JSON.stringify(snapshotBackup(), null, 2));
 }
 
-/** 복원·삭제 뒤 홈 카드·목록·카테고리 칩·목표가 바로 새 DB 를 보게 한다 */
+/**
+ * 복원·삭제 뒤 홈 카드·목록·카테고리 칩·목표가 바로 새 DB 를 보게 한다.
+ * 알림도 다시 맞춘다: 복원은 오늘 기록 유무를 바꾸고, 전체 삭제는 reminder_enabled 를 지워 예약이 모두 취소된다
+ */
 export function refreshAllStores(): void {
   useCategoryStore.getState().reload();
   useSettingsStore.getState().load();
   useEntryStore.getState().reload();
+  void syncReminders();
 }
 
 async function share(uri: string, kind: ShareKind): Promise<void> {

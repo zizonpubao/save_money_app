@@ -225,6 +225,34 @@
 - 규격(동전 녹음 2개): 44.1kHz mono PCM16, 앞 무음 제거, 피크 −4 dBFS. 출처·라이선스는 `assets/sounds/CREDITS.md` 에 있습니다.
 - 재생: `useTapSound` 훅. 저장 효과음과 같은 `AUDIO_MODE` · `downloadFirst` · 처음부터 재생 방식을 씁니다. 연타 때 앞 소리가 끊기지 않게 파일마다 플레이어 3개를 미리 만들어 번갈아 씁니다. 동전 녹음은 두 개 다 미리 만들고, 누르는 순간의 설정 값으로 고릅니다.
 
+## 1.0.1 기능
+**별점 요청**
+- 저장 축하 연출과 배너가 끝난 뒤 t0+2,500ms(`motion.reviewPromptMs`)에 iOS 기본 별점 창을 요청합니다.
+- 그 사이 다시 저장하면 마지막 연출 뒤로 밀립니다. 입력 시트가 열려 있으면 닫힐 때까지 미룹니다.
+
+**알림 구획 (설정 탭, 효과 다음)**
+- `저녁 기록 알림` 스위치(`SettingsSwitchRow`, 기본 꺼짐)가 있습니다. 켜면 아래에 `알림 시간` 행이 나옵니다.
+- 시간은 기록 입력의 날짜 칸과 같은 방식입니다. iOS 는 행 아래 휠, Android 는 다이얼로그입니다.
+- 제목은 "오늘 참은 소비 있나요?", 본문은 "커피 한 잔이라도 좋아요. 적어 두면 쌓여요." 입니다.
+
+**자랑 이미지**
+- 기록 탭 요약 카드 바로 아래 "자랑하기" 텍스트 버튼(`card` + `border` + `primary` 글자)입니다. 합계가 0원이면 opacity 0.4 로 비활성입니다.
+- 미리보기는 pageSheet 모달입니다. 왼쪽 위 "닫기", 카드, 아래 `primary` 면 "공유하기" 버튼 순서입니다.
+- 카드는 320×400(4:5)이고 저장 이미지는 1080×1350 입니다. 테마와 상관없이 `brandColors` 고정 색을 씁니다.
+
+| 토큰 | 값 | 쓰는 곳 |
+| --- | --- | --- |
+| `brandColors.bg` / `text` | `#FAF6EF` `#23794B` (4.99) | 크림 바탕, 숲 초록 글자 |
+| `brandColors.accent` / `onAccent` | `#F28C28` `#2B2520` (6.16) | 주황 면(최다 카테고리 칩)과 그 위 글자 |
+| `type.shareAmount` | 52 / 800 / 66 · Outfit ExtraBold | 큰 금액 |
+| `size.shareCardWidth` / `shareCardHeight` | 320 / 400 | 화면 크기 |
+| `size.shareCardExportWidth` / `shareCardExportHeight` | 1080 / 1350 | 저장 이미지 크기 |
+| `size.shareCardPig` / `shareCardPigBox` | 240 / 120 | 돼지 이미지(둘레 여백을 잘라 씀) |
+
+- 내용은 위에서 기간(`heading`) · 금액(`shareAmount`) · "아꼈어요"(`heading`) · 기록 건수 + 최다 카테고리 칩 · 돼지 · "SaveLog" 순서입니다.
+- 금액은 `fitFontSize`(최소 0.4배)로 줄입니다. `adjustsFontSizeToFit` 은 쓰지 않습니다.
+- 최다 카테고리는 금액 합계 1위입니다. 미분류가 1위면 "📦 미분류" 입니다.
+
 ## 하지 말 것
 - `theme.ts` 밖에서 색·폰트 크기·radius 숫자 하드코딩 (`fs`/`sp` 조합 즉석 계산 포함 — 필요하면 토큰을 추가한다).
 - 카드·행·칩에 그림자 넣기, 테두리와 그림자 동시에 쓰기.

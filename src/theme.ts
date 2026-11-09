@@ -123,6 +123,20 @@ export const darkColors: ColorTokens = {
   shadow: '#000000',
 };
 
+/**
+ * (1.0.1) 자랑 이미지 전용 고정 색. 다른 사람에게 보내는 그림이라 앱 테마(다크)를 따르지 않는다.
+ * 주황은 다른 화면과 같이 면으로만 쓰고 위 글자는 onAccent 다.
+ */
+export const brandColors = {
+  // 크림 바탕
+  bg: lightColors.bg,
+  // 숲 초록 글자. bg 위 4.99
+  text: lightColors.primary,
+  // 주황 강조 면. onAccent 글자 6.16
+  accent: lightColors.warn,
+  onAccent: lightColors.onWarn,
+} as const;
+
 /** 간격 토큰 (px) — 4의 배수만 */
 export const sp = {
   xs: 4,
@@ -143,6 +157,8 @@ export const fs = {
   xl: 28,
   /** (B 방향) 36 → 40: 숫자 폰트(Outfit)로 바꾸며 주인공 숫자를 한 단계 키운다 */
   xxl: 40,
+  /** (1.0.1) 자랑 이미지 큰 금액 */
+  share: 52,
 } as const;
 
 export const radius = {
@@ -208,6 +224,8 @@ export const typeScale = {
   note: { fontSize: fs.sm, fontWeight: '400', lineHeight: 20 },
   /** 필드 라벨, 메모 미리보기 */
   caption: { fontSize: fs.xs, fontWeight: '400', lineHeight: 16 },
+  /** (1.0.1) 자랑 이미지의 큰 금액 (52 × 1.26 = 65.5 → 66) */
+  shareAmount: { fontSize: fs.share, fontWeight: '800', lineHeight: 66, fontFamily: numFont.extrabold },
 } as const satisfies Record<string, TypeToken>;
 
 /**
@@ -287,6 +305,14 @@ export const size = {
   percentLabel: 40,
   /** (떠 있는 저장 버튼) 입력 시트·기록 수정 오른쪽 아래 알약 버튼 높이. 44pt 터치보다 한 단계 크게 */
   floatingSave: 52,
+  /** (1.0.1) 자랑 카드 화면 크기(4:5). 저장 이미지는 shareCardExport 폭으로 키운다 */
+  shareCardWidth: 320,
+  shareCardHeight: 400,
+  shareCardExportWidth: 1080,
+  shareCardExportHeight: 1350,
+  /** (1.0.1) 돼지 이미지 원본은 둘레 여백이 커서, 크게 그리고 shareCardPigBox 높이로 잘라 쓴다 */
+  shareCardPig: 240,
+  shareCardPigBox: 120,
 } as const;
 
 /**
@@ -394,6 +420,8 @@ export const motion = {
   reducedBannerMs: 150,
   /** 오버레이를 걷는 시각. big 컨페티·라벨이 끝나는 t0+1000 */
   layerMs: 1000,
+  /** (1.0.1) 별점 창을 띄우는 시각(t0 기준). 축하 배너(t0+300 등장, 1.5초 유지)까지 끝난 뒤 */
+  reviewPromptMs: 2500,
 
   /** (M4.5) + 버튼 길게 누르기 인식 시간 */
   longPressMs: 500,
