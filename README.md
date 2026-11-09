@@ -314,6 +314,7 @@ npx expo-doctor    # 의존성 호환 점검
 - [지원 페이지](docs/SUPPORT.md): 문의 방법과 자주 묻는 질문
 - [App Store 입력 가이드](docs/APP-STORE.md): App Store Connect 화면별 입력값, 스크린샷 계획, 심사 메모
 - [스토어 스크린샷](docs/appstore/): 아이폰 17 Pro 원본 1206×2622 (App Store Connect "Dynamic Island 지원 iPhone" 칸 규격)
+- [스토어 소개 이미지](docs/appstore/marketing/): 1.0.1 부터 쓰는 꾸민 이미지 5장과 만드는 템플릿
 
 ### 안드로이드 APK
 

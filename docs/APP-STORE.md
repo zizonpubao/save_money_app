@@ -111,15 +111,15 @@ App Store Connect(appstoreconnect.apple.com → 나의 앱 → SaveLog)에 넣�
 아이폰 17 Pro 캡처 원본(1206×2622)을 그대로 올립니다. 2026년 App Store Connect 의 "Dynamic Island 지원 iPhone (중형 디스플레이)" 칸이 1206×2622 · 1179×2556 을 받습니다 (키운 1320×2868 은 "파일 크기가 유효하지 않습니다" 로 거절됨). 파일은 `docs/appstore/` 에 순서대로 있습니다 (1-home · 2-entry · 3-records · 4-settings-effects · 5-settings-categories).
 iPad 는 지원하지 않으므로(supportsTablet false) iPad · Apple Watch 칸은 비웁니다.
 
-| 순서 | 화면 | 보여 줄 것 |
-|---|---|---|
-| 1 | 홈 | 이번 달 절약액 큰 숫자, 목표 진행 바, 잔디 |
-| 2 | 입력 시트 | 금액 버튼과 카테고리, 떠 있는 저장 버튼 |
-| 3 | 저장 연출 | 컨페티가 터지는 순간 |
-| 4 | 기록 탭 (월) | 일별 막대와 카테고리 비율 |
-| 5 | 설정 | 테마·효과·백업 |
+1.0.1 부터는 꾸민 소개 이미지 `docs/appstore/marketing/store-1.png` ~ `store-5.png` 를 순서대로 올립니다 (1206×2622). 기존 스크린샷은 지우고 바꿉니다. 만드는 법은 `docs/appstore/marketing/README.md` 에 있습니다.
 
-기록이 며칠 쌓인 상태에서 찍어야 화면이 비어 보이지 않습니다.
+| 순서 | 화면 | 큰 문구 |
+|---|---|---|
+| 1 | 홈 | 안 쓴 돈을 기록하면 쌓여요 |
+| 2 | 입력 시트 | 버튼 몇 번이면 기록 끝 |
+| 3 | 기록 탭 (월) | 한 달 얼마 아꼈는지 한눈에 |
+| 4 | 자랑하기 | 아낀 만큼 자랑해요 |
+| 5 | 설정 | 알림도 소리도 내 마음대로 |
 
 ## 6. 연령 등급
 
