@@ -42,7 +42,8 @@ export const PNG_SHARE: ShareKind = {
 export function writeTextFile(dir: 'cache' | 'document', name: string, content: string): string {
   const file = new File(dir === 'cache' ? Paths.cache : Paths.document, name);
   file.create({ overwrite: true });
-  file.write(content);
+  // SDK 58 부터 File.write() 는 Promise 를 돌려준다. 다 쓰기 전에 공유·복원으로 넘어가지 않게 동기 쓰기를 쓴다
+  file.writeSync(content);
   return file.uri;
 }
 

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import * as Sharing from 'expo-sharing';
 import { Alert, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { captureRef } from 'react-native-view-shot';
 
 import RecordsScreen from '@/app/(tabs)/monthly';
@@ -96,12 +97,12 @@ describe('기록 탭 자랑하기', () => {
   }
 
   async function openPreview() {
-    await render(<RecordsScreen />);
+    await render(<RecordsScreen />, { wrapper: GestureHandlerRootView });
     await fireEvent.press(screen.getByRole('button', { name: '자랑하기' }));
   }
 
   it('합계가 0원이면 비활성이다', async () => {
-    await render(<RecordsScreen />);
+    await render(<RecordsScreen />, { wrapper: GestureHandlerRootView });
     const button = screen.getByRole('button', { name: '자랑하기' });
     expect(button).toBeDisabled();
     await fireEvent.press(button);
@@ -118,7 +119,7 @@ describe('기록 탭 자랑하기', () => {
 
   it('년 모드: 카드 기간이 그 해다', async () => {
     addSample();
-    await render(<RecordsScreen />);
+    await render(<RecordsScreen />, { wrapper: GestureHandlerRootView });
     await fireEvent.press(screen.getByText('년'));
     await fireEvent.press(screen.getByRole('button', { name: '자랑하기' }));
     expect(screen.getAllByText(formatKoYear(thisYear())).length).toBeGreaterThan(1);

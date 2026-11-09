@@ -12,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  type TextInputInstance,
 } from 'react-native';
 
 import { AmountPresetChips } from '@/src/components/AmountPresetChips';
@@ -53,7 +54,7 @@ export function EntryForm({
   const { colors, type, fs, sp, radius, isDark, motion } = useTheme();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { values } = form;
-  const amountRef = useRef<TextInput>(null);
+  const amountRef = useRef<TextInputInstance>(null);
   // (입력 버튼 타격감) 누른 즉시 소리 + 햅틱. 무음 스위치가 켜져 있으면 소리는 안 나고 햅틱만 남는다
   const playTap = useTapSound();
 

@@ -1,6 +1,7 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react-native';
 import { BackHandler, Platform, type NativeEventSubscription } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BarChart } from '@/src/components/BarChart';
@@ -163,7 +164,9 @@ describe('Android 대응', () => {
   it('막대 그래프: 툴팁이 떠 있을 때만 뒤로 가기가 툴팁을 닫는다', async () => {
     const back = spyBack();
     const month = '2026-01';
-    await render(<BarChart bars={toDailyChartBars(buildDailyBars(month, []), axisDays(month))} />);
+    await render(<BarChart bars={toDailyChartBars(buildDailyBars(month, []), axisDays(month))} />, {
+      wrapper: GestureHandlerRootView,
+    });
     expect(back.listeners).toHaveLength(0);
 
     const track = screen.getByTestId('barchart-track');

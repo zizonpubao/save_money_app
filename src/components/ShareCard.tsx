@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 
 import type { ShareCardData } from '@/src/features/shareCard';
 import { brandColors, numeric, radius, size, sp, typeScale } from '@/src/theme';
@@ -16,7 +16,7 @@ const AMOUNT_MIN_SCALE = 0.4;
  * 공유용 4:5 카드. 앱 테마와 상관없이 항상 브랜드 색이다.
  * collapsable={false}: Android 가 뷰를 합쳐 없애면 캡처할 대상이 사라진다.
  */
-export const ShareCard = forwardRef<View, { data: ShareCardData }>(function ShareCard({ data }, ref) {
+export const ShareCard = forwardRef<ViewInstance, { data: ShareCardData }>(function ShareCard({ data }, ref) {
   const fontSize = fitFontSize(data.amountText, INNER_WIDTH, typeScale.shareAmount.fontSize, AMOUNT_MIN_SCALE);
   return (
     <View ref={ref} testID="share-card" collapsable={false} style={styles.card}>

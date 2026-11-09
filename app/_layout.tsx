@@ -18,7 +18,7 @@ import { numFont, sp, typeScale, useTheme } from '@/src/theme';
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  anchor: '(tabs)',
 };
 
 // DB 준비 + 숫자 폰트 로드 전까지 스플래시 유지

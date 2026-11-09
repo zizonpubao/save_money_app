@@ -9,11 +9,11 @@
 커피 한 잔, 배달 한 번을 참을 때마다 항목과 금액을 적는 개인용 iOS 앱입니다.
 **날짜별 · 월별 · 연별로 얼마를 아꼈는지** 보여줍니다. 저장할 때마다 짧은 축하 이펙트가 나옵니다.
 
-![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)
-![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
+![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-expo--sqlite-003B57?logo=sqlite&logoColor=white)
-![Jest](https://img.shields.io/badge/Tests-996%20passing-C21325?logo=jest&logoColor=white)
+![Jest](https://img.shields.io/badge/Tests-997%20passing-C21325?logo=jest&logoColor=white)
 ![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-D97757)
 ![License](https://img.shields.io/badge/License-All%20rights%20reserved-lightgrey)
 
@@ -162,7 +162,7 @@ sequenceDiagram
 
 | 구분 | 기술 | 비고 |
 |---|---|---|
-| 앱 | Expo SDK 57 · React Native · Expo Router | 파일 기반 라우팅, 탭 3개 |
+| 앱 | Expo SDK 58 · React Native 0.88 · Expo Router | 파일 기반 라우팅, 탭 3개 |
 | 언어 | TypeScript (strict, `any` 금지) | |
 | 저장 | expo-sqlite (동기 API) | `schema_version` 테이블로 마이그레이션 관리 |
 | 상태 | Zustand | 화면 로컬 상태는 `useState` |

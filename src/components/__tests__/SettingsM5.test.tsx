@@ -27,7 +27,8 @@ const alertSpy = jest.spyOn(Alert, 'alert');
 function lastAlert(): { title: string; message?: string; buttons: AlertButton[] } {
   const call = alertSpy.mock.calls.at(-1);
   if (!call) throw new Error('알림이 없습니다');
-  return { title: call[0], message: call[1], buttons: call[2] ?? [] };
+  // RN 0.88 타입: 제목·내용이 null 일 수 있고 버튼 배열은 읽기 전용이다
+  return { title: call[0] ?? '', message: call[1] ?? undefined, buttons: [...(call[2] ?? [])] };
 }
 
 function rowNames(): string[] {

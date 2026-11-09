@@ -39,9 +39,10 @@ type AlertCall = { title: string; message?: string; buttons: AlertButton[] };
 
 function alerts(): AlertCall[] {
   return alertSpy.mock.calls.map(([title, message, buttons]) => ({
-    title,
-    message,
-    buttons: buttons ?? [],
+    // RN 0.88 타입: 제목·내용이 null 일 수 있고 버튼 배열은 읽기 전용이다
+    title: title ?? '',
+    message: message ?? undefined,
+    buttons: [...(buttons ?? [])],
   }));
 }
 

@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, SectionList, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -67,8 +67,8 @@ export default function HomeScreen() {
   // (M4.5) + 길게 누르기 원탭 저장 메뉴. null 이면 닫힘
   const [quickItems, setQuickItems] = useState<RecentTitle[] | null>(null);
   // 축하 오버레이 기준 = 홈 영역(rootRef) 기준 카드 사각형
-  const rootRef = useRef<View>(null);
-  const cardRef = useRef<View>(null);
+  const rootRef = useRef<ViewInstance>(null);
+  const cardRef = useRef<ViewInstance>(null);
   const [cardRect, setCardRect] = useState<CardRect | null>(null);
   const [run, setRun] = useState<CelebrationRun | null>(null);
   // DB 에는 저장했고 화면 반영(t0)을 기다리는 저장. "저장으로 닫힘" 플래그를 겸한다
@@ -392,7 +392,7 @@ export default function HomeScreen() {
                   ]}>
                   <Text style={[type.label, { color: colors.primary }]}>이전 달 더 보기</Text>
                 </Pressable>
-              ) : null
+              ) : undefined
             }
           />
         </View>

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import HomeScreen from '@/app/(tabs)/index';
 import RecordsScreen from '@/app/(tabs)/monthly';
@@ -95,7 +96,7 @@ describe('미분류 이모지는 어디서나 📦', () => {
 
   it('기록 탭 목록 행과 카테고리 합계: 📦 · "미분류"', async () => {
     seedUncategorized();
-    await render(<RecordsScreen />);
+    await render(<RecordsScreen />, { wrapper: GestureHandlerRootView });
     expect(screen.getByText('📦 편의점')).toBeOnTheScreen();
     expect(screen.getByText('📦 붕어빵')).toBeOnTheScreen();
     expect(screen.getByText('미분류')).toBeOnTheScreen();

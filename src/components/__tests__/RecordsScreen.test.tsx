@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import RecordsScreen from '@/app/(tabs)/monthly';
 import { addEntry, initDatabase, resetDatabaseConnection } from '@/src/db';
@@ -35,7 +36,7 @@ describe('기록 탭 화면 (월 / 년 토글)', () => {
 
   it('년을 누르면 "2026년" 이동·월별 막대 12칸·월별 섹션 헤더로 바뀐다', async () => {
     addEntry({ date: today(), title: '아메리카노', amount: 4500, categoryId: null, memo: null });
-    await render(<RecordsScreen />);
+    await render(<RecordsScreen />, { wrapper: GestureHandlerRootView });
     expect(screen.getByText(formatKoMonth(thisMonth()))).toBeOnTheScreen();
     expect(screen.getByText('일별')).toBeOnTheScreen();
 
@@ -51,7 +52,7 @@ describe('기록 탭 화면 (월 / 년 토글)', () => {
   });
 
   it('기록이 없는 해는 빈 상태 문구를 보여준다', async () => {
-    await render(<RecordsScreen />);
+    await render(<RecordsScreen />, { wrapper: GestureHandlerRootView });
     await fireEvent.press(screen.getByText('년'));
     expect(screen.getByText('이 해엔 기록이 없어요')).toBeOnTheScreen();
   });

@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import * as Haptics from 'expo-haptics';
 import { StyleSheet } from 'react-native';
-import { State } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, State } from 'react-native-gesture-handler';
 import { fireGestureHandler, getByGestureTestId } from 'react-native-gesture-handler/jest-utils';
 
 import { BarChart, indexAtX } from '@/src/components/BarChart';
@@ -66,13 +66,15 @@ async function scrub(xs: number[]) {
 /** 실제 화면과 같은 경로(buildDailyBars/axisDays → toDailyChartBars)로 props 를 만든다. 2026-01 은 31일. */
 async function renderChart(month: string, totals: DailyTotal[] = []) {
   const bars = toDailyChartBars(buildDailyBars(month, totals), axisDays(month));
-  await render(<BarChart bars={bars} />);
+  await render(<BarChart bars={bars} />, { wrapper: GestureHandlerRootView });
   await layout(bars.length);
 }
 
 /** 년 모드: buildMonthlyBars → toMonthlyChartBars */
 async function renderYearChart(year: string, totals: MonthlyTotal[] = []) {
-  await render(<BarChart bars={toMonthlyChartBars(buildMonthlyBars(year, totals))} />);
+  await render(<BarChart bars={toMonthlyChartBars(buildMonthlyBars(year, totals))} />, {
+    wrapper: GestureHandlerRootView,
+  });
   await layout(12);
 }
 
@@ -112,6 +114,17 @@ describe('indexAtX — 손가락 x → 칸 번호', () => {
   it('폭을 아직 모르거나 칸이 없으면 -1', () => {
     expect(indexAtX(10, 0, 31)).toBe(-1);
     expect(indexAtX(10, 310, 0)).toBe(-1);
+  });
+});
+
+describe('BarChart — 제스처 루트 (gesture-handler 3)', () => {
+  // v3 의 GestureDetector 는 개발 모드에서 GestureHandlerRootView 밖에 있으면 던진다.
+  // 앱은 app/_layout.tsx 가 감싸 주므로 괜찮고, 테스트도 같은 이유로 wrapper 를 준다
+  it('GestureHandlerRootView 없이 그리면 던진다 (그래서 앱 루트와 테스트가 감싼다)', async () => {
+    const bars = toDailyChartBars(buildDailyBars('2026-01', []), axisDays('2026-01'));
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(render(<BarChart bars={bars} />)).rejects.toThrow(/GestureHandlerRootView/);
+    spy.mockRestore();
   });
 });
 

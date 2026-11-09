@@ -44,9 +44,16 @@ export class File {
     mockFiles.set(this.uri, '');
   }
 
-  write(content: string): void {
+  /** SDK 58: 동기 쓰기. 앱은 이것만 쓴다 */
+  writeSync(content: string): void {
     if (mockFileSystemState.failWrites) throw new Error('쓰기 실패 (테스트)');
     mockFiles.set(this.uri, content);
+  }
+
+  /** SDK 58: write() 는 비동기다. 앱이 실수로 쓰면(await 없이) 내용이 아직 없는 상태가 테스트에서 드러난다 */
+  async write(content: string): Promise<void> {
+    await Promise.resolve();
+    this.writeSync(content);
   }
 
   text(): Promise<string> {

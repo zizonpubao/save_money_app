@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View, type ViewInstance } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { ShareCard } from '@/src/components/ShareCard';
@@ -33,7 +33,7 @@ export function ShareCardModal({ visible, data, onClose }: Props) {
 function ShareCardModalBody({ data, onClose }: Omit<Props, 'visible'>) {
   const { colors, type, sp, radius } = useTheme();
   const insets = useModalInsets();
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<ViewInstance>(null);
   const [busy, setBusy] = useState(false);
 
   const share = async () => {
