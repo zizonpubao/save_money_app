@@ -3,6 +3,20 @@
 App Store Connect(appstoreconnect.apple.com → 나의 앱 → SaveLog)에 넣을 값을 화면 순서대로 모았습니다.
 코드 블록 안 문구는 그대로 복사해 붙여 넣습니다.
 
+## 0. 1.0.1 업데이트 순서 (출시된 앱을 새 버전으로 바꿀 때)
+
+1. **새 버전 만들기**: 나의 앱 → SaveLog → 위쪽 탭 "배포". 왼쪽 메뉴의 "iOS 앱" 글자 옆 파란 **+** 를 누르고 `1.0.1` 을 입력합니다. 이 + 는 현재 버전이 출시된 상태("배포 준비 완료")일 때만 보입니다.
+2. **1.0.1 제출 준비 중 화면**
+   - 스크린샷: 기존 다섯 장을 지우고 `store-1.png` ~ `store-5.png` 를 순서대로 올립니다.
+   - 프로모션 텍스트, 설명, 키워드: 아래 4번 문구로 바꿉니다.
+   - 이 버전의 새로운 기능: 아래 4번의 "1.0.1 이 버전의 새로운 기능" 문구를 넣습니다.
+   - 빌드: 기존 빌드를 빼고 **1.0.1 (8)** 을 고릅니다.
+   - 앱 심사 정보의 메모: 아래 7번의 영어 문단으로 바꿉니다.
+3. **앱 정보 화면** (일반 정보 → 앱 정보): 이름을 `SaveLog - 절약 기록 앱`, 부제를 `오늘 참은 소비로 쌓는 짠테크 습관` 으로 바꾸고 저장합니다. 이름과 부제는 새 버전이 "제출 준비 중"일 때 고칩니다.
+4. **심사에 추가 → 심사를 위해 제출**
+
+개인정보 라벨("데이터를 수집하지 않음"), 가격, 출시 국가, 연령 등급은 그대로 둡니다. 알림은 기기 안에서만 예약하고 서버로 보내는 데이터가 없습니다.
+
 ## 1. 앱 정보 (일반 → 앱 정보)
 
 | 항목 | 값 |
@@ -97,7 +111,7 @@ App Store Connect(appstoreconnect.apple.com → 나의 앱 → SaveLog)에 넣�
 | 항목 | 값 |
 |---|---|
 | 저작권 | `2026 zizonpubao` |
-| 빌드 | TestFlight 에서 확인한 빌드 (1.0.0 (7) 예정) |
+| 빌드 | TestFlight 에서 확인한 빌드. 1.0 은 1.0.0 (7), 1.0.1 은 1.0.1 (8) |
 
 ### 1.0.1 이 버전의 새로운 기능
 ```
@@ -141,6 +155,11 @@ How to test:
 1. Tap the green + button on the Home tab, tap an amount chip (e.g. 3천 = 3,000 KRW), choose a category, and tap the green "저장" (Save) button at the bottom right.
 2. Home shows the monthly total; the 기록 (Records) tab shows monthly/yearly charts.
 3. 설정 (Settings) lets you set a monthly goal, theme, sound/haptics, and export/import a JSON backup.
+
+New in 1.0.1:
+- Daily reminder (설정 > 알림 > 매일 기록 알림). It is off by default. Notification permission is requested only when the user turns the switch on. Reminders are local notifications scheduled on the device; the app does not use remote push or any server.
+- Share card (기록 tab > 자랑하기): renders the saved amount as an image and opens the system share sheet.
+- Rating prompt: the standard StoreKit review prompt may appear after the user reaches a monthly goal.
 
 About NSMicrophoneUsageDescription: the app never records audio and never requests microphone permission. The string exists only because the audio playback module (expo-audio) links recording APIs.
 ```
